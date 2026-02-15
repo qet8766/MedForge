@@ -1,0 +1,51 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# Reusable TLS snippet — swap the DNS provider module as needed.
+(tls_dns) {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+}
+
+# ── Frontend ──────────────────────────────────────────────
+medforge.{$DOMAIN} {
+	import tls_dns
+	reverse_proxy medforge-web:3000
+}
+
+# ── API ───────────────────────────────────────────────────
+api.medforge.{$DOMAIN} {
+	import tls_dns
+	reverse_proxy medforge-api:8000
+}
+
+# ── Session wildcard ──────────────────────────────────────
+# Catches all *.medforge.<domain> not matched above.
+# Only s-<slug> subdomains are expected; forward_auth returns
+# 404 for anything else.
+*.medforge.{$DOMAIN} {
+	import tls_dns
+
+	# Strip any client-supplied X-Upstream to prevent spoofing.
+	request_header -X-Upstream
+
+	forward_auth medforge-api:8000 {
+		uri /api/auth/session-proxy
+		header_up Host {host}
+		header_up X-Forwarded-For {remote}
+		copy_headers X-Upstream
+	}
+
+	# Fail closed if the auth endpoint did not set an upstream.
+	@missing not header X-Upstream *
+	handle @missing {
+		respond "Session upstream missing" 502
+	}
+
+	reverse_proxy {http.request.header.X-Upstream} {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

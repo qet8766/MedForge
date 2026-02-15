@@ -1,0 +1,90 @@
+networks:
+  medforge-control:
+    driver: bridge
+  medforge-public-sessions:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24          # Fixed subnet so Caddy gets a stable IP.
+  medforge-private-sessions:
+    driver: bridge                        # Placeholder — unused until PRIVATE tier.
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+services:
+  # ── Database ──────────────────────────────────────────────
+  medforge-db:
+    image: mariadb:11
+    container_name: medforge-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: medforge
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /tank/medforge/system/db:/var/lib/mysql
+    networks:
+      - medforge-control
+
+  # ── API ───────────────────────────────────────────────────
+  medforge-api:
+    build: ../../apps/api
+    container_name: medforge-api
+    restart: unless-stopped
+    depends_on:
+      - medforge-db
+    environment:
+      DATABASE_URL: mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@medforge-db:3306/medforge
+      DOMAIN: ${DOMAIN}
+      SESSION_SECRET: ${SESSION_SECRET}
+      PUBLIC_SESSIONS_NETWORK: medforge-public-sessions
+      PACK_IMAGE: ${PACK_IMAGE}                   # e.g. medforge-pack-default@sha256:...
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Manage session containers.
+    # ZFS snapshot commands require host-level access.
+    # The API shells out to `zfs snapshot`; mount the binary + device.
+    devices:
+      - /dev/zfs:/dev/zfs
+    cap_add:
+      - SYS_ADMIN                                  # Required for ZFS ioctls.
+    networks:
+      - medforge-control
+      - medforge-public-sessions
+
+  # ── Frontend ──────────────────────────────────────────────
+  medforge-web:
+    build: ../../apps/web
+    container_name: medforge-web
+    restart: unless-stopped
+    depends_on:
+      - medforge-api
+    environment:
+      NEXT_PUBLIC_API_URL: https://api.medforge.${DOMAIN}
+      NEXT_PUBLIC_DOMAIN: ${DOMAIN}
+    networks:
+      - medforge-control
+
+  # ── Reverse proxy ────────────────────────────────────────
+  medforge-caddy:
+    build: ../caddy
+    container_name: medforge-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"                              # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      CF_API_TOKEN: ${CF_API_TOKEN}
+    volumes:
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      medforge-control: {}
+      medforge-public-sessions:
+        ipv4_address: 172.30.0.2                   # Fixed IP for firewall rules.
