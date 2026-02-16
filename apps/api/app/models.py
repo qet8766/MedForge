@@ -47,7 +47,6 @@ class CompetitionTier(StrEnum):
 
 class CompetitionStatus(StrEnum):
     ACTIVE = "active"
-    INACTIVE = "inactive"
 
 
 class ScoreStatus(StrEnum):

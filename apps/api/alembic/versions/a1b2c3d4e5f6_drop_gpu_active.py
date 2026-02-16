@@ -33,7 +33,14 @@ _DATETIME6_COLUMNS = [
 ]
 
 
+def _is_mysql() -> bool:
+    return op.get_bind().dialect.name == "mysql"
+
+
 def upgrade() -> None:
+    if not _is_mysql():
+        return
+
     op.drop_constraint("uq_sessions_gpu_active", "sessions", type_="unique")
     op.drop_column("sessions", "gpu_active")
 
@@ -43,6 +50,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    if not _is_mysql():
+        return
+
     for table, column in reversed(_DATETIME6_COLUMNS):
         op.alter_column(table, column, type_=sa.DateTime(), existing_type=MySQLDATETIME(fsp=6))
 

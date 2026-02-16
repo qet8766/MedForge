@@ -10,7 +10,6 @@ from app.session_runtime.types import (
     SessionInspectResult,
     SessionStartResult,
     SessionStopRequest,
-    SessionStopResult,
     WorkspaceProvisionRequest,
     WorkspaceProvisionResult,
     WorkspaceSnapshotRequest,
@@ -40,8 +39,9 @@ class MockContainerAdapter:
         slug = request.container_name.split("-")[-1]
         return SessionStartResult(container_id=f"mock-{slug}-{next(self._counter)}")
 
-    def stop_container(self, request: SessionStopRequest) -> SessionStopResult:
-        return SessionStopResult(removed=bool(request.container_id))
+    def stop_container(self, request: SessionStopRequest) -> None:
+        _ = request
+        return
 
     def inspect_container(self, request: ContainerInspectRequest) -> SessionInspectResult:
         container_id = request.container_id

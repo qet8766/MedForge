@@ -104,11 +104,6 @@ class SessionStopRequest:
 
 
 @dataclass(frozen=True)
-class SessionStopResult:
-    removed: bool
-
-
-@dataclass(frozen=True)
 class SessionInspectRequest:
     container_id: str | None
     slug: str
@@ -138,4 +133,3 @@ class ContainerStartRequest:
 class ContainerInspectRequest:
     container_id: str | None
     container_name: str
-

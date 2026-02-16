@@ -20,6 +20,12 @@ from sqlmodel import Session, SQLModel, create_engine, select
 import app.config as config_module
 from app.config import Settings, get_settings
 from app.database import get_session, run_migrations
+from app.http_contract import (
+    apply_legacy_api_deprecation_headers,
+    default_problem_responses,
+    include_api_routers,
+    is_legacy_api_path,
+)
 from app.models import AuthSession, Competition, Role, User
 from app.problem_details import register_problem_exception_handler
 from app.routers.auth import router as auth_router
@@ -60,7 +66,7 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
             '{"evaluation_split_version":"titanic-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
             '"id_column":"PassengerId","target_columns":["Survived"],'
-            '"label_source":"test-fixture:titanic","expected_row_count":3}'
+            '"expected_row_count":3}'
         ),
         encoding="utf-8",
     )
@@ -74,7 +80,7 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
             '{"evaluation_split_version":"rsna-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
             '"id_column":"patientId","target_columns":["x","y","width","height","Target"],'
-            '"label_source":"test-fixture:rsna","expected_row_count":4}'
+            '"expected_row_count":4}'
         ),
         encoding="utf-8",
     )
@@ -92,7 +98,7 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
             '{"evaluation_split_version":"cifar100-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
             '"id_column":"image_id","target_columns":["label"],'
-            '"label_source":"test-fixture:cifar100","expected_row_count":3}'
+            '"expected_row_count":3}'
         ),
         encoding="utf-8",
     )
@@ -191,19 +197,24 @@ def client(test_settings: Settings, db_engine) -> Iterator[TestClient]:
         with Session(db_engine) as session:
             yield session
 
-    app = FastAPI()
+    app = FastAPI(responses=default_problem_responses())
 
     @app.middleware("http")
-    async def request_id_middleware(request, call_next):
+    async def request_contract_middleware(request, call_next):
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         response.headers["X-Request-Id"] = request.state.request_id
+        if is_legacy_api_path(request.url.path):
+            apply_legacy_api_deprecation_headers(response, settings=test_settings)
         return response
 
     register_problem_exception_handler(app)
-    app.include_router(auth_router)
-    app.include_router(router)
-    app.include_router(control_plane_router)
+    include_api_routers(
+        app,
+        auth_router=auth_router,
+        competitions_router=router,
+        control_plane_router=control_plane_router,
+    )
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_settings] = lambda: test_settings
 

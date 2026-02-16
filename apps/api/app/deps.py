@@ -20,7 +20,6 @@ class AuthPrincipal:
     user_id: UUID
     role: Role
     email: str | None
-    auth_session_id: UUID | None
     source: str
 
 
@@ -110,7 +109,6 @@ def _principal_from_cookie(
         user_id=user.id,
         role=user.role,
         email=user.email,
-        auth_session_id=auth_session.id,
         source="cookie",
     )
 

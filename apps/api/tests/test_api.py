@@ -55,6 +55,35 @@ def _assert_problem(response, *, status_code: int, type_suffix: str) -> dict[str
     return payload
 
 
+def test_versioned_routes_match_legacy_routes(client) -> None:
+    legacy = client.get("/api/competitions")
+    legacy_data, legacy_meta = _assert_success(legacy, status_code=200)
+    assert legacy_meta["api_version"] == "v1.0"
+    assert legacy.headers.get("deprecation") == "true"
+    assert "sunset" in legacy.headers
+    assert 'rel="deprecation"' in legacy.headers.get("link", "")
+
+    versioned = client.get("/api/v1/competitions")
+    versioned_data, versioned_meta = _assert_success(versioned, status_code=200)
+    assert versioned_meta["api_version"] == "v1.0"
+    assert "deprecation" not in versioned.headers
+    assert "sunset" not in versioned.headers
+    assert "link" not in versioned.headers
+
+    assert versioned_data == legacy_data
+
+
+def test_openapi_problem_responses_use_problem_media_type(client) -> None:
+    schema = client.app.openapi()
+    login_401 = schema["paths"]["/api/v1/auth/login"]["post"]["responses"]["401"]
+    content = login_401["content"]
+    assert "application/problem+json" in content
+    assert "application/json" not in content
+    problem_schema = content["application/problem+json"]["schema"]
+    assert isinstance(problem_schema.get("properties"), dict)
+    assert "detail" in problem_schema["properties"]
+
+
 def test_list_competitions(client) -> None:
     response = client.get("/api/competitions")
     data, meta = _assert_success(response, status_code=200)

@@ -24,7 +24,7 @@ from app.schemas import (
 from app.session_lifecycle import create_session_for_principal, stop_session_for_principal
 from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
 
-router = APIRouter(prefix="/api", tags=["control-plane"])
+router = APIRouter(tags=["control-plane"])
 
 _SESSION_HOST_RE = re.compile(r"^s-([a-z0-9]{8})\.medforge\..+$")
 

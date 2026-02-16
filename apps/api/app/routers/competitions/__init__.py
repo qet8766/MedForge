@@ -14,7 +14,7 @@ from .admin import router as admin_router
 from .public import router as public_router
 from .submissions import router as submissions_router
 
-router = APIRouter(prefix="/api", tags=["competitions"])
+router = APIRouter(tags=["competitions"])
 router.include_router(public_router)
 router.include_router(submissions_router)
 router.include_router(admin_router)

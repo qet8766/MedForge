@@ -21,7 +21,16 @@ fi
 # ── Create pool (skip if it already exists) ─────────────────
 if ! zpool list "$POOL_NAME" &>/dev/null; then
   # shellcheck disable=SC2086
-  zpool create -o ashift=12 "$POOL_NAME" $POOL_DISKS
+  zpool create \
+    -o ashift=12 \
+    -o autotrim=on \
+    -O compression=lz4 \
+    -O atime=off \
+    -O xattr=sa \
+    -O dnodesize=auto \
+    -O normalization=formD \
+    -O relatime=on \
+    "$POOL_NAME" $POOL_DISKS
   echo "Pool '$POOL_NAME' created."
 else
   echo "Pool '$POOL_NAME' already exists, skipping creation."

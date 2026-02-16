@@ -20,7 +20,6 @@ class ManifestMetadata:
     evaluation_policy: str
     id_column: str
     target_columns: tuple[str, ...]
-    label_source: str
     expected_row_count: int
 
 

@@ -6,7 +6,7 @@ from typing import TypeVar
 from fastapi import Request
 from pydantic import BaseModel, Field
 
-API_VERSION = "2026-02-16"
+API_VERSION = "v1.0"
 T = TypeVar("T")
 
 

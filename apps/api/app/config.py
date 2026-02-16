@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from uuid import UUID
 
 # ---------------------------------------------------------------------------
 # Field-factory helpers - each returns a dataclass field() whose
@@ -100,9 +99,6 @@ class Settings:
     session_secret: str = _env("SESSION_SECRET", "dev-session-secret")
     competitions_data_dir: Path = field(default_factory=lambda: Path(os.getenv("COMPETITIONS_DATA_DIR", "data/competitions")))
     submissions_dir: Path = field(default_factory=lambda: Path(os.getenv("SUBMISSIONS_DIR", "data/submissions")))
-    default_user_id: UUID = field(
-        default_factory=lambda: UUID(os.getenv("DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001"))
-    )
     auto_score_on_submit: bool = _env_bool("AUTO_SCORE_ON_SUBMIT", "true")
     submission_upload_max_bytes: int = _env_int("SUBMISSION_UPLOAD_MAX_BYTES", 10 * 1024 * 1024, min=1)
     auth_idle_ttl_seconds: int = _env_int("AUTH_IDLE_TTL_SECONDS", 604800)
@@ -130,6 +126,9 @@ class Settings:
     session_mem_reservation: str | None = _env_opt_str("SESSION_MEM_RESERVATION", "8g")
     session_shm_size: str | None = _env_opt_str("SESSION_SHM_SIZE", "4g")
     session_pids_limit: int | None = _env_opt_int("SESSION_PIDS_LIMIT")
+    legacy_api_deprecation_enabled: bool = _env_bool("LEGACY_API_DEPRECATION_ENABLED", "true")
+    legacy_api_sunset: str = _env("LEGACY_API_SUNSET", "Wed, 31 Dec 2026 23:59:59 GMT")
+    legacy_api_deprecation_link: str = _env("LEGACY_API_DEPRECATION_LINK", "/docs/api-deprecations#legacy-api")
 
 
 _SETTINGS: Settings | None = None

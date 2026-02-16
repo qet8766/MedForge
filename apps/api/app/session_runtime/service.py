@@ -9,7 +9,6 @@ from app.session_runtime.types import (
     SessionStartRequest,
     SessionStartResult,
     SessionStopRequest,
-    SessionStopResult,
     WorkspaceProvisionRequest,
     WorkspaceProvisionResult,
     WorkspaceSnapshotRequest,
@@ -57,8 +56,8 @@ class SessionRuntimeService(SessionRuntime):
         )
         return self._container.start_container(container_request)
 
-    def stop_session(self, request: SessionStopRequest) -> SessionStopResult:
-        return self._container.stop_container(request)
+    def stop_session(self, request: SessionStopRequest) -> None:
+        self._container.stop_container(request)
 
     def snapshot_workspace(self, request: WorkspaceSnapshotRequest) -> WorkspaceSnapshotResult:
         return self._workspace.snapshot_workspace(request)
@@ -69,4 +68,3 @@ class SessionRuntimeService(SessionRuntime):
             container_name=self._container_name(request.slug),
         )
         return self._container.inspect_container(inspect_request)
-

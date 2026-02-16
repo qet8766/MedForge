@@ -8,12 +8,12 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - GPU lock is enforced only by DB constraint (`UNIQUE(gpu_id, gpu_active)`), where `gpu_active` is non-null only for active states.
 - Every session has its own workspace dataset path in `sessions.workspace_zfs` and paths are unique.
 - Reconciliation must not leave `starting` rows stranded; `stopping` rows may remain only when stop command execution fails and must be retried by poller.
-- `tier=PRIVATE` remains modeled everywhere but `POST /api/sessions` must return `501`.
+- `tier=PRIVATE` remains modeled everywhere but `POST /api/v1/sessions` must return `501`.
 - Runtime interface uses typed DTO request/result contracts; runtime methods must not accept ORM models (`SessionRecord`, `Pack`).
 
 ### API Checklist
 
-#### `POST /api/sessions`
+#### `POST /api/v1/sessions`
 
 - Require authenticated user.
 - Accept `tier` and optional `pack_id`.
@@ -25,7 +25,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - On success set `running`, `container_id`, `started_at`.
 - On failure set `error`, `stopped_at`, and `error_message`.
 
-#### `POST /api/sessions/{id}/stop`
+#### `POST /api/v1/sessions/{id}/stop`
 
 - Require owner or admin.
 - Be idempotent for repeated requests.
@@ -36,7 +36,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - If already terminal (`stopped` or `error`), return `Session already terminal.` without changing state.
 - Do not execute runtime stop/snapshot in request path; recovery handles completion.
 
-#### `GET /api/auth/session-proxy`
+#### `GET /api/v1/auth/session-proxy`
 
 - Parse slug from `Host: s-<slug>.medforge.<domain>`.
 - Require valid cookie session.
@@ -58,16 +58,16 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 #### Competition/Dataset APIs
 
-- `GET /api/competitions` returns active competitions with `competition_tier`, `metric`, `metric_version`, `scoring_mode`, `leaderboard_rule`, `evaluation_policy`, `competition_spec_version`, `is_permanent`, and `submission_cap_per_day`.
-- `GET /api/competitions/{slug}` returns dataset linkage and competition metadata.
-- `GET /api/datasets` and `GET /api/datasets/{slug}` return mirrored dataset metadata.
+- `GET /api/v1/competitions` returns active competitions with `competition_tier`, `metric`, `metric_version`, `scoring_mode`, `leaderboard_rule`, `evaluation_policy`, `competition_spec_version`, `is_permanent`, and `submission_cap_per_day`.
+- `GET /api/v1/competitions/{slug}` returns dataset linkage and competition metadata.
+- `GET /api/v1/datasets` and `GET /api/v1/datasets/{slug}` return mirrored dataset metadata.
 
 #### Submission APIs
 
-- `POST /api/competitions/{slug}/submissions` accepts CSV only, validates competition-specific schema, persists artifact hash/path, and sets `score_status=queued`.
+- `POST /api/v1/competitions/{slug}/submissions` accepts CSV only, validates competition-specific schema, persists artifact hash/path, and sets `score_status=queued`.
 - Enforce daily cap per competition per user (Titanic `20/day`, RSNA `10/day`, CIFAR `20/day`).
-- `GET /api/competitions/{slug}/submissions/me` returns submission history with `score_status`, `official_score`, and errors.
-- `GET /api/competitions/{slug}/leaderboard` ranks by best per-user official `primary_score`; tie-break by earliest score timestamp then submission ID.
+- `GET /api/v1/competitions/{slug}/submissions/me` returns submission history with `score_status`, `official_score`, and errors.
+- `GET /api/v1/competitions/{slug}/leaderboard` ranks by best per-user official `primary_score`; tie-break by earliest score timestamp then submission ID.
 
 #### Scoring Worker
 
@@ -75,7 +75,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - On success, append an official `submission_scores` row with `primary_score`, `score_components_json`, `scorer_version`, `metric_version`, `evaluation_split_version`, and `manifest_sha256`; set submission `scored_at`.
 - On failure, persist `score_error` and terminal `failed` state.
 - Scoring must be deterministic for same submission + same `metric_version` + same `evaluation_split_version`.
-- Scoring manifest must include `evaluation_split_version`, `scoring_mode`, `leaderboard_rule`, `evaluation_policy`, `id_column`, `target_columns`, `label_source`, and `expected_row_count`.
+- Scoring manifest must include `evaluation_split_version`, `scoring_mode`, `leaderboard_rule`, `evaluation_policy`, `id_column`, `target_columns`, and `expected_row_count`.
 
 ### State Machine Checklist
 
@@ -170,7 +170,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 #### Ticket 8: Auth + Wildcard Routing — Done
 
-- Implement `GET /api/auth/session-proxy` contract.
+- Implement `GET /api/v1/auth/session-proxy` contract.
 - Ensure Caddy strips inbound `X-Upstream`.
 - Fail closed if auth response misses upstream on `200`.
 - Preserve websocket upgrades for code-server terminal.
@@ -214,7 +214,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 #### Competition API and Scoring — Validated
 
-- Verify `GET /api/competitions` includes `titanic-survival`, `rsna-pneumonia-detection`, and `cifar-100-classification` with `competition_tier=PUBLIC`.
+- Verify `GET /api/v1/competitions` includes `titanic-survival`, `rsna-pneumonia-detection`, and `cifar-100-classification` with `competition_tier=PUBLIC`.
 - Verify all returned competitions include `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and contract versions (`metric_version`, `competition_spec_version`).
 - Submit valid Titanic CSV and verify `score_status=scored` and non-null `official_score.primary_score`.
 - Verify Titanic holdout manifest expects 418 labelled test IDs (`evaluation_split_version=v2-kaggle-labelled-test418`).

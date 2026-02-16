@@ -16,7 +16,7 @@ from app.rate_limit import require_auth_rate_limit
 from app.schemas import AuthCredentials, AuthUserResponse, SessionActionResponse
 from app.security import create_session_token, hash_password, hash_session_token, normalize_email, verify_password
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _utcnow() -> datetime:

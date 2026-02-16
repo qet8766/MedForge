@@ -20,7 +20,6 @@ from app.session_runtime.types import (
     SessionStartRequest,
     SessionStartResult,
     SessionStopRequest,
-    SessionStopResult,
     WorkspaceProvisionRequest,
     WorkspaceProvisionResult,
     WorkspaceSnapshotRequest,
@@ -40,11 +39,9 @@ __all__ = [
     "SessionStartRequest",
     "SessionStartResult",
     "SessionStopRequest",
-    "SessionStopResult",
     "WorkspaceProvisionRequest",
     "WorkspaceProvisionResult",
     "WorkspaceSnapshotRequest",
     "WorkspaceSnapshotResult",
     "get_session_runtime",
 ]
-

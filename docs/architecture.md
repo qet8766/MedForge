@@ -78,6 +78,31 @@ infra/
 ### Storage
 
 ZFS setup script: `@infra/zfs/setup.sh`
+Bootstrap provisioning: `@infra/host/bootstrap-easy.sh`
+
+#### Pool Configuration
+
+Production pool uses RAIDZ1 across 4x NVMe drives (e.g. Samsung 9100 PRO 8TB). Pool creation options:
+
+| Option | Value | Purpose |
+| --- | --- | --- |
+| `ashift` | 12 | 4K sector alignment |
+| `autotrim` | on | SSD TRIM passthrough |
+| `compression` | lz4 | Inline compression |
+| `atime` | off | Disable access-time updates |
+| `xattr` | sa | Store extended attributes in inodes |
+| `dnodesize` | auto | Variable dnode sizing |
+| `normalization` | formD | Unicode normalization |
+| `relatime` | on | Reduced atime overhead |
+
+Host-level datasets `tank/data` and `tank/docker` are created manually (host-specific). The bootstrap script configures Docker `data-root` to `/tank/docker`.
+
+#### Host Tuning
+
+- **ARC cap**: 32 GiB (`/etc/modprobe.d/zfs.conf` + live sysfs write).
+- **Weekly scrub**: cron job at 02:00 Sunday (`/etc/cron.d/zfs-scrub`).
+
+Both are applied by `ensure_zfs_tuning()` in the bootstrap script.
 
 #### Workspaces
 

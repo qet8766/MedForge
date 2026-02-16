@@ -24,7 +24,7 @@ All are `competition_tier=public`.
 
 ### Submission and Scoring Flow
 
-1. User uploads CSV to `POST /api/competitions/{slug}/submissions`.
+1. User uploads CSV to `POST /api/v1/competitions/{slug}/submissions`.
 2. API validates schema and daily cap.
 3. Submission is created as `score_status=queued`.
 4. If `AUTO_SCORE_ON_SUBMIT=true` (default), API scores immediately; otherwise the worker scores asynchronously.
@@ -34,13 +34,18 @@ All are `competition_tier=public`.
 
 ### Alpha API Surface
 
-- `GET /api/competitions` (`limit`, `cursor`)
-- `GET /api/competitions/{slug}`
-- `GET /api/competitions/{slug}/leaderboard` (`limit`, `cursor`)
-- `POST /api/competitions/{slug}/submissions` (returns `201`)
-- `GET /api/competitions/{slug}/submissions/me` (`limit`, `cursor`)
-- `GET /api/datasets` (`limit`, `cursor`)
-- `GET /api/datasets/{slug}`
+Canonical versioned routes:
+- `GET /api/v1/competitions` (`limit`, `cursor`)
+- `GET /api/v1/competitions/{slug}`
+- `GET /api/v1/competitions/{slug}/leaderboard` (`limit`, `cursor`)
+- `POST /api/v1/competitions/{slug}/submissions` (returns `201`)
+- `GET /api/v1/competitions/{slug}/submissions/me` (`limit`, `cursor`)
+- `GET /api/v1/datasets` (`limit`, `cursor`)
+- `GET /api/v1/datasets/{slug}`
+
+Compatibility alias during migration:
+- The same routes remain available under `/api/*`.
+- `/api/*` responses include `Deprecation`, `Sunset`, and `Link: <...>; rel="deprecation"` headers.
 
 ### Router Module Structure
 
@@ -58,16 +63,17 @@ The competition API is implemented as a modular router package at `apps/api/app/
 
 ### Admin API
 
-- `POST /api/admin/submissions/{submission_id}/score` — trigger scoring for a specific submission (requires authenticated admin principal cookie session)
+- `POST /api/v1/admin/submissions/{submission_id}/score` — trigger scoring for a specific submission (requires authenticated admin principal cookie session)
 
 ### Response Contract (Breaking)
 
 - Success responses use a universal envelope:
   - `{ "data": ..., "meta": { request_id, api_version, timestamp, ... } }`
+- `meta.api_version` is the schema version (`v1.0` in current implementation).
 - Errors use RFC 7807-style payloads (`application/problem+json`) with:
   - `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`
   - optional `errors` array for validation-style failures
-- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api`.
+- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api/v1` (with `/api` compatibility aliases during migration).
 
 ### Migration Notes
 

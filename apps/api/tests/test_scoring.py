@@ -22,7 +22,6 @@ def _write_manifest(
     id_column: str,
     target_columns: list[str],
     expected_row_count: int,
-    label_source: str,
 ) -> None:
     target_columns_json = ",".join(f'"{column}"' for column in target_columns)
     path.write_text(
@@ -34,7 +33,6 @@ def _write_manifest(
             '"evaluation_policy":"canonical_test_first",'
             f'"id_column":"{id_column}",'
             f'"target_columns":[{target_columns_json}],'
-            f'"label_source":"{label_source}",'
             f'"expected_row_count":{expected_row_count}'
             "}"
         ),
@@ -68,7 +66,6 @@ def test_titanic_scoring_deterministic(tmp_path: Path) -> None:
         id_column="PassengerId",
         target_columns=["Survived"],
         expected_row_count=3,
-        label_source="test-fixture:titanic",
     )
     labels.write_text("PassengerId,Survived\n1,0\n2,1\n3,1\n", encoding="utf-8")
     submission.write_text("PassengerId,Survived\n1,0\n2,1\n3,0\n", encoding="utf-8")
@@ -160,7 +157,6 @@ def test_rsna_scoring_perfect_match(tmp_path: Path) -> None:
         id_column="patientId",
         target_columns=["x", "y", "width", "height", "Target"],
         expected_row_count=2,
-        label_source="test-fixture:rsna",
     )
     labels.write_text(
         "patientId,x,y,width,height,Target\n"
@@ -197,7 +193,6 @@ def test_rsna_scoring_no_predictions(tmp_path: Path) -> None:
         id_column="patientId",
         target_columns=["x", "y", "width", "height", "Target"],
         expected_row_count=3,
-        label_source="test-fixture:rsna",
     )
     labels.write_text(
         "patientId,x,y,width,height,Target\n"
@@ -237,7 +232,6 @@ def test_rsna_scoring_deterministic(tmp_path: Path) -> None:
         id_column="patientId",
         target_columns=["x", "y", "width", "height", "Target"],
         expected_row_count=2,
-        label_source="test-fixture:rsna",
     )
     labels.write_text(
         "patientId,x,y,width,height,Target\n"
@@ -301,7 +295,6 @@ def test_cifar100_scoring_deterministic(tmp_path: Path) -> None:
         id_column="image_id",
         target_columns=["label"],
         expected_row_count=3,
-        label_source="test-fixture:cifar100",
     )
     labels.write_text("image_id,label\n0,42\n1,7\n2,99\n", encoding="utf-8")
     # 2 correct (0 and 2), 1 wrong (1: predicted 50 instead of 7)
@@ -336,7 +329,6 @@ def test_cifar100_label_out_of_range_rejected(tmp_path: Path) -> None:
         id_column="image_id",
         target_columns=["label"],
         expected_row_count=1,
-        label_source="test-fixture:cifar100",
     )
     labels.write_text("image_id,label\n0,42\n", encoding="utf-8")
 
@@ -376,7 +368,6 @@ def test_titanic_duplicate_passenger_id_rejected(tmp_path: Path) -> None:
         id_column="PassengerId",
         target_columns=["Survived"],
         expected_row_count=3,
-        label_source="test-fixture:titanic",
     )
     labels.write_text("PassengerId,Survived\n1,0\n2,1\n3,1\n", encoding="utf-8")
     submission.write_text("PassengerId,Survived\n1,0\n1,1\n3,1\n", encoding="utf-8")
@@ -414,7 +405,6 @@ def test_manifest_expected_row_count_mismatch_rejected(tmp_path: Path) -> None:
         id_column="PassengerId",
         target_columns=["Survived"],
         expected_row_count=4,
-        label_source="test-fixture:titanic",
     )
     labels.write_text("PassengerId,Survived\n1,0\n2,1\n3,1\n", encoding="utf-8")
     submission.write_text("PassengerId,Survived\n1,0\n2,1\n3,1\n", encoding="utf-8")
@@ -463,7 +453,46 @@ def test_manifest_missing_required_fields_rejected(tmp_path: Path) -> None:
         dataset_id="00000000-0000-0000-0000-000000000001",
     )
 
-    with pytest.raises(ValueError, match="Manifest field 'scoring_mode'"):
+    with pytest.raises(ValueError, match="Manifest keys mismatch"):
+        score_submission_file(
+            competition=competition,
+            submission_path=submission,
+            labels_path=labels,
+            manifest_path=manifest,
+        )
+
+
+def test_manifest_extra_fields_rejected(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    labels = tmp_path / "labels.csv"
+    submission = tmp_path / "submission.csv"
+
+    manifest.write_text(
+        (
+            '{"evaluation_split_version":"vdet","scoring_mode":"single_realtime_hidden",'
+            '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
+            '"id_column":"PassengerId","target_columns":["Survived"],'
+            '"label_source":"legacy-fixture","expected_row_count":1}'
+        ),
+        encoding="utf-8",
+    )
+    labels.write_text("PassengerId,Survived\n1,0\n", encoding="utf-8")
+    submission.write_text("PassengerId,Survived\n1,0\n", encoding="utf-8")
+
+    competition = Competition(
+        slug="titanic-survival",
+        title="Titanic",
+        description="",
+        competition_tier=CompetitionTier.PUBLIC,
+        status=CompetitionStatus.ACTIVE,
+        is_permanent=True,
+        metric="accuracy",
+        higher_is_better=True,
+        submission_cap_per_day=20,
+        dataset_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    with pytest.raises(ValueError, match="Manifest keys mismatch"):
         score_submission_file(
             competition=competition,
             submission_path=submission,

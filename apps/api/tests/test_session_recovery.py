@@ -17,7 +17,6 @@ from app.session_runtime import (
     SessionInspectResult,
     SessionRuntimeError,
     SessionStopRequest,
-    SessionStopResult,
     WorkspaceSnapshotRequest,
     WorkspaceSnapshotResult,
 )
@@ -68,7 +67,7 @@ class RecoveryRuntime(MockSessionRuntime):
             )
         return super().snapshot_workspace(request)
 
-    def stop_session(self, request: SessionStopRequest) -> SessionStopResult:
+    def stop_session(self, request: SessionStopRequest) -> None:
         _ = request
         if self._stop_error:
             raise SessionRuntimeError(

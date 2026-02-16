@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # One-command host bootstrap for MedForge alpha.
-# Safe defaults favor a local loopback ZFS pool when no physical disks are provided.
+# Defaults target production (physical POOL_DISKS required).
 #
 # Usage:
 #   sudo bash infra/host/bootstrap-easy.sh
@@ -9,7 +9,7 @@
 # Optional env:
 #   POOL_NAME=tank
 #   POOL_DISKS="/dev/sdb /dev/sdc"     # physical disks (optional)
-#   USE_LOOPBACK_IF_NO_DISKS=true      # default true
+#   USE_LOOPBACK_IF_NO_DISKS=false     # default false; set true for dev/CI
 #   LOOPBACK_FILE=/var/tmp/medforge-tank.img
 #   LOOPBACK_SIZE_GB=40
 #   BUILD_PACK_IMAGE=true              # default true
@@ -21,7 +21,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 POOL_NAME="${POOL_NAME:-tank}"
 POOL_DISKS="${POOL_DISKS:-}"
-USE_LOOPBACK_IF_NO_DISKS="${USE_LOOPBACK_IF_NO_DISKS:-true}"
+USE_LOOPBACK_IF_NO_DISKS="${USE_LOOPBACK_IF_NO_DISKS:-false}"
 LOOPBACK_FILE="${LOOPBACK_FILE:-/var/tmp/medforge-tank.img}"
 LOOPBACK_SIZE_GB="${LOOPBACK_SIZE_GB:-40}"
 BUILD_PACK_IMAGE="${BUILD_PACK_IMAGE:-true}"
@@ -60,19 +60,38 @@ ensure_zfs_pool() {
   if [ -n "${POOL_DISKS}" ]; then
     echo "Creating pool '${POOL_NAME}' from POOL_DISKS..."
     # shellcheck disable=SC2086
-    run_sudo zpool create -o ashift=12 "${POOL_NAME}" ${POOL_DISKS}
+    run_sudo zpool create \
+      -o ashift=12 \
+      -o autotrim=on \
+      -O compression=lz4 \
+      -O atime=off \
+      -O xattr=sa \
+      -O dnodesize=auto \
+      -O normalization=formD \
+      -O relatime=on \
+      "${POOL_NAME}" ${POOL_DISKS}
     return
   fi
 
   if [ "${USE_LOOPBACK_IF_NO_DISKS}" != "true" ]; then
     echo "ERROR: no ZFS pool found and POOL_DISKS is empty."
-    echo "Set POOL_DISKS or USE_LOOPBACK_IF_NO_DISKS=true."
+    echo "For production, set POOL_DISKS to physical disk paths."
+    echo "For dev/CI, set USE_LOOPBACK_IF_NO_DISKS=true."
     exit 1
   fi
 
   echo "Creating loopback-backed pool '${POOL_NAME}' at ${LOOPBACK_FILE} (${LOOPBACK_SIZE_GB}G)..."
   run_sudo truncate -s "${LOOPBACK_SIZE_GB}G" "${LOOPBACK_FILE}"
-  run_sudo zpool create -f "${POOL_NAME}" "${LOOPBACK_FILE}"
+  run_sudo zpool create -f \
+    -o ashift=12 \
+    -o autotrim=on \
+    -O compression=lz4 \
+    -O atime=off \
+    -O xattr=sa \
+    -O dnodesize=auto \
+    -O normalization=formD \
+    -O relatime=on \
+    "${POOL_NAME}" "${LOOPBACK_FILE}"
 }
 
 ensure_zfs_datasets() {
@@ -136,6 +155,49 @@ ensure_workspace_permissions() {
   fi
 }
 
+ensure_zfs_tuning() {
+  local arc_max=34359738368  # 32 GiB
+
+  if ! grep -q "zfs_arc_max" /etc/modprobe.d/zfs.conf 2>/dev/null; then
+    echo "options zfs zfs_arc_max=${arc_max}" | run_sudo tee /etc/modprobe.d/zfs.conf >/dev/null
+  fi
+  if [ -w /sys/module/zfs/parameters/zfs_arc_max ]; then
+    echo "${arc_max}" | run_sudo tee /sys/module/zfs/parameters/zfs_arc_max >/dev/null
+  fi
+
+  if [ ! -f /etc/cron.d/zfs-scrub ]; then
+    echo "0 2 * * 0 root /usr/sbin/zpool scrub ${POOL_NAME}" \
+      | run_sudo tee /etc/cron.d/zfs-scrub >/dev/null
+  fi
+
+  echo "ZFS tuning applied (ARC max 32 GiB, weekly scrub)."
+}
+
+ensure_docker_data_root() {
+  local daemon_json="/etc/docker/daemon.json"
+  local data_root="/tank/docker"
+
+  if [ -f "${daemon_json}" ] && grep -q '"data-root"' "${daemon_json}"; then
+    echo "Docker data-root already configured."
+    return
+  fi
+
+  if [ ! -f "${daemon_json}" ]; then
+    echo "{\"data-root\": \"${data_root}\"}" | run_sudo tee "${daemon_json}" >/dev/null
+  elif command -v jq >/dev/null 2>&1; then
+    local tmp
+    # shellcheck disable=SC2016
+    tmp="$(run_sudo jq --arg dr "${data_root}" '. + {"data-root": $dr}' "${daemon_json}")"
+    echo "${tmp}" | run_sudo tee "${daemon_json}" >/dev/null
+  else
+    echo "WARNING: jq not available. Manually add \"data-root\": \"${data_root}\" to ${daemon_json}"
+    return
+  fi
+
+  run_sudo systemctl restart docker
+  echo "Docker data-root set to ${data_root}."
+}
+
 ensure_networks_and_firewall() {
   if ! run_docker network inspect medforge-public-sessions >/dev/null 2>&1; then
     run_docker network create --subnet=172.30.0.0/24 medforge-public-sessions >/dev/null
@@ -169,13 +231,15 @@ main() {
 
   echo "==> Installing base host packages..."
   run_sudo apt-get update
-  run_sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y zfsutils-linux iptables
+  run_sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y zfsutils-linux iptables jq
 
   ensure_nvidia_toolkit
   ensure_bridge_netfilter
   ensure_zfs_pool
   ensure_zfs_datasets
   ensure_workspace_permissions
+  ensure_zfs_tuning
+  ensure_docker_data_root
   ensure_networks_and_firewall
   ensure_compose_env
   build_pack_image

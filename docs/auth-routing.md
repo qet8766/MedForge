@@ -3,11 +3,12 @@
 Implementation status note (2026-02-16):
 
 - Gate 2 auth foundations are implemented in API:
-  - cookie-backed signup/login/logout and `/api/me`
-  - `/api/auth/session-proxy` owner/admin authorization with running-session checks
+  - cookie-backed signup/login/logout and `/api/v1/me`
+  - `/api/v1/auth/session-proxy` owner/admin authorization with running-session checks
 - Gate 4 recovery orchestration is implemented (startup reconciliation + active-session poller).
 - Gate 5 routing/isolation controls are in place; API auth matrix + spoof + east-west block + wildcard browser routing + websocket activity were validated on host (`@docs/host-validation-2026-02-16.md`).
 - Legacy header identity fallback (`X-User-Id`) is removed from API auth paths.
+- `/api/*` compatibility aliases remain enabled and include deprecation headers.
 - Competition submission uploads are bounded by `SUBMISSION_UPLOAD_MAX_BYTES` (default `10485760`).
 
 ### Cookie Sessions
@@ -17,14 +18,14 @@ HTTP-only cookie session auth.
 - Cookie attributes: `HttpOnly; Secure; SameSite=Lax; Domain=.medforge.<domain>; Path=/`
 - CSRF/Origin guard: for all state-changing endpoints, reject if `Origin` is not an allowed MedForge origin.
 - Cookie stores a random token (base64url). DB stores only a hash of the token (never raw).
-- Competition write endpoints covered by origin guard: `POST /api/competitions/{slug}/submissions` and `POST /api/admin/submissions/{submission_id}/score`.
+- Competition write endpoints covered by origin guard: `POST /api/v1/competitions/{slug}/submissions` and `POST /api/v1/admin/submissions/{submission_id}/score`.
 - Admin scoring endpoint authorization is cookie principal role-based (`role=admin`); no `X-Admin-Token` bypass.
 
 ### Wildcard Session Routing (Caddy + forward_auth)
 
 Full Caddy config: `@infra/caddy/Caddyfile`
 
-**forward_auth endpoint:** `GET /api/auth/session-proxy`
+**forward_auth endpoint:** `GET /api/v1/auth/session-proxy`
 
 Inputs:
 

@@ -245,7 +245,6 @@ Holdout labels live in `{COMPETITIONS_DATA_DIR}/{competition_slug}/holdout_label
 - `evaluation_policy`
 - `id_column`
 - `target_columns`
-- `label_source`
 - `expected_row_count`
 
 | Competition | Holdout columns |

@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -94,10 +95,11 @@ def process_submission_by_id(session: Session, *, submission_id: UUID, settings:
             labels_path=labels_path,
             manifest_path=manifest_path,
         )
+        is_official_col = cast(Any, SubmissionScore.is_official)
         previous_official_scores = session.exec(
-            select(SubmissionScore).where(SubmissionScore.submission_id == submission.id).where(
-                SubmissionScore.is_official.is_(True)
-            )
+            select(SubmissionScore)
+            .where(SubmissionScore.submission_id == submission.id)
+            .where(is_official_col.is_(True))
         ).all()
         for previous in previous_official_scores:
             previous.is_official = False

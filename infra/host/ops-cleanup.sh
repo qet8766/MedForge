@@ -61,7 +61,7 @@ list_session_containers() {
 
 extract_slug() {
   local name="$1"
-  echo "${name}" | sed 's/^mf-session-//'
+  echo "${name#mf-session-}"
 }
 
 is_api_reachable() {
@@ -89,7 +89,7 @@ main() {
     exit 0
   fi
 
-  local containers orphans
+  local orphans
   orphans=()
 
   while IFS= read -r name; do

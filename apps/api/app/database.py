@@ -17,7 +17,19 @@ def _normalized_database_url(url: str) -> str:
 
 
 DATABASE_URL = _normalized_database_url(get_settings().database_url)
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, isolation_level="READ COMMITTED")
+
+
+def _engine_isolation_level(database_url: str) -> str:
+    if database_url.startswith("sqlite:"):
+        return "SERIALIZABLE"
+    return "READ COMMITTED"
+
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    isolation_level=_engine_isolation_level(DATABASE_URL),
+)
 
 
 def _alembic_config(database_url: str) -> Config:

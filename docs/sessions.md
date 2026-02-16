@@ -3,9 +3,10 @@
 Implementation status note (2026-02-16):
 
 - Core Gate 3 alpha flow is implemented for PUBLIC sessions:
-  - `POST /api/sessions` performs allocation + launch and returns running/error terminalization.
-  - `POST /api/sessions/{id}/stop` records an async stop request (`202 Accepted`) and is idempotent.
-  - `GET /api/sessions/current` returns the caller's most recent active (`starting|running|stopping`) session, or `null`.
+  - `POST /api/v1/sessions` performs allocation + launch and returns running/error terminalization.
+  - `POST /api/v1/sessions/{id}/stop` records an async stop request (`202 Accepted`) and is idempotent.
+  - `GET /api/v1/sessions/current` returns the caller's most recent active (`starting|running|stopping`) session, or `null`.
+  - Legacy `/api/*` aliases remain active during migration and include deprecation headers.
   - `apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
 - Gate 4 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
@@ -54,7 +55,7 @@ Optional runtime toggle:
 
 ### Session Lifecycle
 
-#### Create -- `POST /api/sessions`
+#### Create -- `POST /api/v1/sessions`
 
 Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pack).
 
@@ -82,7 +83,7 @@ Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pa
 
 Update session: set `container_id`, `status='running'`, `started_at`. On failure (dataset create or container start): set `status='error'`, `stopped_at`, `error_message`. Leaving active status frees the GPU automatically (generated column becomes NULL, unique constraint releases).
 
-#### Stop -- `POST /api/sessions/{id}/stop`
+#### Stop -- `POST /api/v1/sessions/{id}/stop`
 
 If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
 
@@ -94,11 +95,11 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
    - stop + snapshot success -> `stopped`, set `stopped_at`.
    - stop success + snapshot failure -> `error`, set `stopped_at`, set `error_message`.
    - stop command failure -> remain `stopping` and retry on later recovery pass.
-6. Clients read session state from `GET /api/sessions/current` after issuing stop.
+6. Clients read session state from `GET /api/v1/sessions/current` after issuing stop.
 
-#### Read Current -- `GET /api/sessions/current`
+#### Read Current -- `GET /api/v1/sessions/current`
 
-- Auth required (`/api/me` auth model).
+- Auth required (`/api/v1/me` auth model).
 - Returns envelope payload:
   - `{ "data": { "session": SessionRead | null }, "meta": { ... } }`
 - Only the caller's own sessions are considered.

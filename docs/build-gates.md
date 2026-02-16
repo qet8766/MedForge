@@ -3,10 +3,11 @@
 Implementation status note (2026-02-16):
 
 - Gate 7 competition API/UI is implemented and tested in this repo.
-- Gate 2 auth endpoints are implemented (`/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/me`) with cookie sessions only (no legacy header identity fallback).
-- Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/sessions`, `/api/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, async stop requests, and recovery-driven snapshot terminalization.
+- Gate 2 auth endpoints are implemented (`/api/v1/auth/signup`, `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/me`) with cookie sessions only (no legacy header identity fallback).
+- Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/v1/sessions`, `/api/v1/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, async stop requests, and recovery-driven snapshot terminalization.
 - Gate 4 recovery logic (poller + startup reconciliation) is implemented in API and covered by tests.
 - Gate 5/6 host evidence run completed via `bash infra/host/validate-gate56.sh --with-browser` for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket frame activity (`@docs/host-validation-2026-02-16.md`).
+- Legacy `/api/*` aliases remain available with deprecation headers during `/api/v1/*` migration.
 
 ### Gate 0 -- Host Foundation
 
@@ -22,13 +23,13 @@ Compose stack up (`@infra/compose/docker-compose.yml`). Networks created (contro
 
 ### Gate 2 -- Auth
 
-Signup/login, cookie sessions, `/api/me`. forward_auth endpoint for session proxy.
+Signup/login, cookie sessions, `/api/v1/me`. forward_auth endpoint for session proxy.
 
 **Acceptance:** Cookie works across subdomains. Protected route returns 401 without cookie.
 
 ### Gate 3 -- Session Lifecycle
 
-`POST /api/sessions` creates GPU-only PUBLIC session (`tier=private` returns 501). Transaction-safe GPU allocation. Stop endpoint records async stop intent (`202 Accepted`); recovery performs stop + ZFS snapshot finalization.
+`POST /api/v1/sessions` creates GPU-only PUBLIC session (`tier=private` returns 501). Transaction-safe GPU allocation. Stop endpoint records async stop intent (`202 Accepted`); recovery performs stop + ZFS snapshot finalization.
 
 **Acceptance:** 7 concurrent sessions succeed; 8th fails "no GPUs available". Per-user limit enforced under concurrent requests. Each created session has a distinct `workspace_zfs` dataset path. Stop request returns `202` and sets/keeps `stopping`. Recovery produces a ZFS snapshot and finalizes to `stopped` or `error`; if stop command execution fails, session may temporarily remain `stopping` until a later retry.
 
@@ -47,7 +48,7 @@ Caddy wildcard route proxies to running sessions (`@infra/caddy/Caddyfile`). Eas
 **Host validation commands (example):**
 
 - `bash infra/host/validate-gate56.sh --with-browser`
-- `curl -i -H "Host: s-<slug>.medforge.<domain>" https://api.medforge.<domain>/api/auth/session-proxy`
+- `curl -i -H "Host: s-<slug>.medforge.<domain>" https://api.medforge.<domain>/api/v1/auth/session-proxy`
 - `docker exec -it mf-session-<slugA> curl -sS --max-time 3 http://mf-session-<slugB>:8080`
 
 Use `--with-browser` for complete Gate 5 coverage (wildcard browser routing + websocket traffic checks); running without it only covers the API/core lane.
@@ -71,7 +72,7 @@ Use `--with-browser` for end-to-end UI/browser verification; without it, only th
 
 Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`). Users can upload predictions, receive scores, and view ranked leaderboards.
 
-**Acceptance:** `GET /api/competitions` returns all competition slugs with `competition_tier=public`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and explicit contract versions (`metric_version`, `competition_spec_version`). Valid CSV submission returns `score_status=scored` and non-null `official_score.primary_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user official `primary_score` with deterministic tie-break by earliest score timestamp and submission ID. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
+**Acceptance:** `GET /api/v1/competitions` returns all competition slugs with `competition_tier=public`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and explicit contract versions (`metric_version`, `competition_spec_version`). Valid CSV submission returns `score_status=scored` and non-null `official_score.primary_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user official `primary_score` with deterministic tie-break by earliest score timestamp and submission ID. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
 
 ### Definition of Done
 

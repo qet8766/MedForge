@@ -141,7 +141,7 @@ Pass criteria:
 Required checks:
 
 1. Signup/login/logout flow with cookie auth.
-2. `/api/me` succeeds with valid cookie.
+2. `/api/v1/me` succeeds with valid cookie.
 3. Protected path returns `401` without cookie.
 4. Cookie scope works across required subdomains.
 
@@ -153,13 +153,13 @@ Pass criteria:
 
 Required checks:
 
-1. `POST /api/sessions` creates PUBLIC session.
+1. `POST /api/v1/sessions` creates PUBLIC session.
 2. `tier=private` returns `501`.
 3. GPU allocation exclusivity:
 - 8 concurrent create attempts -> 7 success, 1 no-GPU failure.
 4. Per-user concurrent limit enforced.
 5. Stop endpoint behavior:
-- `POST /api/sessions/{id}/stop` returns `202`.
+- `POST /api/v1/sessions/{id}/stop` returns `202`.
 - idempotent responses for repeated stop calls.
 6. Snapshot finalization:
 - stop path completes via recovery and creates snapshot.
@@ -234,7 +234,7 @@ Pass criteria:
 Required checks:
 
 1. Competition discovery:
-- `GET /api/competitions` includes expected permanent PUBLIC competitions.
+- `GET /api/v1/competitions` includes expected permanent PUBLIC competitions.
 2. Valid submission:
 - scored successfully with non-null `official_score.primary_score`.
 3. Invalid submission:

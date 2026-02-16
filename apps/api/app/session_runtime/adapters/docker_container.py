@@ -13,7 +13,6 @@ from app.session_runtime.types import (
     SessionRuntimeError,
     SessionStartResult,
     SessionStopRequest,
-    SessionStopResult,
 )
 
 
@@ -55,7 +54,7 @@ class DockerContainerAdapter:
         except Exception:
             return
 
-    def stop_container(self, request: SessionStopRequest) -> SessionStopResult:
+    def stop_container(self, request: SessionStopRequest) -> None:
         return stop_container(self._client, request)
 
     def inspect_container(self, request: ContainerInspectRequest) -> SessionInspectResult:

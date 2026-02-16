@@ -13,7 +13,6 @@ from app.session_runtime import (
     SessionStartRequest,
     SessionStartResult,
     SessionStopRequest,
-    SessionStopResult,
     WorkspaceProvisionRequest,
     WorkspaceProvisionResult,
     WorkspaceSnapshotRequest,
@@ -50,9 +49,9 @@ class RecordingContainerPort:
         self.last_start = request
         return SessionStartResult(container_id="cid-1")
 
-    def stop_container(self, request: SessionStopRequest) -> SessionStopResult:
+    def stop_container(self, request: SessionStopRequest) -> None:
         _ = request
-        return SessionStopResult(removed=True)
+        return
 
     def inspect_container(self, request: object) -> SessionInspectResult:
         self.last_inspect = request

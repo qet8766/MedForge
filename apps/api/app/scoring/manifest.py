@@ -14,6 +14,33 @@ from app.competition_policy import (
 
 from .types import ManifestMetadata
 
+MANIFEST_REQUIRED_FIELDS = frozenset(
+    {
+        "evaluation_split_version",
+        "scoring_mode",
+        "leaderboard_rule",
+        "evaluation_policy",
+        "id_column",
+        "target_columns",
+        "expected_row_count",
+    }
+)
+
+
+def _validate_manifest_fields(payload: dict[str, Any]) -> None:
+    payload_fields = set(payload.keys())
+    missing = sorted(MANIFEST_REQUIRED_FIELDS - payload_fields)
+    extra = sorted(payload_fields - MANIFEST_REQUIRED_FIELDS)
+    if not missing and not extra:
+        return
+
+    details: list[str] = []
+    if missing:
+        details.append(f"missing={missing}")
+    if extra:
+        details.append(f"extra={extra}")
+    raise ValueError(f"Manifest keys mismatch: {', '.join(details)}")
+
 
 def _manifest_str(payload: dict[str, Any], field: str) -> str:
     value = payload.get(field)
@@ -51,6 +78,7 @@ def _load_manifest(manifest_path: Path) -> ManifestMetadata:
 
     if not isinstance(payload, dict):
         raise ValueError("Invalid manifest format.")
+    _validate_manifest_fields(payload)
 
     metadata = ManifestMetadata(
         evaluation_split_version=_manifest_str(payload, "evaluation_split_version"),
@@ -59,7 +87,6 @@ def _load_manifest(manifest_path: Path) -> ManifestMetadata:
         evaluation_policy=_manifest_str(payload, "evaluation_policy"),
         id_column=_manifest_str(payload, "id_column"),
         target_columns=_manifest_target_columns(payload),
-        label_source=_manifest_str(payload, "label_source"),
         expected_row_count=_manifest_expected_row_count(payload),
     )
 

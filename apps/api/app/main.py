@@ -9,16 +9,18 @@ import structlog
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
+from starlette.middleware.base import RequestResponseEndpoint
 
 from app.api_contract import ApiEnvelope, envelope
 from app.config import get_settings
 from app.database import engine, init_db
-from app.problem_details import (
-    PROBLEM_CONTENT_TYPE,
-    ProblemDocument,
-    http_status_title,
-    register_problem_exception_handler,
+from app.http_contract import (
+    apply_legacy_api_deprecation_headers,
+    default_problem_responses,
+    include_api_routers,
+    is_legacy_api_path,
 )
+from app.problem_details import register_problem_exception_handler
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router as competitions_router
 from app.routers.control_plane import router as control_plane_router
@@ -108,24 +110,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         _stop_session_recovery_thread()
 
 
-def _default_problem_responses() -> dict[int, dict[str, object]]:
-    statuses = (400, 401, 403, 404, 409, 422, 429, 500, 501, 503)
-    return {
-        code: {
-            "model": ProblemDocument,
-            "description": http_status_title(code),
-            "content": {
-                PROBLEM_CONTENT_TYPE: {},
-            },
-        }
-        for code in statuses
-    }
-
-
 app = FastAPI(
     title=settings.app_name,
     lifespan=lifespan,
-    responses=_default_problem_responses(),
+    responses=default_problem_responses(),
 )
 app.add_middleware(
     CORSMiddleware,
@@ -134,20 +122,25 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
-app.include_router(auth_router)
-app.include_router(competitions_router)
-app.include_router(control_plane_router)
+include_api_routers(
+    app,
+    auth_router=auth_router,
+    competitions_router=competitions_router,
+    control_plane_router=control_plane_router,
+)
 register_problem_exception_handler(app)
 
 
 @app.middleware("http")
-async def request_id_middleware(request: Request, call_next):
+async def request_contract_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
     request_id = str(uuid4())
     request.state.request_id = request_id
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)
     response = await call_next(request)
     response.headers["X-Request-Id"] = request_id
+    if is_legacy_api_path(request.url.path):
+        apply_legacy_api_deprecation_headers(response, settings=settings)
     return response
 
 
