@@ -3,7 +3,7 @@
 Implementation status note (2026-02-16):
 
 - Gate 7 competition API/UI is implemented and tested in this repo.
-- Gate 2 auth endpoints are implemented (`/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/me`) with cookie sessions and an optional `X-User-Id` legacy fallback flag.
+- Gate 2 auth endpoints are implemented (`/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/me`) with cookie sessions only (no legacy header identity fallback).
 - Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/sessions`, `/api/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, async stop requests, and recovery-driven snapshot terminalization.
 - Gate 4 recovery logic (poller + startup reconciliation) is implemented in API and covered by tests.
 - Gate 5/6 host evidence run completed via `bash infra/host/validate-gate56.sh --with-browser` for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket frame activity (`@docs/host-validation-2026-02-16.md`).
@@ -28,7 +28,7 @@ Signup/login, cookie sessions, `/api/me`. forward_auth endpoint for session prox
 
 ### Gate 3 -- Session Lifecycle
 
-`POST /api/sessions` creates GPU-only PUBLIC session (PRIVATE returns 501). Transaction-safe GPU allocation. Stop endpoint records async stop intent (`202 Accepted`); recovery performs stop + ZFS snapshot finalization.
+`POST /api/sessions` creates GPU-only PUBLIC session (`tier=private` returns 501). Transaction-safe GPU allocation. Stop endpoint records async stop intent (`202 Accepted`); recovery performs stop + ZFS snapshot finalization.
 
 **Acceptance:** 7 concurrent sessions succeed; 8th fails "no GPUs available". Per-user limit enforced under concurrent requests. Each created session has a distinct `workspace_zfs` dataset path. Stop request returns `202` and sets/keeps `stopping`. Recovery produces a ZFS snapshot and finalizes to `stopped` or `error`; if stop command execution fails, session may temporarily remain `stopping` until a later retry.
 
@@ -71,7 +71,7 @@ Use `--with-browser` for end-to-end UI/browser verification; without it, only th
 
 Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`). Users can upload predictions, receive scores, and view ranked leaderboards.
 
-**Acceptance:** `GET /api/competitions` returns all competition slugs with `competition_tier=PUBLIC`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and explicit contract versions (`metric_version`, `competition_spec_version`). Valid CSV submission returns `score_status=scored` and non-null `official_score.primary_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user official `primary_score` with deterministic tie-break by earliest score timestamp and submission ID. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
+**Acceptance:** `GET /api/competitions` returns all competition slugs with `competition_tier=public`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and explicit contract versions (`metric_version`, `competition_spec_version`). Valid CSV submission returns `score_status=scored` and non-null `official_score.primary_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user official `primary_score` with deterministic tie-break by earliest score timestamp and submission ID. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
 
 ### Definition of Done
 

@@ -78,9 +78,9 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleCreateSession(): Promise<void> {
     setError("");
     try {
-      const response = await apiPostJson<SessionCreateResponse>("/api/sessions", { tier: "PUBLIC" });
+      const response = await apiPostJson<SessionCreateResponse>("/api/sessions", { tier: "public" });
       setStatus(
-        `${response.detail} Slug: ${response.session.slug}, GPU: ${response.session.gpu_id}, status: ${response.session.status}.`
+        `${response.message} Slug: ${response.session.slug}, GPU: ${response.session.gpu_id}, status: ${response.session.status}.`
       );
       await rehydrateCurrentSession(false);
     } catch (requestError) {
@@ -97,7 +97,7 @@ export default function SessionsPage(): React.JSX.Element {
 
     try {
       const response = await apiPostJson<SessionActionResponse>(`/api/sessions/${currentSession.id}/stop`, {});
-      setStatus(response.detail);
+      setStatus(response.message);
       await rehydrateCurrentSession(false);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Session stop failed.");
@@ -107,7 +107,7 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleLogout(): Promise<void> {
     setError("");
     try {
-      await apiPostJson<{ detail: string }>("/api/auth/logout", {});
+      await apiPostJson<SessionActionResponse>("/api/auth/logout", {});
       setStatus("Signed out.");
       setCurrentSession(null);
     } catch (requestError) {

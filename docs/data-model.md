@@ -19,7 +19,7 @@
 | email                   | string   | unique    |
 | password_hash           | string   |           |
 | role                    | Role     |           |
-| max_concurrent_sessions | int      | default 1 |
+| max_concurrent_sessions | int      | default 1, `CHECK > 0` |
 | created_at              | datetime |           |
 
 #### auth_sessions
@@ -72,6 +72,7 @@
 | started_at    | datetime      | nullable                        |
 | stopped_at    | datetime      | nullable                        |
 | error_message | string        | nullable                        |
+| gpu_active    | int           | generated; non-null only for active states, NULL when terminal |
 
 **GPU exclusivity via generated column + unique index:**
 
@@ -114,7 +115,7 @@ Important terminology:
 | source       | string   | e.g. `kaggle` |
 | license      | string   | |
 | storage_path | string   | mirrored path |
-| bytes        | int      | |
+| bytes        | int      | `CHECK >= 0` |
 | checksum     | string   | |
 | created_at   | datetime | |
 
@@ -136,7 +137,7 @@ Important terminology:
 | leaderboard_rule       | string            | e.g. `best_per_user` |
 | evaluation_policy      | string            | e.g. `canonical_test_first` |
 | competition_spec_version | string          | scoring contract version |
-| submission_cap_per_day | int               | per-user cap |
+| submission_cap_per_day | int               | per-user cap, `CHECK > 0` |
 | dataset_id             | UUID              | FK -> datasets |
 | created_at             | datetime          | |
 | updated_at             | datetime          | |
@@ -151,7 +152,7 @@ Important terminology:
 | filename                 | string     | original upload name |
 | artifact_path            | string     | stored CSV path |
 | artifact_sha256          | string     | integrity hash |
-| row_count                | int        | |
+| row_count                | int        | `CHECK >= 0` |
 | score_status             | ScoreStatus | |
 | score_error              | string     | nullable |
 | created_at               | datetime   | |
@@ -173,3 +174,5 @@ Important terminology:
 | evaluation_split_version | string    | holdout split version |
 | manifest_sha256          | string    | manifest integrity hash |
 | created_at               | datetime  | scoring run timestamp |
+
+`UNIQUE(submission_id, scorer_version, metric_version, evaluation_split_version, manifest_sha256)` — idempotent scoring runs.

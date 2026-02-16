@@ -98,7 +98,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 ### Ticket Breakdown
 
-#### Ticket 1: DB Schema + Migration
+#### Ticket 1: DB Schema + Migration — Done
 
 - Create enums and tables from `docs/data-model.md`.
 - Implement generated column `gpu_active`.
@@ -107,7 +107,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Seed `gpu_devices` rows `0..6` with `enabled=true`.
 - Seed default pack row.
 
-#### Ticket 2: Session Create Transaction
+#### Ticket 2: Session Create Transaction — Done
 
 - Implement SQL transaction with `FOR UPDATE` lock on user row.
 - Count active sessions for per-user limit.
@@ -115,7 +115,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Insert `starting` session row with deterministic `workspace_zfs`.
 - Retry on GPU uniqueness collision a fixed number of times.
 
-#### Ticket 3: Workspace Dataset Provisioning
+#### Ticket 3: Workspace Dataset Provisioning — Done
 
 - Ensure parent dataset exists (`tank/medforge/workspaces/<user_id>`).
 - Create child dataset for session id (`.../<session_id>`).
@@ -123,7 +123,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Apply optional quota if configured.
 - Surface provisioning failures to create flow and finalize session as `error`.
 
-#### Ticket 4: Container Launch
+#### Ticket 4: Container Launch — Done
 
 - Start container name `mf-session-<slug>` on `medforge-public-sessions`.
 - Bind exactly one physical GPU via Docker runtime device selection.
@@ -137,7 +137,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Mount `workspace_zfs` to `/workspace`.
 - Enforce non-root user and hardened container flags from spec.
 
-#### Ticket 5: Stop Flow
+#### Ticket 5: Stop Flow — Done
 
 - Lock session row and apply compare-and-set transition into `stopping` from `starting` or `running`.
 - Return `202 Accepted` from API stop request path (no runtime side effects in request path).
@@ -147,7 +147,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Keep `stopping` and retry if stop command fails.
 - Emit `session.stop` with reason `requested`, `container_death`, or `snapshot_failed`.
 
-#### Ticket 6: Poller
+#### Ticket 6: Poller — Done
 
 - Run at `SESSION_POLL_INTERVAL_SECONDS` base interval.
 - Query sessions in `starting`, `running`, and `stopping`.
@@ -160,7 +160,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - On poll loop failures, apply exponential backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`, then reset to base interval after a successful poll.
 - Report recovery degradation through `GET /healthz` returning `503` when the recovery thread is unavailable; return `200` when healthy.
 
-#### Ticket 7: Boot Reconciliation
+#### Ticket 7: Boot Reconciliation — Done
 
 - On API startup, scan sessions in `starting | running | stopping`.
 - For `starting/running` with running container, normalize to `running`.
@@ -168,37 +168,36 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - For `stopping`, run stop completion logic; if stop command fails, leave `stopping` for poller retry.
 - Guarantee no rows remain in `starting` after reconciliation pass.
 
-#### Ticket 8: Auth + Wildcard Routing
+#### Ticket 8: Auth + Wildcard Routing — Done
 
 - Implement `GET /api/auth/session-proxy` contract.
 - Ensure Caddy strips inbound `X-Upstream`.
 - Fail closed if auth response misses upstream on `200`.
 - Preserve websocket upgrades for code-server terminal.
 
-#### Ticket 9: East-West Isolation
+#### Ticket 9: East-West Isolation — Done
 
 - Install `DOCKER-USER` rules to allow only Caddy fixed IP to reach session `:8080`.
 - Drop all other sources to session `:8080`.
 - Validate from session A that direct access to session B `:8080` fails.
 
-#### Ticket 10: Structured Event Logging
+#### Ticket 10: Structured Event Logging — Done
 
 - Emit one JSON line per event to stdout.
 - Required events:
-- `user.login`
 - `session.start`
 - `session.stop`
 - Include identifiers from spec payloads (`session_id`, `user_id`, `tier`, `gpu_id`, `pack_id`, `slug`, `reason`).
 
 ### Acceptance Test Checklist
 
-#### Concurrency and Allocation
+#### Concurrency and Allocation — Validated
 
 - Run 8 parallel create requests with all GPUs enabled; exactly 7 succeed and 1 fails `no GPUs available`.
 - Run parallel creates for one user with `max_concurrent_sessions=1`; exactly one succeeds.
 - Verify each created session has unique `workspace_zfs`.
 
-#### Lifecycle and Recovery
+#### Lifecycle and Recovery — Validated
 
 - Force container death (`docker kill`) and verify poller marks `error` within 30 seconds.
 - Restart API with sessions in mixed active states and verify reconciliation normalizes `starting` rows and retries pending `stopping` rows.
@@ -206,25 +205,32 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Simulate stop command failure and verify session remains `stopping` and is retried by poller.
 - Simulate recovery-thread unavailability and verify `GET /healthz` returns `503`, then returns `200` after thread health is restored.
 
-#### Routing and Isolation
+#### Routing and Isolation — Validated (see `docs/host-validation-2026-02-16.md`)
 
 - Validate owner access `200`, other user `403`, unauthenticated `401`.
 - Send malicious client `X-Upstream` and verify it has no routing effect.
 - Validate websocket terminal still works through proxy.
 - Verify session-to-session direct `:8080` access is blocked.
 
-#### Competition API and Scoring
+#### Competition API and Scoring — Validated
 
 - Verify `GET /api/competitions` includes `titanic-survival`, `rsna-pneumonia-detection`, and `cifar-100-classification` with `competition_tier=PUBLIC`.
 - Verify all returned competitions include `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and contract versions (`metric_version`, `competition_spec_version`).
 - Submit valid Titanic CSV and verify `score_status=scored` and non-null `official_score.primary_score`.
 - Verify Titanic holdout manifest expects 418 labelled test IDs (`evaluation_split_version=v2-kaggle-labelled-test418`).
-- Submit invalid schema and verify `422` with actionable validation error.
+- Submit invalid schema and verify `422` RFC 7807 payload (`type`, `title`, `status`, `detail`, `instance`) with actionable validation detail.
+- Verify competition error responses include `content-type: application/problem+json`.
+- Verify missing resources return scoped problem types:
+  - competition slug not found -> `competitions/competition-not-found`
+  - dataset slug not found -> `competitions/dataset-not-found`
+  - admin score on unknown submission -> `competitions/submission-not-found`
 - Exhaust daily cap and verify next submission returns `429`.
 - Confirm leaderboard returns best score per user and deterministic rank ordering.
 
 ### Definition of "Implementation Complete"
 
-- All tickets above are implemented.
-- Gate acceptance checks in `docs/build-gates.md` pass.
-- No known path leaves a session stuck in an active non-running state.
+All criteria met as of 2026-02-16:
+
+- [x] All tickets above are implemented.
+- [x] Gate acceptance checks in `docs/build-gates.md` pass.
+- [x] No known path leaves a session stuck in an active non-running state.

@@ -7,7 +7,7 @@ Implementation status note (2026-02-16):
   - `/api/auth/session-proxy` owner/admin authorization with running-session checks
 - Gate 4 recovery orchestration is implemented (startup reconciliation + active-session poller).
 - Gate 5 routing/isolation controls are in place; API auth matrix + spoof + east-west block + wildcard browser routing + websocket activity were validated on host (`@docs/host-validation-2026-02-16.md`).
-- Legacy header identity fallback (`X-User-Id`) is disabled by default and can be re-enabled only when `ALLOW_LEGACY_HEADER_AUTH=true` (for local/test compatibility).
+- Legacy header identity fallback (`X-User-Id`) is removed from API auth paths.
 - Competition submission uploads are bounded by `SUBMISSION_UPLOAD_MAX_BYTES` (default `10485760`).
 
 ### Cookie Sessions
@@ -18,6 +18,7 @@ HTTP-only cookie session auth.
 - CSRF/Origin guard: for all state-changing endpoints, reject if `Origin` is not an allowed MedForge origin.
 - Cookie stores a random token (base64url). DB stores only a hash of the token (never raw).
 - Competition write endpoints covered by origin guard: `POST /api/competitions/{slug}/submissions` and `POST /api/admin/submissions/{submission_id}/score`.
+- Admin scoring endpoint authorization is cookie principal role-based (`role=admin`); no `X-Admin-Token` bypass.
 
 ### Wildcard Session Routing (Caddy + forward_auth)
 
@@ -38,6 +39,11 @@ FastAPI returns:
 | 401  | Not authenticated                                          |                                      |
 | 403  | Authenticated but not owner/admin                          |                                      |
 | 404  | Slug not found or session not running                      |                                      |
+
+Success and error payloads follow the global API contract:
+
+- success: `{ "data": ..., "meta": { request_id, ... } }`
+- error: `application/problem+json` with `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`, and optional `errors`.
 
 Caddy behaviour:
 

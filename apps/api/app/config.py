@@ -5,11 +5,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from uuid import UUID
 
-
 # ---------------------------------------------------------------------------
-# Field-factory helpers – each returns a dataclass field() whose
+# Field-factory helpers - each returns a dataclass field() whose
 # default_factory reads os.environ at instantiation time.
-# Default-arg capture (_n=name, _d=default …) prevents late-binding issues.
+# Default-arg capture (_n=name, _d=default ...) prevents late-binding issues.
 # ---------------------------------------------------------------------------
 
 def _env(name: str, default: str, *, lower: bool = False) -> str:
@@ -37,13 +36,6 @@ def _env_int(name: str, default: int, *, min: int | None = None) -> int:
                 v = _d
         return max(v, _m) if _m is not None else v
     return field(default_factory=_factory)
-
-
-def _env_path(name: str, default: str) -> Path:
-    def _factory(_n: str = name, _d: str = default) -> Path:
-        return Path(os.getenv(_n, _d))
-    return field(default_factory=_factory)
-
 
 def _env_opt_int(name: str) -> int | None:
     def _factory(_n: str = name) -> int | None:
@@ -83,10 +75,10 @@ def _default_cookie_domain() -> str:
 
 def _default_cors_origins() -> tuple[str, ...]:
     domain = os.getenv("DOMAIN", "").strip().lower()
-    origins = {
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    }
+    is_local = not domain or domain in {"localhost", "127.0.0.1"}
+    origins: set[str] = set()
+    if is_local:
+        origins.update({"http://localhost:3000", "http://127.0.0.1:3000"})
     if domain:
         origins.update(
             f"{s}://{p}medforge.{domain}"
@@ -106,14 +98,12 @@ class Settings:
     domain: str = _env("DOMAIN", "example.com", lower=True)
     pack_image: str = _env("PACK_IMAGE", "")
     session_secret: str = _env("SESSION_SECRET", "dev-session-secret")
-    competitions_data_dir: Path = _env_path("COMPETITIONS_DATA_DIR", "data/competitions")
-    submissions_dir: Path = _env_path("SUBMISSIONS_DIR", "data/submissions")
+    competitions_data_dir: Path = field(default_factory=lambda: Path(os.getenv("COMPETITIONS_DATA_DIR", "data/competitions")))
+    submissions_dir: Path = field(default_factory=lambda: Path(os.getenv("SUBMISSIONS_DIR", "data/submissions")))
     default_user_id: UUID = field(
         default_factory=lambda: UUID(os.getenv("DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001"))
     )
     auto_score_on_submit: bool = _env_bool("AUTO_SCORE_ON_SUBMIT", "true")
-    allow_legacy_header_auth: bool = _env_bool("ALLOW_LEGACY_HEADER_AUTH", "false")
-    require_user_header: bool = _env_bool("REQUIRE_USER_HEADER", "false")
     submission_upload_max_bytes: int = _env_int("SUBMISSION_UPLOAD_MAX_BYTES", 10 * 1024 * 1024, min=1)
     auth_idle_ttl_seconds: int = _env_int("AUTH_IDLE_TTL_SECONDS", 604800)
     auth_max_ttl_seconds: int = _env_int("AUTH_MAX_TTL_SECONDS", 2592000)
@@ -122,7 +112,6 @@ class Settings:
     cookie_secure: bool = _env_bool("COOKIE_SECURE", "true")
     cookie_samesite: str = _env("COOKIE_SAMESITE", "lax", lower=True)
     cors_origins: tuple[str, ...] = field(default_factory=_default_cors_origins)
-    admin_api_token: str = _env("ADMIN_API_TOKEN", "")
     public_sessions_network: str = _env("PUBLIC_SESSIONS_NETWORK", "medforge-public-sessions")
     workspace_zfs_root: str = _env("WORKSPACE_ZFS_ROOT", "tank/medforge/workspaces")
     session_allocation_max_retries: int = _env_int("SESSION_ALLOCATION_MAX_RETRIES", 3, min=1)

@@ -3,17 +3,26 @@ from __future__ import annotations
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from uuid import uuid4
 
 import structlog
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
+from app.api_contract import ApiEnvelope, envelope
 from app.config import get_settings
 from app.database import engine, init_db
+from app.problem_details import (
+    PROBLEM_CONTENT_TYPE,
+    ProblemDocument,
+    http_status_title,
+    register_problem_exception_handler,
+)
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router as competitions_router
 from app.routers.control_plane import router as control_plane_router
+from app.schemas import HealthResponse
 from app.seed import seed_defaults
 from app.session_recovery import poll_active_sessions_once, reconcile_on_startup
 
@@ -99,7 +108,25 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         _stop_session_recovery_thread()
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+def _default_problem_responses() -> dict[int, dict[str, object]]:
+    statuses = (400, 401, 403, 404, 409, 422, 429, 500, 501, 503)
+    return {
+        code: {
+            "model": ProblemDocument,
+            "description": http_status_title(code),
+            "content": {
+                PROBLEM_CONTENT_TYPE: {},
+            },
+        }
+        for code in statuses
+    }
+
+
+app = FastAPI(
+    title=settings.app_name,
+    lifespan=lifespan,
+    responses=_default_problem_responses(),
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
@@ -110,12 +137,21 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(competitions_router)
 app.include_router(control_plane_router)
+register_problem_exception_handler(app)
 
 
-@app.get("/healthz")
-def healthz(response: Response) -> dict[str, str]:
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request.state.request_id = str(uuid4())
+    response = await call_next(request)
+    response.headers["X-Request-Id"] = request.state.request_id
+    return response
+
+
+@app.get("/healthz", response_model=ApiEnvelope[HealthResponse])
+def healthz(request: Request, response: Response) -> ApiEnvelope[HealthResponse]:
     if _is_session_recovery_healthy():
-        return {"status": "ok"}
+        return envelope(request, HealthResponse(status="ok"))
 
     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    return {"status": "degraded"}
+    return envelope(request, HealthResponse(status="degraded"))

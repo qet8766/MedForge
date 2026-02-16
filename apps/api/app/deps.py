@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from hmac import compare_digest
 from typing import Annotated
 from urllib.parse import urlparse
 from uuid import UUID
@@ -116,38 +115,16 @@ def _principal_from_cookie(
     )
 
 
-def _principal_from_header_user_id(x_user_id: str) -> AuthPrincipal:
-    try:
-        user_id = UUID(x_user_id)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid X-User-Id header. Expected UUID.",
-        ) from exc
-
-    return AuthPrincipal(
-        user_id=user_id,
-        role=Role.USER,
-        email=None,
-        auth_session_id=None,
-        source="legacy_header",
-    )
-
-
 def get_current_user(
     request: Request,
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
-    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
 ) -> AuthPrincipal:
     cookie_token = request.cookies.get(settings.cookie_name)
     if cookie_token:
         principal = _principal_from_cookie(cookie_token, session, settings)
         if principal is not None:
             return principal
-
-    if settings.allow_legacy_header_auth and x_user_id is not None:
-        return _principal_from_header_user_id(x_user_id)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -161,13 +138,8 @@ def get_current_user_id(principal: AuthPrincipal = Depends(get_current_user)) ->
 
 def require_admin_access(
     principal: AuthPrincipal = Depends(get_current_user),
-    x_admin_token: Annotated[str | None, Header(alias="X-Admin-Token")] = None,
-    settings: Settings = Depends(get_settings),
 ) -> None:
     if principal.role == Role.ADMIN:
-        return
-
-    if settings.admin_api_token and x_admin_token is not None and compare_digest(x_admin_token, settings.admin_api_token):
         return
 
     raise HTTPException(

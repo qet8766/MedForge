@@ -1,4 +1,4 @@
-## Dataset Formats
+## 5. Dataset Formats
 
 Storage root: `/data/medforge/datasets/`
 
@@ -76,7 +76,7 @@ PassengerId,Survived
 
 ### 2. RSNA Pneumonia Detection
 
-**Dataset slug:** `rsna-pneumonia-detection` | **Competition slug:** `rsna-pneumonia-detection`
+**Dataset slug:** `rsna-pneumonia-detection-challenge` | **Competition slug:** `rsna-pneumonia-detection`
 **Path:** `/data/medforge/datasets/rsna-pneumonia-detection/`
 **Metric:** mAP @ IoU [0.4–0.75] | **Source:** [Kaggle](https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge)
 

@@ -110,14 +110,13 @@ class SessionRecoveryRunner:
                 updated += 1
                 continue
 
-            if startup and row.status == SessionStatus.STARTING:
-                if self._finalize_error(
-                    row=row,
-                    expected_statuses=(SessionStatus.STARTING,),
-                    mutation="reconcile_starting_not_running",
-                    error_message="container not running during reconcile",
-                ):
-                    updated += 1
+            if startup and row.status == SessionStatus.STARTING and self._finalize_error(
+                row=row,
+                expected_statuses=(SessionStatus.STARTING,),
+                mutation="reconcile_starting_not_running",
+                error_message="container not running during reconcile",
+            ):
+                updated += 1
 
         return updated
 

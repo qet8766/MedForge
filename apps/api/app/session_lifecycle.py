@@ -21,31 +21,12 @@ from app.session_repo import (
 )
 from app.session_runtime import (
     SessionResourceLimits,
-    SessionRuntimeError,
     SessionStartRequest,
     WorkspaceProvisionRequest,
     get_session_runtime,
 )
 
 logger = structlog.get_logger(__name__)
-
-
-def _as_session_read(row: SessionRecord) -> SessionRead:
-    return SessionRead(
-        id=row.id,
-        user_id=row.user_id,
-        tier=row.tier,
-        pack_id=row.pack_id,
-        status=row.status,
-        container_id=row.container_id,
-        gpu_id=row.gpu_id,
-        slug=row.slug,
-        workspace_zfs=row.workspace_zfs,
-        created_at=row.created_at,
-        started_at=row.started_at,
-        stopped_at=row.stopped_at,
-        error_message=row.error_message,
-    )
 
 
 def create_session_for_principal(
@@ -55,13 +36,13 @@ def create_session_for_principal(
     session: Session,
     settings: Settings,
 ) -> SessionCreateResponse:
-    if payload.tier == "PRIVATE":
+    if payload.tier == "private":
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="PRIVATE tier is not available yet.",
+            detail="private tier is not available yet.",
         )
 
-    tier = Tier(payload.tier)
+    tier = Tier(payload.tier.upper())
     user = get_or_create_principal_user(session, principal)
     pack = resolve_pack(session, pack_id=payload.pack_id, tier=tier)
 
@@ -106,14 +87,15 @@ def create_session_for_principal(
             )
         )
         row = finalize_running(session, row=row, container_id=start_result.container_id)
-    except SessionRuntimeError as exc:
-        row = finalize_error(session, row=row, error_message=f"create failed: {exc}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to start session runtime.",
-        ) from exc
     except Exception as exc:
         row = finalize_error(session, row=row, error_message=f"create failed: {exc}")
+        logger.error(
+            "session.start_failed",
+            session_id=str(row.id),
+            user_id=str(row.user_id),
+            slug=row.slug,
+            error=str(exc),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to start session runtime.",
@@ -128,7 +110,7 @@ def create_session_for_principal(
         pack_id=str(row.pack_id),
         slug=row.slug,
     )
-    return SessionCreateResponse(detail="Session started.", session=_as_session_read(row))
+    return SessionCreateResponse(message="Session started.", session=SessionRead.model_validate(row))
 
 
 def _get_owned_or_admin_session(
@@ -153,8 +135,8 @@ def stop_session_for_principal(
 ) -> SessionActionResponse:
     row = _get_owned_or_admin_session(session=session, session_id=session_id, principal=principal)
     if row.status in {SessionStatus.STOPPED, SessionStatus.ERROR}:
-        return SessionActionResponse(detail="Session already terminal.")
+        return SessionActionResponse(message="Session already terminal.")
 
     if row.status != SessionStatus.STOPPING:
         row = mark_session_stopping(session, row=row)
-    return SessionActionResponse(detail="Session stop requested.")
+    return SessionActionResponse(message="Session stop requested.")

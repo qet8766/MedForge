@@ -1,7 +1,7 @@
 export type CompetitionSummary = {
   slug: string;
   title: string;
-  competition_tier: "PUBLIC" | "PRIVATE";
+  competition_tier: "public" | "private";
   metric: string;
   metric_version: string;
   scoring_mode: string;
@@ -52,7 +52,7 @@ export type SessionStatus = "starting" | "running" | "stopping" | "stopped" | "e
 export type SessionRead = {
   id: string;
   user_id: string;
-  tier: "PUBLIC" | "PRIVATE";
+  tier: "public" | "private";
   pack_id: string;
   status: SessionStatus;
   container_id: string | null;
@@ -65,14 +65,26 @@ export type SessionRead = {
   error_message: string | null;
 };
 export type SessionCreateResponse = {
-  detail: string;
+  message: string;
   session: SessionRead;
 };
 export type SessionActionResponse = {
-  detail: string;
+  message: string;
 };
 export type SessionCurrentResponse = {
   session: SessionRead | null;
+};
+export type ApiMeta = {
+  request_id: string;
+  api_version: string;
+  timestamp: string;
+  limit?: number | null;
+  next_cursor?: string | null;
+  has_more?: boolean | null;
+};
+export type ApiEnvelope<T> = {
+  data: T;
+  meta: ApiMeta;
 };
 const API_URL = process.env.API_URL?.trim() ?? "";
 const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
@@ -82,6 +94,44 @@ const API_BASE_FALLBACK = NEXT_PUBLIC_DOMAIN
   ? `https://api.medforge.${NEXT_PUBLIC_DOMAIN}`
   : DOMAIN ? `https://api.medforge.${DOMAIN}` : "";
 const DEFAULT_SERVER_API_URL = "http://127.0.0.1:8000";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return "data" in value && "meta" in value;
+}
+
+function extractApiErrorMessage(payload: unknown, fallback: string): string {
+  if (!isRecord(payload)) {
+    return fallback;
+  }
+
+  const detail = payload.detail;
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
+  }
+
+  const title = payload.title;
+  if (typeof title === "string" && title.trim()) {
+    return title;
+  }
+
+  return fallback;
+}
+
+async function parseJsonBody(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 function resolveApiBase(): string {
   if (typeof window === "undefined") {
     return API_URL || NEXT_PUBLIC_API_URL || API_BASE_FALLBACK || DEFAULT_SERVER_API_URL;
@@ -104,12 +154,16 @@ export async function apiGet<T>(path: string): Promise<T> {
     cache: "no-store",
     credentials: "include"
   });
+  const payload = await parseJsonBody(res);
   if (!res.ok) {
-    throw new Error(`GET ${path} failed: ${res.status}`);
+    throw new Error(extractApiErrorMessage(payload, `GET ${path} failed: ${res.status}`));
   }
-  return res.json() as Promise<T>;
+  if (!isEnvelope<T>(payload)) {
+    throw new Error(`GET ${path} returned an invalid response envelope.`);
+  }
+  return payload.data;
 }
-export async function apiSubmitFile(path: string, file: File): Promise<unknown> {
+export async function apiSubmitFile<TResponse>(path: string, file: File): Promise<TResponse> {
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(toApiUrl(path), {
@@ -117,12 +171,14 @@ export async function apiSubmitFile(path: string, file: File): Promise<unknown> 
     credentials: "include",
     body: form
   });
-  const payload = await res.json();
+  const payload = await parseJsonBody(res);
   if (!res.ok) {
-    const detail = typeof payload?.detail === "string" ? payload.detail : "Submission failed";
-    throw new Error(detail);
+    throw new Error(extractApiErrorMessage(payload, `POST ${path} failed: ${res.status}`));
   }
-  return payload;
+  if (!isEnvelope<TResponse>(payload)) {
+    throw new Error(`POST ${path} returned an invalid response envelope.`);
+  }
+  return payload.data;
 }
 export async function apiPostJson<TResponse>(path: string, payload: unknown): Promise<TResponse> {
   const res = await fetch(toApiUrl(path), {
@@ -133,17 +189,12 @@ export async function apiPostJson<TResponse>(path: string, payload: unknown): Pr
     },
     body: JSON.stringify(payload)
   });
-  let body: unknown = null;
-  try {
-    body = await res.json();
-  } catch {
-    body = null;
-  }
+  const body = await parseJsonBody(res);
   if (!res.ok) {
-    const detail = typeof (body as { detail?: unknown } | null)?.detail === "string"
-      ? (body as { detail: string }).detail
-      : `POST ${path} failed: ${res.status}`;
-    throw new Error(detail);
+    throw new Error(extractApiErrorMessage(body, `POST ${path} failed: ${res.status}`));
   }
-  return body as TResponse;
+  if (!isEnvelope<TResponse>(body)) {
+    throw new Error(`POST ${path} returned an invalid response envelope.`);
+  }
+  return body.data;
 }

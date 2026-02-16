@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import UUID, uuid4
 
 import pytest
+
+# Ensure SESSION_SECRET is always available for tests that construct
+# Settings() without explicit keyword args (e.g. test_main_lifecycle.py).
+os.environ.setdefault("SESSION_SECRET", "test-session-secret")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import Session, create_engine, select
@@ -11,10 +18,12 @@ from sqlmodel import Session, create_engine, select
 import app.config as config_module
 from app.config import Settings, get_settings
 from app.database import get_session, run_migrations
-from app.models import Competition
+from app.models import AuthSession, Competition, Role, User
+from app.problem_details import register_problem_exception_handler
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router
 from app.routers.control_plane import router as control_plane_router
+from app.security import create_session_token, hash_password, hash_session_token
 from app.seed import seed_defaults
 
 
@@ -78,7 +87,6 @@ def test_settings(tmp_path: Path) -> Settings:
         competitions_data_dir=competitions_dir,
         submissions_dir=submissions_dir,
         auto_score_on_submit=True,
-        allow_legacy_header_auth=True,
         pack_image="medforge-pack-default@sha256:0000000000000000000000000000000000000000000000000000000000000000",
         session_secret="test-session-secret",
         cookie_secure=False,
@@ -115,12 +123,61 @@ def db_engine(test_settings: Settings):
 
 
 @pytest.fixture()
+def auth_tokens(db_engine, test_settings: Settings) -> dict[str, str]:
+    user_defs = {
+        "00000000-0000-0000-0000-000000000011": ("user-a@example.com", Role.USER),
+        "00000000-0000-0000-0000-000000000012": ("user-b@example.com", Role.USER),
+        "00000000-0000-0000-0000-000000000013": ("admin@example.com", Role.ADMIN),
+    }
+    now = datetime.now(UTC)
+    tokens: dict[str, str] = {}
+    with Session(db_engine) as session:
+        for user_id, (email, role) in user_defs.items():
+            uid = UUID(user_id)
+            existing = session.get(User, uid)
+            if existing is None:
+                session.add(
+                    User(
+                        id=uid,
+                        email=email,
+                        password_hash=hash_password("sufficiently-strong"),
+                        role=role,
+                    )
+                )
+        session.commit()
+
+        for user_id in user_defs:
+            token = create_session_token()
+            tokens[user_id] = token
+            session.add(
+                AuthSession(
+                    user_id=UUID(user_id),
+                    token_hash=hash_session_token(token, test_settings.session_secret),
+                    created_at=now,
+                    expires_at=now + timedelta(days=7),
+                    last_seen_at=now,
+                )
+            )
+        session.commit()
+    return tokens
+
+
+@pytest.fixture()
 def client(test_settings: Settings, db_engine) -> Iterator[TestClient]:
     def override_get_session() -> Iterator[Session]:
         with Session(db_engine) as session:
             yield session
 
     app = FastAPI()
+
+    @app.middleware("http")
+    async def request_id_middleware(request, call_next):
+        request.state.request_id = str(uuid4())
+        response = await call_next(request)
+        response.headers["X-Request-Id"] = request.state.request_id
+        return response
+
+    register_problem_exception_handler(app)
     app.include_router(auth_router)
     app.include_router(router)
     app.include_router(control_plane_router)

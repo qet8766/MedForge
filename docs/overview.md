@@ -18,7 +18,7 @@ Current implementation note (2026-02-16):
 - Enforce per-user concurrent session limits.
 - Wildcard subdomains per session: `s-<slug>.medforge.<domain>`.
 - Persist per-session workspaces on ZFS; take a snapshot on session stop.
-- Structured JSON event logs to stdout (login + session lifecycle).
+- Structured JSON event logs to stdout (session lifecycle).
 
 ### Constraints
 
@@ -31,7 +31,7 @@ Current implementation note (2026-02-16):
 ### Non-Goals
 
 - Forums, marketplace.
-- Dataset registry / managed read-only mounts.
+- Managed read-only dataset mounts into sessions (metadata-only dataset catalog exists).
 - Exfiltration prevention against screenshots/copying.
 - Enterprise auth (SSO/SCIM).
 - Multi-node scheduling.

@@ -26,6 +26,7 @@ Runtime constraints (applied by the session manager when creating the container)
 - `--auth none` on code-server (Caddy is the gate).
 - Non-root user (UID/GID 1000).
 - `cap-drop=ALL`, not privileged, no Docker socket.
+- `security_opt=["no-new-privileges:true"]`
 - Container name: `mf-session-<slug>`
 - Network: `medforge-public-sessions`
 
@@ -55,9 +56,9 @@ Optional runtime toggle:
 
 #### Create -- `POST /api/sessions`
 
-Inputs: `tier` (PUBLIC | PRIVATE), optional `pack_id` (defaults to seeded pack).
+Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pack).
 
-- `tier=PRIVATE` returns **501**.
+- `tier=private` returns **501**.
 - Every session allocates exactly one GPU.
 - If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
 
@@ -85,9 +86,9 @@ Update session: set `container_id`, `status='running'`, `started_at`. On failure
 
 If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
 
-1. If row is `starting` or `running`, set `status='stopping'` and return **202** with `{detail:"Session stop requested."}`.
-2. If row is already `stopping`, return **202** with the same detail (idempotent intent).
-3. If row is terminal (`stopped` or `error`), return **202** with `{detail:"Session already terminal."}`.
+1. If row is `starting` or `running`, set `status='stopping'` and return **202** with `{message:"Session stop requested."}`.
+2. If row is already `stopping`, return **202** with the same message (idempotent intent).
+3. If row is terminal (`stopped` or `error`), return **202** with `{message:"Session already terminal."}`.
 4. Runtime stop/snapshot is not executed in request path.
 5. Recovery loop finalizes `stopping` rows:
    - stop + snapshot success -> `stopped`, set `stopped_at`.
@@ -98,7 +99,8 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
 #### Read Current -- `GET /api/sessions/current`
 
 - Auth required (`/api/me` auth model).
-- Returns `{ "session": SessionRead | null }`.
+- Returns envelope payload:
+  - `{ "data": { "session": SessionRead | null }, "meta": { ... } }`
 - Only the caller's own sessions are considered.
 - The selected row is the newest active session (`starting|running|stopping`) by `created_at DESC`.
 
@@ -116,6 +118,7 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
 
 - `GET /healthz` returns `200` when API + recovery loop are healthy.
 - `GET /healthz` returns `503` when recovery is enabled but the recovery thread is unavailable.
+- Health payload uses the same envelope contract: `{ "data": { "status": "ok" | "degraded" }, "meta": { ... } }`.
 
 #### Boot-Time Reconciliation
 
@@ -133,6 +136,5 @@ One JSON object per line to stdout.
 
 | Event           | Payload                                              |
 | --------------- | ---------------------------------------------------- |
-| `user.login`    |                                                      |
 | `session.start` | `{session_id, user_id, tier, gpu_id, pack_id, slug}` |
 | `session.stop`  | `{reason: requested \| container_death \| snapshot_failed}` |

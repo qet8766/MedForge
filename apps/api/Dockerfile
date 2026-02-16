@@ -16,6 +16,15 @@ RUN apt-get update \
     && uv pip install --system --no-cache-dir . \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user with docker group for container management.
+# The docker GID must match the host's docker group (typically 999).
+ARG DOCKER_GID=999
+RUN groupadd -g ${DOCKER_GID} docker || true \
+    && useradd -r -m -s /bin/false -G docker medforge \
+    && chown -R medforge:medforge /app
+
+USER medforge
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
