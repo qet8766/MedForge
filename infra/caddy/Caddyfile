@@ -35,6 +35,7 @@ api.medforge.{$DOMAIN} {
 		uri /api/auth/session-proxy
 		header_up Host {host}
 		header_up X-Forwarded-For {remote}
+		header_up Cookie {http.request.header.Cookie}
 		copy_headers X-Upstream
 	}
 

@@ -10,7 +10,7 @@ import {
   type SessionStopResponse
 } from "../../lib/api";
 
-export default function SessionsPage(): JSX.Element {
+export default function SessionsPage(): React.JSX.Element {
   const [status, setStatus] = useState<string>("No session action yet.");
   const [error, setError] = useState<string>("");
   const [currentSession, setCurrentSession] = useState<SessionRead | null>(null);
@@ -73,18 +73,23 @@ export default function SessionsPage(): JSX.Element {
         Create a PUBLIC session, then stop it. The API now returns live lifecycle state for each action.
       </p>
       <div className="grid" style={{ gap: 10, maxWidth: 280 }}>
-        <button type="button" onClick={handleCreateSession}>Create PUBLIC Session</button>
-        <button type="button" onClick={handleStopSession} disabled={!currentSession}>Stop Current Session</button>
-        <button type="button" onClick={handleWhoAmI}>Check /api/me</button>
-        <button type="button" onClick={handleLogout}>Sign out</button>
+        <button type="button" onClick={handleCreateSession} data-testid="session-create">Create PUBLIC Session</button>
+        <button type="button" onClick={handleStopSession} disabled={!currentSession} data-testid="session-stop">Stop Current Session</button>
+        <button type="button" onClick={handleWhoAmI} data-testid="session-whoami">Check /api/me</button>
+        <button type="button" onClick={handleLogout} data-testid="session-logout">Sign out</button>
       </div>
-      <p className="muted">{status}</p>
+      <p className="muted" data-testid="session-status">{status}</p>
       {currentSession ? (
-        <p className="muted">
+        <p className="muted" data-testid="session-current">
           Session: {currentSession.id} | slug: {currentSession.slug} | status: {currentSession.status}
         </p>
       ) : null}
-      {error ? <p className="muted" style={{ color: "#a11" }}>{error}</p> : null}
+      {currentSession ? (
+        <p className="muted" data-testid="session-slug">
+          {currentSession.slug}
+        </p>
+      ) : null}
+      {error ? <p className="muted" style={{ color: "#a11" }} data-testid="session-error">{error}</p> : null}
     </section>
   );
 }

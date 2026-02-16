@@ -9,7 +9,7 @@ export default async function CompetitionLeaderboardPage({
   params
 }: {
   params: { slug: string };
-}): Promise<JSX.Element> {
+}): Promise<React.JSX.Element> {
   const leaderboard = await apiGet<LeaderboardResponse>(
     `/api/competitions/${params.slug}/leaderboard`
   );

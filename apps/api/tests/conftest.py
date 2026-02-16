@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine, select
 
+import app.config as config_module
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.models import Competition
@@ -62,6 +63,9 @@ def test_settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture()
 def db_engine(test_settings: Settings):
+    # Keep seed_defaults aligned with per-test settings instead of process env defaults.
+    config_module._SETTINGS = test_settings
+
     engine = create_engine(
         test_settings.database_url,
         connect_args={"check_same_thread": False},

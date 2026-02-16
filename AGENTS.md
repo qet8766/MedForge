@@ -15,7 +15,7 @@ Primary app code lives in `apps/web` and `apps/api`; infra and spec docs remain 
 - `cp infra/compose/.env.example infra/compose/.env`: create local environment file.
 - `sudo bash infra/host/bootstrap-easy.sh`: one-command host bootstrap (NVIDIA runtime, ZFS datasets, bridge firewall settings, local pack build).
 - `bash infra/host/quick-check.sh`: fast local lint/type/test/build pass.
-- `bash infra/host/validate-gate56.sh`: run host Gate 5/6 core validation and write evidence markdown.
+- `bash infra/host/validate-gate56.sh --with-browser`: run host Gate 5/6 validation (core + browser/websocket lane) and write evidence markdown.
 - `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml up -d --build`: build and start control-plane services.
 - `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml logs -f medforge-api medforge-caddy`: stream key service logs.
 - `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev]'`: install API dependencies.

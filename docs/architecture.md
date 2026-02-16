@@ -68,7 +68,7 @@ infra/
   caddy/                # Caddyfile, Caddy Dockerfile (DNS plugin)
   compose/              # docker-compose, .env.example
   packs/
-    default/            # Session container Dockerfile
+    default/            # Session Dockerfile + pinned basic/extras dependency manifests
   zfs/                  # ZFS pool/dataset setup
   firewall/             # East-west isolation iptables rules
 ```

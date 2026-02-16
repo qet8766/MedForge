@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { apiGet, type DatasetSummary } from "../../lib/api";
 
-export default async function DatasetsPage(): Promise<JSX.Element> {
+export default async function DatasetsPage(): Promise<React.JSX.Element> {
   const datasets = await apiGet<DatasetSummary[]>("/api/datasets");
 
   return (

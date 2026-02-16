@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { apiGet, type CompetitionSummary } from "../../lib/api";
 
-export default async function CompetitionsPage(): Promise<JSX.Element> {
+export default async function CompetitionsPage(): Promise<React.JSX.Element> {
   const competitions = await apiGet<CompetitionSummary[]>("/api/competitions");
 
   return (

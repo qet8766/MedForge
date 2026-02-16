@@ -1,4 +1,4 @@
-export default function ProfilePage({ params }: { params: { handle: string } }): JSX.Element {
+export default function ProfilePage({ params }: { params: { handle: string } }): React.JSX.Element {
   return (
     <section className="card">
       <h1>Profile · {params.handle}</h1>

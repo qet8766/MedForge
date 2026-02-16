@@ -16,10 +16,7 @@ This file is the big-picture source of truth. Detailed docs are split below, but
   - Session proxy authorization contract (`GET /api/auth/session-proxy`) for owner/admin on running session rows.
   - Gate 3 alpha lifecycle for PUBLIC: `POST /api/sessions` and `POST /api/sessions/{id}/stop`.
   - Gate 4 recovery paths: startup reconciliation + periodic poller for active session/container drift.
-  - Manual host evidence pass for Gate 5/6 core checks (auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop).
-- Not implemented yet in this repo:
-  - Caddy wildcard websocket path validation (Gate 5).
-  - UI-driven end-to-end browser smoke validation (Gate 6).
+  - Host evidence pass for Gate 5/6 checks (auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, wildcard browser routing, websocket activity).
 
 ---
 

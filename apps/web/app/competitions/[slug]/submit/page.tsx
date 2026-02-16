@@ -7,7 +7,7 @@ export default function CompetitionSubmitPage({
   params
 }: {
   params: { slug: string };
-}): JSX.Element {
+}): React.JSX.Element {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<string>("");
   const [error, setError] = useState<string>("");

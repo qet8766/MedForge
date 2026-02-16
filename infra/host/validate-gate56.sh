@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 #
-# Manual host validation runner for Gate 5/6 core checks.
+# Manual host validation runner for Gate 5/6 checks.
 # Starts a local API process in docker runtime mode, performs create/stop and
 # routing/isolation checks, and writes evidence to a markdown file.
 #
 # Usage:
 #   bash infra/host/validate-gate56.sh
+#   bash infra/host/validate-gate56.sh --with-browser
 #
 # Optional env:
 #   API_PORT=8000
 #   PACK_IMAGE=medforge-pack-default:local
 #   EVIDENCE_FILE=docs/host-validation-$(date +%F).md
 #   DB_PATH=apps/api/gate-evidence.db
+#   BROWSER_DOMAIN=localtest.me
+#   CADDY_PORT=18080
+#   WEB_PORT=3000
+#   E2E_USER_EMAIL=e2e@example.com
+#   E2E_USER_PASSWORD=Password123!
 
 set -euo pipefail
 
@@ -19,18 +25,63 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 API_PORT="${API_PORT:-8000}"
 API_URL="http://127.0.0.1:${API_PORT}"
 PACK_IMAGE="${PACK_IMAGE:-medforge-pack-default:local}"
+PACK_IMAGE_RESOLVED=""
 DB_PATH="${DB_PATH:-${ROOT_DIR}/apps/api/gate-evidence.db}"
 EVIDENCE_FILE="${EVIDENCE_FILE:-${ROOT_DIR}/docs/host-validation-$(date +%F).md}"
 API_LOG="${ROOT_DIR}/apps/api/.gate56-api.log"
+
+WITH_BROWSER=false
+BROWSER_DOMAIN="${BROWSER_DOMAIN:-localtest.me}"
+CADDY_PORT="${CADDY_PORT:-18080}"
+WEB_PORT="${WEB_PORT:-3000}"
+BROWSER_BASE_URL="${BROWSER_BASE_URL:-http://medforge.${BROWSER_DOMAIN}:${CADDY_PORT}}"
+E2E_USER_EMAIL="${E2E_USER_EMAIL:-e2e-$(date +%s)@medforge.test}"
+E2E_USER_PASSWORD="${E2E_USER_PASSWORD:-Password123!}"
+E2E_RESULT_FILE="${E2E_RESULT_FILE:-/tmp/medforge-e2e-result.json}"
+WEB_LOG="${ROOT_DIR}/apps/web/.gate56-web.log"
+CADDY_LOG="${ROOT_DIR}/infra/host/.gate56-caddy.log"
+CADDY_CONTAINER="medforge-gate56-caddy"
+CADDYFILE=""
 
 USER_A="00000000-0000-0000-0000-0000000000a1"
 USER_B="00000000-0000-0000-0000-0000000000b2"
 
 API_PID=""
+WEB_PID=""
 SESSION_ID_A=""
 SLUG_A=""
 SESSION_ID_B=""
 SLUG_B=""
+
+usage() {
+  cat <<'USAGE'
+Usage: bash infra/host/validate-gate56.sh [--with-browser]
+
+Options:
+  --with-browser   Run Playwright browser smoke through a local Caddy wildcard proxy.
+  -h, --help       Show this help message.
+USAGE
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --with-browser)
+        WITH_BROWSER=true
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        echo "ERROR: unknown argument: $1"
+        usage
+        exit 1
+        ;;
+    esac
+    shift
+  done
+}
 
 require_cmd() {
   local cmd="$1"
@@ -66,31 +117,103 @@ json_field() {
   python3 -c "import json,sys; data=json.load(sys.stdin); print(${expr})" <<<"${payload}"
 }
 
+json_file_key() {
+  local path="$1"
+  local key="$2"
+  python3 - "$path" "$key" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    data = json.load(handle)
+value = data.get(sys.argv[2], "")
+print(value)
+PY
+}
+
+cleanup_stale_runtime() {
+  pkill -f "uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT}" >/dev/null 2>&1 || true
+  pkill -f "next dev --hostname 0.0.0.0 --port ${WEB_PORT}" >/dev/null 2>&1 || true
+  docker rm -f "${CADDY_CONTAINER}" >/dev/null 2>&1 || true
+}
+
+resolve_pack_image() {
+  if [[ "${PACK_IMAGE}" == *@sha256:* ]]; then
+    PACK_IMAGE_RESOLVED="${PACK_IMAGE}"
+    return
+  fi
+
+  local image_id
+  image_id="$(docker image inspect --format '{{.Id}}' "${PACK_IMAGE}" 2>/dev/null || true)"
+  if [ -z "${image_id}" ]; then
+    echo "ERROR: PACK_IMAGE '${PACK_IMAGE}' is not digest-pinned and was not found locally."
+    echo "Build the local pack first or pass PACK_IMAGE=<name>@sha256:<digest>."
+    exit 1
+  fi
+
+  PACK_IMAGE_RESOLVED="${PACK_IMAGE}@${image_id}"
+}
+
 cleanup() {
   local exit_code=$?
+
   if [ -n "${SESSION_ID_A}" ]; then
     curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_A}/stop" -H "X-User-Id: ${USER_A}" >/dev/null 2>&1 || true
   fi
   if [ -n "${SESSION_ID_B}" ]; then
     curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -H "X-User-Id: ${USER_B}" >/dev/null 2>&1 || true
   fi
+
   docker ps -a --format '{{.ID}} {{.Names}}' | awk '/ mf-session-/{print $1}' | xargs -r docker rm -f >/dev/null 2>&1 || true
+
+  if docker ps -a --format '{{.Names}}' | rg -x "${CADDY_CONTAINER}" >/dev/null 2>&1; then
+    docker rm -f "${CADDY_CONTAINER}" >/dev/null 2>&1 || true
+  fi
+
+  if [ -n "${WEB_PID}" ]; then
+    kill "${WEB_PID}" >/dev/null 2>&1 || true
+    wait "${WEB_PID}" >/dev/null 2>&1 || true
+  fi
+
   if [ -n "${API_PID}" ]; then
     kill "${API_PID}" >/dev/null 2>&1 || true
     wait "${API_PID}" >/dev/null 2>&1 || true
   fi
+
+  if [ -n "${CADDYFILE}" ] && [ -f "${CADDYFILE}" ]; then
+    rm -f "${CADDYFILE}" || true
+  fi
+
   exit "${exit_code}"
 }
 trap cleanup EXIT
 
-wait_for_api() {
-  for _ in $(seq 1 60); do
-    if curl -sS "${API_URL}/healthz" >/dev/null 2>&1; then
+wait_for_http() {
+  local url="$1"
+  local label="$2"
+  for _ in $(seq 1 120); do
+    if curl -sS "${url}" >/dev/null 2>&1; then
       return
     fi
     sleep 1
   done
-  echo "ERROR: API did not become healthy at ${API_URL}"
+  echo "ERROR: ${label} did not become ready at ${url}"
+  exit 1
+}
+
+wait_for_api() {
+  for _ in $(seq 1 120); do
+    if curl -sS "${API_URL}/healthz" >/dev/null 2>&1; then
+      return
+    fi
+    if [ -n "${API_PID}" ] && ! kill -0 "${API_PID}" >/dev/null 2>&1; then
+      echo "ERROR: API exited before becoming healthy."
+      tail -n 120 "${API_LOG}" || true
+      exit 1
+    fi
+    sleep 1
+  done
+  echo "ERROR: API did not become ready at ${API_URL}/healthz"
   exit 1
 }
 
@@ -100,12 +223,20 @@ start_local_api() {
     echo "ERROR: apps/api/.venv not found. Create it first."
     exit 1
   fi
+
   rm -f "${DB_PATH}" "${API_LOG}"
+
+  local cookie_domain=""
+  if [ "${WITH_BROWSER}" = true ]; then
+    cookie_domain=".medforge.${BROWSER_DOMAIN}"
+  fi
+
   (
     # shellcheck source=/dev/null
     . .venv/bin/activate
     DATABASE_URL="sqlite:///${DB_PATH}" \
-    PACK_IMAGE="${PACK_IMAGE}" \
+    DOMAIN="${BROWSER_DOMAIN}" \
+    PACK_IMAGE="${PACK_IMAGE_RESOLVED}" \
     ALLOW_LEGACY_HEADER_AUTH=true \
     SESSION_RUNTIME_MODE=docker \
     SESSION_RUNTIME_USE_SUDO=true \
@@ -114,19 +245,144 @@ start_local_api() {
     SESSION_RECOVERY_ENABLED=true \
     SESSION_POLL_INTERVAL_SECONDS=5 \
     COOKIE_SECURE=false \
-    COOKIE_DOMAIN='' \
+    COOKIE_DOMAIN="${cookie_domain}" \
     uvicorn app.main:app --host 0.0.0.0 --port "${API_PORT}" >"${API_LOG}" 2>&1
   ) &
   API_PID=$!
   wait_for_api
 }
 
+start_local_web() {
+  cd "${ROOT_DIR}/apps/web"
+  if [ ! -d node_modules ]; then
+    npm install
+  fi
+
+  rm -f "${WEB_LOG}"
+
+  (
+    NEXT_PUBLIC_API_URL="${BROWSER_BASE_URL}" \
+    NEXT_PUBLIC_DOMAIN="${BROWSER_DOMAIN}" \
+    npm run dev -- --hostname 0.0.0.0 --port "${WEB_PORT}" >"${WEB_LOG}" 2>&1
+  ) &
+  WEB_PID=$!
+
+  wait_for_http "http://127.0.0.1:${WEB_PORT}" "web app"
+}
+
+start_local_caddy() {
+  CADDYFILE="$(mktemp /tmp/medforge-gate56-caddy.XXXXXX)"
+  cat >"${CADDYFILE}" <<CADDY
+{
+  auto_https off
+}
+
+http://medforge.${BROWSER_DOMAIN}:${CADDY_PORT} {
+  @api path /api/*
+  handle @api {
+    reverse_proxy host.docker.internal:${API_PORT}
+  }
+
+  handle {
+    reverse_proxy host.docker.internal:${WEB_PORT}
+  }
+}
+
+http://api.medforge.${BROWSER_DOMAIN}:${CADDY_PORT} {
+  reverse_proxy host.docker.internal:${API_PORT}
+}
+
+http://*.medforge.${BROWSER_DOMAIN}:${CADDY_PORT} {
+  request_header -X-Upstream
+
+  @session header_regexp session Host ^s-([a-z0-9]{8})\\.medforge\\.${BROWSER_DOMAIN}(:${CADDY_PORT})?$
+  handle @session {
+    forward_auth host.docker.internal:${API_PORT} {
+      uri /api/auth/session-proxy
+      header_up Host {host}
+      header_up X-Forwarded-For {remote}
+      header_up Cookie {http.request.header.Cookie}
+      header_up X-User-Id {http.request.header.X-User-Id}
+    }
+
+    reverse_proxy mf-session-{re.session.1}:8080 {
+      header_up Host {host}
+      header_up X-Forwarded-Proto {scheme}
+    }
+  }
+
+  handle {
+    respond "Session host not matched" 404
+  }
+}
+CADDY
+
+  if docker ps -a --format '{{.Names}}' | rg -x "${CADDY_CONTAINER}" >/dev/null 2>&1; then
+    docker rm -f "${CADDY_CONTAINER}" >/dev/null 2>&1
+  fi
+
+  rm -f "${CADDY_LOG}"
+  docker run -d --rm \
+    --name "${CADDY_CONTAINER}" \
+    --network medforge-public-sessions \
+    --add-host host.docker.internal:host-gateway \
+    -p "${CADDY_PORT}:${CADDY_PORT}" \
+    -v "${CADDYFILE}:/etc/caddy/Caddyfile:ro" \
+    caddy:2-alpine >/dev/null
+
+  docker logs -f "${CADDY_CONTAINER}" >"${CADDY_LOG}" 2>&1 &
+  wait_for_http "${BROWSER_BASE_URL}" "Caddy wildcard proxy"
+}
+
+run_browser_smoke() {
+  section "Gate 5/6 Browser + Websocket"
+
+  require_cmd node
+  require_cmd npm
+
+  start_local_web
+  start_local_caddy
+
+  cd "${ROOT_DIR}/apps/web"
+  rm -f "${E2E_RESULT_FILE}"
+
+  npm run test:e2e:install >/dev/null
+
+  E2E_BASE_URL="${BROWSER_BASE_URL}" \
+  E2E_DOMAIN="${BROWSER_DOMAIN}" \
+  E2E_USER_EMAIL="${E2E_USER_EMAIL}" \
+  E2E_USER_PASSWORD="${E2E_USER_PASSWORD}" \
+  E2E_RESULT_FILE="${E2E_RESULT_FILE}" \
+  E2E_IGNORE_HTTPS_ERRORS=true \
+  npm run test:e2e -- e2e/session-smoke.spec.ts --reporter=line
+
+  if [ ! -f "${E2E_RESULT_FILE}" ]; then
+    echo "ERROR: browser smoke passed but no result file was written: ${E2E_RESULT_FILE}"
+    exit 1
+  fi
+
+  local session_url websocket_count slug
+  session_url="$(json_file_key "${E2E_RESULT_FILE}" "session_url")"
+  websocket_count="$(json_file_key "${E2E_RESULT_FILE}" "websocket_count")"
+  slug="$(json_file_key "${E2E_RESULT_FILE}" "slug")"
+
+  record "- browser base URL: \`${BROWSER_BASE_URL}\`"
+  record "- e2e user: \`${E2E_USER_EMAIL}\`"
+  record "- wildcard auth mode: \`X-User-Id\` header derived from \`/api/me\` (local harness)"
+  record "- wildcard session URL: \`${session_url}\`"
+  record "- wildcard slug: \`${slug}\`"
+  record "- websocket connections observed: \`${websocket_count}\`"
+}
+
 main() {
+  parse_args "$@"
+
   require_cmd curl
   require_cmd docker
   require_cmd python3
   require_cmd zfs
   require_cmd sudo
+  require_cmd rg
 
   if ! sudo -n true >/dev/null 2>&1; then
     echo "ERROR: this script requires passwordless sudo (sudo -n)."
@@ -139,6 +395,9 @@ main() {
     exit 1
   fi
 
+  resolve_pack_image
+  cleanup_stale_runtime
+
   {
     echo "## Host Validation Evidence ($(date +%F))"
     echo ""
@@ -146,27 +405,37 @@ main() {
     echo ""
     echo "Runtime:"
     echo "- API URL: \`${API_URL}\`"
-    echo "- Pack image: \`${PACK_IMAGE}\`"
+    echo "- Pack image: \`${PACK_IMAGE_RESOLVED}\`"
     echo "- DB path: \`${DB_PATH}\`"
+    echo "- Browser lane enabled: \`${WITH_BROWSER}\`"
+    if [ "${WITH_BROWSER}" = true ]; then
+      echo "- Browser base URL: \`${BROWSER_BASE_URL}\`"
+      echo "- Browser domain: \`${BROWSER_DOMAIN}\`"
+      echo "- Browser user: \`${E2E_USER_EMAIL}\`"
+    fi
   } >"${EVIDENCE_FILE}"
 
   start_local_api
 
   section "Create Sessions"
-  local resp_a
-  resp_a="$(curl -sS -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -H "X-User-Id: ${USER_A}" -d '{"tier":"PUBLIC"}')"
+  local resp_a resp_a_code
+  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -H "X-User-Id: ${USER_A}" -d '{"tier":"PUBLIC"}')"
+  assert_eq "${resp_a_code}" "201" "create session A"
+  resp_a="$(cat /tmp/g6_create_a.out)"
   record "- create A: \`${resp_a}\`"
   SESSION_ID_A="$(json_field "${resp_a}" "data['session']['id']")"
   SLUG_A="$(json_field "${resp_a}" "data['session']['slug']")"
 
-  local resp_b
-  resp_b="$(curl -sS -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -H "X-User-Id: ${USER_B}" -d '{"tier":"PUBLIC"}')"
+  local resp_b resp_b_code
+  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -H "X-User-Id: ${USER_B}" -d '{"tier":"PUBLIC"}')"
+  assert_eq "${resp_b_code}" "201" "create session B"
+  resp_b="$(cat /tmp/g6_create_b.out)"
   record "- create B: \`${resp_b}\`"
   SESSION_ID_B="$(json_field "${resp_b}" "data['session']['id']")"
   SLUG_B="$(json_field "${resp_b}" "data['session']['slug']")"
 
   local host_a
-  host_a="s-${SLUG_A}.medforge.local"
+  host_a="s-${SLUG_A}.medforge.${BROWSER_DOMAIN}"
 
   section "Gate 5 Auth Matrix"
   local code
@@ -240,14 +509,35 @@ main() {
   stop_b="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -H "X-User-Id: ${USER_B}")"
   record "- stop B: \`${stop_b}\`"
 
-  section "Residual Gaps"
-  record "- Caddy wildcard websocket validation is not covered by this script."
-  record "- Full browser UI flow validation is not covered by this script."
+  SESSION_ID_A=""
+  SESSION_ID_B=""
+
+  if [ "${WITH_BROWSER}" = true ]; then
+    run_browser_smoke
+  else
+    section "Residual Gaps"
+    record "- Caddy wildcard websocket validation is not covered by this script."
+    record "- Full browser UI flow validation is not covered by this script."
+  fi
 
   section "API Log Snippet"
   record '```text'
   tail -n 80 "${API_LOG}" | tee -a "${EVIDENCE_FILE}"
   record '```'
+
+  if [ "${WITH_BROWSER}" = true ] && [ -f "${WEB_LOG}" ]; then
+    section "Web Log Snippet"
+    record '```text'
+    tail -n 80 "${WEB_LOG}" | tee -a "${EVIDENCE_FILE}"
+    record '```'
+  fi
+
+  if [ "${WITH_BROWSER}" = true ] && [ -f "${CADDY_LOG}" ]; then
+    section "Caddy Log Snippet"
+    record '```text'
+    tail -n 80 "${CADDY_LOG}" | tee -a "${EVIDENCE_FILE}"
+    record '```'
+  fi
 
   echo ""
   echo "Validation complete: ${EVIDENCE_FILE}"

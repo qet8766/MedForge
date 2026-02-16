@@ -6,8 +6,7 @@ Implementation status note (2026-02-16):
 - Gate 2 auth endpoints are implemented (`/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/me`) with cookie sessions and an optional `X-User-Id` legacy fallback flag.
 - Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/sessions`, `/api/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, and snapshot-on-stop terminalization.
 - Gate 4 recovery logic (poller + startup reconciliation) is implemented in API and covered by tests.
-- Gate 5/6 manual host evidence run completed for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, and snapshot-on-stop (`@docs/host-validation-2026-02-16.md`).
-- Remaining Gate 5/6 checks: Caddy wildcard websocket path and UI-driven end-to-end browser smoke.
+- Gate 5/6 host evidence run completed for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket activity (`@docs/host-validation-2026-02-16.md`).
 
 ### Gate 0 -- Host Foundation
 
@@ -47,9 +46,10 @@ Caddy wildcard route proxies to running sessions (`@infra/caddy/Caddyfile`). Eas
 
 **Host validation commands (example):**
 
-- `bash infra/host/validate-gate56.sh`
+- `bash infra/host/validate-gate56.sh --with-browser`
 - `curl -i -H "Host: s-<slug>.medforge.<domain>" https://api.medforge.<domain>/api/auth/session-proxy`
 - `docker exec -it mf-session-<slugA> curl -sS --max-time 3 http://mf-session-<slugB>:8080`
+- Local browser harness note: wildcard browser auth uses `X-User-Id` derived from `/api/me` while `ALLOW_LEGACY_HEADER_AUTH=true`.
 
 ### Gate 6 -- End-to-End
 
@@ -59,7 +59,7 @@ Full user flow through the UI: log in, create a PUBLIC session, land in code-ser
 
 **Host validation commands (example):**
 
-- `bash infra/host/validate-gate56.sh`
+- `bash infra/host/validate-gate56.sh --with-browser`
 - `docker exec -it mf-session-<slug> nvidia-smi`
 - `docker exec -it mf-session-<slug> sh -lc 'echo alpha > /workspace/alpha.txt && cat /workspace/alpha.txt'`
 - `zfs list -t snapshot | grep "tank/medforge/workspaces/.*/<session_id>@stop-"`

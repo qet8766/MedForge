@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiPostJson, type AuthUser } from "../../../lib/api";
 
-export default function SignupPage(): JSX.Element {
+export default function SignupPage(): React.JSX.Element {
   const [email, setEmail] = useState("you@example.com");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -29,12 +29,13 @@ export default function SignupPage(): JSX.Element {
   return (
     <section className="card" style={{ maxWidth: 420 }}>
       <h1>Sign up</h1>
-      <form onSubmit={handleSubmit} className="grid" style={{ gap: 10 }}>
+      <form onSubmit={handleSubmit} className="grid" style={{ gap: 10 }} data-testid="signup-form">
         <div>
           <label htmlFor="email">Email</label>
           <input
             id="email"
             type="email"
+            data-testid="signup-email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -45,18 +46,19 @@ export default function SignupPage(): JSX.Element {
           <input
             id="password"
             type="password"
+            data-testid="signup-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
             minLength={8}
           />
         </div>
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading} data-testid="signup-submit">
           {loading ? "Creating..." : "Create account"}
         </button>
       </form>
-      {error ? <p className="muted" style={{ color: "#a11" }}>{error}</p> : null}
-      {message ? <p className="muted">{message}</p> : null}
+      {error ? <p className="muted" style={{ color: "#a11" }} data-testid="signup-error">{error}</p> : null}
+      {message ? <p className="muted" data-testid="signup-success">{message}</p> : null}
     </section>
   );
 }

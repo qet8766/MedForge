@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function Nav(): JSX.Element {
+export function Nav(): React.JSX.Element {
   return (
     <nav>
       <div className="nav-inner">

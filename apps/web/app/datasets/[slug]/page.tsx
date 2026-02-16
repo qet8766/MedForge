@@ -4,7 +4,7 @@ export default async function DatasetDetailPage({
   params
 }: {
   params: { slug: string };
-}): Promise<JSX.Element> {
+}): Promise<React.JSX.Element> {
   const dataset = await apiGet<DatasetDetail>(`/api/datasets/${params.slug}`);
 
   return (
