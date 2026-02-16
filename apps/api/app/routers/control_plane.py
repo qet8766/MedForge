@@ -13,11 +13,11 @@ from app.deps import AuthPrincipal, get_current_user, require_allowed_origin
 from app.models import Role, SessionRecord, SessionStatus
 from app.schemas import (
     MeResponse,
+    SessionActionResponse,
     SessionCreateRequest,
     SessionCreateResponse,
     SessionCurrentResponse,
     SessionRead,
-    SessionStopResponse,
 )
 from app.session_lifecycle import create_session_for_principal, stop_session_for_principal
 from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
@@ -78,20 +78,19 @@ def create_session(
 
 @router.post(
     "/sessions/{id}/stop",
-    response_model=SessionStopResponse,
+    response_model=SessionActionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 def stop_session(
     session_id: UUID = Path(alias="id"),
     principal: AuthPrincipal = Depends(get_current_user),
     session: Session = Depends(get_session),
-    settings: Settings = Depends(get_settings),
     _origin_guard: None = Depends(require_allowed_origin),
-) -> SessionStopResponse:
+) -> SessionActionResponse:
     return stop_session_for_principal(
         session_id=session_id,
         principal=principal,
         session=session,
-        settings=settings,
     )
 
 

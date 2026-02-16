@@ -6,10 +6,10 @@ import {
   apiGet,
   apiPostJson,
   type MeResponse,
+  type SessionActionResponse,
   type SessionCreateResponse,
   type SessionCurrentResponse,
   type SessionRead,
-  type SessionStopResponse,
 } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,8 +96,8 @@ export default function SessionsPage(): React.JSX.Element {
     }
 
     try {
-      const response = await apiPostJson<SessionStopResponse>(`/api/sessions/${currentSession.id}/stop`, {});
-      setStatus(`${response.detail} Current state: ${response.session.status}.`);
+      const response = await apiPostJson<SessionActionResponse>(`/api/sessions/${currentSession.id}/stop`, {});
+      setStatus(response.detail);
       await rehydrateCurrentSession(false);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Session stop failed.");
@@ -120,7 +120,7 @@ export default function SessionsPage(): React.JSX.Element {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Sessions</h1>
         <p className="text-muted-foreground">
-          Create a PUBLIC session, then stop it. The API now returns live lifecycle state for each action.
+          Create a PUBLIC session, then request stop. Stop is asynchronous and final state arrives via recovery.
         </p>
       </div>
 

@@ -13,7 +13,7 @@ Current alpha scope:
   - `GET /api/auth/session-proxy` (owner/admin + running-session check)
 - Gate 3 alpha lifecycle routes are implemented for PUBLIC sessions:
   - `POST /api/sessions` (PUBLIC create, PRIVATE returns `501`)
-  - `POST /api/sessions/{id}/stop` (idempotent stop + snapshot terminalization)
+  - `POST /api/sessions/{id}/stop` (idempotent async stop request; reconciliation performs stop + snapshot terminalization)
 - Gate 4 recovery paths are implemented in API:
   - startup reconciliation for `starting|running|stopping`
   - periodic poller for active session container-death detection

@@ -219,6 +219,43 @@ wait_for_api() {
   exit 1
 }
 
+wait_for_session_proxy_not_running() {
+  local host="$1"
+  local user_id="$2"
+  local timeout_seconds="${3:-90}"
+  local code=""
+
+  for _ in $(seq 1 "${timeout_seconds}"); do
+    code="$(curl -sS -o /tmp/g5_stopped.out -w '%{http_code}' "${API_URL}/api/auth/session-proxy" -H "Host: ${host}" -H "X-User-Id: ${user_id}")"
+    if [ "${code}" = "404" ]; then
+      echo "${code}"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "ERROR: timed out waiting for session host ${host} to stop routing (last=${code})"
+  return 1
+}
+
+wait_for_stop_snapshot() {
+  local session_id="$1"
+  local timeout_seconds="${2:-90}"
+  local snapshot=""
+
+  for _ in $(seq 1 "${timeout_seconds}"); do
+    snapshot="$(zfs list -t snapshot -H -o name | rg "tank/medforge/workspaces/.*/${session_id}@stop-" | tail -n1 || true)"
+    if [ -n "${snapshot}" ]; then
+      echo "${snapshot}"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "ERROR: timed out waiting for stop snapshot for session ${session_id}"
+  return 1
+}
+
 start_local_api() {
   cd "${ROOT_DIR}/apps/api"
   if [ ! -d ".venv" ]; then
@@ -520,22 +557,20 @@ main() {
 
   local stop_a
   stop_a="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_A}/stop" -H "X-User-Id: ${USER_A}")"
+  assert_eq "$(json_field "${stop_a}" "data['detail']")" "Session stop requested." "stop A detail"
   record "- stop A: \`${stop_a}\`"
 
-  code="$(curl -sS -o /tmp/g5_stopped.out -w '%{http_code}' "${API_URL}/api/auth/session-proxy" -H "Host: ${host_a}" -H "X-User-Id: ${USER_A}")"
-  assert_eq "${code}" "404" "stopped session-proxy"
+  code="$(wait_for_session_proxy_not_running "${host_a}" "${USER_A}")"
   record "- stopped host check: \`${code}\` body=\`$(cat /tmp/g5_stopped.out)\`"
 
   local snapshot
-  snapshot="$(zfs list -t snapshot -H -o name | rg "tank/medforge/workspaces/.*/${SESSION_ID_A}@stop-" | tail -n1 || true)"
-  if [ -z "${snapshot}" ]; then
-    echo "ERROR: snapshot not found for session ${SESSION_ID_A}"
-    exit 1
-  fi
+  snapshot="$(wait_for_stop_snapshot "${SESSION_ID_A}")"
   record "- snapshot: \`${snapshot}\`"
 
   local stop_b
   stop_b="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -H "X-User-Id: ${USER_B}")"
+  assert_eq "$(json_field "${stop_b}" "data['detail']")" "Session stop requested." "stop B detail"
+  wait_for_stop_snapshot "${SESSION_ID_B}" >/dev/null
   record "- stop B: \`${stop_b}\`"
 
   SESSION_ID_A=""

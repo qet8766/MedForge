@@ -9,8 +9,7 @@ from sqlmodel import Session
 from app.config import Settings
 from app.deps import AuthPrincipal
 from app.models import Role, SessionRecord, SessionStatus, Tier
-from app.schemas import SessionCreateRequest, SessionCreateResponse, SessionRead, SessionStopResponse
-from app.session_recovery import complete_stopping_session
+from app.schemas import SessionActionResponse, SessionCreateRequest, SessionCreateResponse, SessionRead
 from app.session_repo import (
     allocate_starting_session,
     finalize_error,
@@ -123,23 +122,11 @@ def stop_session_for_principal(
     session_id: UUID,
     principal: AuthPrincipal,
     session: Session,
-    settings: Settings,
-) -> SessionStopResponse:
+) -> SessionActionResponse:
     row = _get_owned_or_admin_session(session=session, session_id=session_id, principal=principal)
     if row.status in {SessionStatus.STOPPED, SessionStatus.ERROR}:
-        return SessionStopResponse(detail="Session already terminal.", session=_as_session_read(row))
+        return SessionActionResponse(detail="Session already terminal.")
 
-    row = mark_session_stopping(session, row=row)
-    runtime = get_session_runtime(settings)
-    reason = "admin" if principal.role == Role.ADMIN and row.user_id != principal.user_id else "user"
-
-    row = complete_stopping_session(
-        session,
-        row=row,
-        settings=settings,
-        runtime=runtime,
-        success_reason=reason,
-    )
-    if row.status == SessionStatus.STOPPED:
-        return SessionStopResponse(detail="Session stopped.", session=_as_session_read(row))
-    return SessionStopResponse(detail="Session stop failed; marked error.", session=_as_session_read(row))
+    if row.status != SessionStatus.STOPPING:
+        row = mark_session_stopping(session, row=row)
+    return SessionActionResponse(detail="Session stop requested.")

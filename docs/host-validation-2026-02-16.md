@@ -9,18 +9,18 @@ Runtime:
 - Browser lane enabled: `true`
 - Browser base URL: `http://medforge.localtest.me:18080`
 - Browser domain: `localtest.me`
-- Browser user: `e2e-1771215185@medforge.test`
+- Browser user: `e2e-1771229583@medforge.test`
 
 ### Create Sessions
 
-- create A: `{"detail":"Session started.","session":{"id":"377238ad-12ec-4d99-be14-f0045ae6073b","user_id":"00000000-0000-0000-0000-0000000000a1","tier":"PUBLIC","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"e65189219935e26f3f5fc24fa103090d95ab544ed8477756f340733cc19b7b8b","gpu_id":0,"slug":"feb4jmf2","workspace_zfs":"tank/medforge/workspaces/00000000-0000-0000-0000-0000000000a1/377238ad-12ec-4d99-be14-f0045ae6073b","created_at":"2026-02-16T04:13:06.638768","started_at":"2026-02-16T04:13:06.915072","stopped_at":null,"error_message":null}}`
-- create B: `{"detail":"Session started.","session":{"id":"76b00948-9ae0-4ee3-a22d-f864fa593d71","user_id":"00000000-0000-0000-0000-0000000000b2","tier":"PUBLIC","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"7253f3d0e231244c237875eb04305ef540dc17274a7c6bc5f0c26afd613053a6","gpu_id":1,"slug":"mtza4ldw","workspace_zfs":"tank/medforge/workspaces/00000000-0000-0000-0000-0000000000b2/76b00948-9ae0-4ee3-a22d-f864fa593d71","created_at":"2026-02-16T04:13:06.962758","started_at":"2026-02-16T04:13:07.254717","stopped_at":null,"error_message":null}}`
+- create A: `{"detail":"Session started.","session":{"id":"7e2931de-a704-4e93-afe9-2ce5912c5271","user_id":"00000000-0000-0000-0000-0000000000a1","tier":"PUBLIC","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"24d01f241cfafc1f901b397687a26f7f923177472779e80869e462288a9c3680","gpu_id":0,"slug":"pmqtcizg","workspace_zfs":"tank/medforge/workspaces/00000000-0000-0000-0000-0000000000a1/7e2931de-a704-4e93-afe9-2ce5912c5271","created_at":"2026-02-16T08:13:04.445462","started_at":"2026-02-16T08:13:04.756344","stopped_at":null,"error_message":null}}`
+- create B: `{"detail":"Session started.","session":{"id":"bf8ec019-95ad-40fa-94ef-c79b52ccd45d","user_id":"00000000-0000-0000-0000-0000000000b2","tier":"PUBLIC","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"2b8f290586e5f3a0a34c66ecf204c9a58e1732f396b9ec52637014039bfb403b","gpu_id":1,"slug":"mei5mlhy","workspace_zfs":"tank/medforge/workspaces/00000000-0000-0000-0000-0000000000b2/bf8ec019-95ad-40fa-94ef-c79b52ccd45d","created_at":"2026-02-16T08:13:04.803961","started_at":"2026-02-16T08:13:05.129926","stopped_at":null,"error_message":null}}`
 
 ### Gate 5 Auth Matrix
 
 - unauthenticated: `401` body=`{"detail":"Authentication required."}`
 - non-owner: `403` body=`{"detail":"Session access denied."}`
-- owner spoof attempt: `200` x-upstream=`mf-session-feb4jmf2:8080`
+- owner spoof attempt: `200` x-upstream=`mf-session-pmqtcizg:8080`
 
 ### Gate 5 Isolation
 
@@ -31,17 +31,17 @@ Runtime:
 
 - GPU in session A: `NVIDIA GeForce RTX 5090`
 - workspace write/read: `alpha`
-- stop A: `{"detail":"Session stopped.","session":{"id":"377238ad-12ec-4d99-be14-f0045ae6073b","user_id":"00000000-0000-0000-0000-0000000000a1","tier":"PUBLIC","pack_id":"00000000-0000-0000-0000-000000000100","status":"stopped","container_id":"e65189219935e26f3f5fc24fa103090d95ab544ed8477756f340733cc19b7b8b","gpu_id":0,"slug":"feb4jmf2","workspace_zfs":"tank/medforge/workspaces/00000000-0000-0000-0000-0000000000a1/377238ad-12ec-4d99-be14-f0045ae6073b","created_at":"2026-02-16T04:13:06.638768","started_at":"2026-02-16T04:13:06.915072","stopped_at":"2026-02-16T04:13:10.741902","error_message":null}}`
+- stop A: `{"detail":"Session stop requested."}`
 - stopped host check: `404` body=`{"detail":"Session not found."}`
-- snapshot: `tank/medforge/workspaces/00000000-0000-0000-0000-0000000000a1/377238ad-12ec-4d99-be14-f0045ae6073b@stop-1771215190726`
-- stop B: `{"detail":"Session stopped.","session":{"id":"76b00948-9ae0-4ee3-a22d-f864fa593d71","user_id":"00000000-0000-0000-0000-0000000000b2","tier":"PUBLIC","pack_id":"00000000-0000-0000-0000-000000000100","status":"stopped","container_id":"7253f3d0e231244c237875eb04305ef540dc17274a7c6bc5f0c26afd613053a6","gpu_id":1,"slug":"mtza4ldw","workspace_zfs":"tank/medforge/workspaces/00000000-0000-0000-0000-0000000000b2/76b00948-9ae0-4ee3-a22d-f864fa593d71","created_at":"2026-02-16T04:13:06.962758","started_at":"2026-02-16T04:13:07.254717","stopped_at":"2026-02-16T04:13:10.916563","error_message":null}}`
+- snapshot: `tank/medforge/workspaces/00000000-0000-0000-0000-0000000000a1/7e2931de-a704-4e93-afe9-2ce5912c5271@stop-1771229589235`
+- stop B: `{"detail":"Session stop requested."}`
 
 ### Gate 5/6 Browser + Websocket
 
 - browser base URL: `http://medforge.localtest.me:18080`
-- e2e user: `e2e-1771215185@medforge.test`
-- wildcard session URL: `http://s-gwuljlvv.medforge.localtest.me:18080`
-- wildcard slug: `gwuljlvv`
+- e2e user: `e2e-1771229583@medforge.test`
+- wildcard session URL: `http://s-kjyqddb5.medforge.localtest.me:18080`
+- wildcard slug: `kjyqddb5`
 - websocket attempts observed: `1`
 - websocket connections with frame traffic: `1`
 - websocket auth 403 entries: `0`
@@ -49,51 +49,20 @@ Runtime:
 ### API Log Snippet
 
 ```text
-INFO:     Started server process [209127]
+INFO:     Started server process [317395]
 INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:47038 - "GET /healthz HTTP/1.1" 200 OK
-2026-02-16 13:13:06 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 session_id=377238ad-12ec-4d99-be14-f0045ae6073b slug=feb4jmf2 tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000a1
-INFO:     127.0.0.1:47042 - "POST /api/sessions HTTP/1.1" 201 Created
-2026-02-16 13:13:07 [info     ] session.start                  gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 session_id=76b00948-9ae0-4ee3-a22d-f864fa593d71 slug=mtza4ldw tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000b2
-INFO:     127.0.0.1:47050 - "POST /api/sessions HTTP/1.1" 201 Created
-INFO:     127.0.0.1:47062 - "GET /api/auth/session-proxy HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:47070 - "GET /api/auth/session-proxy HTTP/1.1" 403 Forbidden
-INFO:     127.0.0.1:47072 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-2026-02-16 13:13:10 [info     ] session.stop                   gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=user session_id=377238ad-12ec-4d99-be14-f0045ae6073b slug=feb4jmf2 tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000a1
-INFO:     127.0.0.1:45630 - "POST /api/sessions/377238ad-12ec-4d99-be14-f0045ae6073b/stop HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45642 - "GET /api/auth/session-proxy HTTP/1.1" 404 Not Found
-2026-02-16 13:13:10 [info     ] session.stop                   gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=user session_id=76b00948-9ae0-4ee3-a22d-f864fa593d71 slug=mtza4ldw tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000b2
-INFO:     127.0.0.1:45648 - "POST /api/sessions/76b00948-9ae0-4ee3-a22d-f864fa593d71/stop HTTP/1.1" 200 OK
-INFO:     172.30.0.2:40506 - "GET /api/competitions HTTP/1.1" 200 OK
-INFO:     172.30.0.2:40506 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-(trapped) error reading bcrypt version
-Traceback (most recent call last):
-  File "/home/shk/projects/MedForge/apps/api/.venv/lib/python3.12/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
-    version = _bcrypt.__about__.__version__
-              ^^^^^^^^^^^^^^^^^
-AttributeError: module 'bcrypt' has no attribute '__about__'
-INFO:     172.30.0.2:54458 - "POST /api/auth/signup HTTP/1.1" 201 Created
-INFO:     172.30.0.2:54458 - "POST /api/auth/logout HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54458 - "POST /api/auth/login HTTP/1.1" 200 OK
-2026-02-16 13:13:24 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 session_id=9d78243b-538c-4c09-b03f-b86adb7bd0f4 slug=gwuljlvv tier=PUBLIC user_id=4c6a88c2-8670-4dfe-ab3d-4d638496bf7d
-INFO:     172.30.0.2:54458 - "POST /api/sessions HTTP/1.1" 201 Created
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy?folder=/workspace HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54480 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54480 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54480 - "GET /api/auth/session-proxy?reconnectionToken=436f0fed-994d-48a7-85bf-acbf4b4ef87a&reconnection=false&skipWebSocketFrames=false HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54480 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54480 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54480 - "GET /api/auth/session-proxy?&vscodeWebWorkerExtHostId=acec324e-457c-4f15-9622-f48558d43f54 HTTP/1.1" 200 OK
-INFO:     172.30.0.2:54466 - "GET /api/auth/session-proxy?reconnectionToken=3c6195d4-cd24-42ac-86c7-6b717535b4bb&reconnection=false&skipWebSocketFrames=false HTTP/1.1" 200 OK
-2026-02-16 13:13:27 [info     ] session.stop                   gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=user session_id=9d78243b-538c-4c09-b03f-b86adb7bd0f4 slug=gwuljlvv tier=PUBLIC user_id=4c6a88c2-8670-4dfe-ab3d-4d638496bf7d
-INFO:     172.30.0.2:54458 - "POST /api/sessions/9d78243b-538c-4c09-b03f-b86adb7bd0f4/stop HTTP/1.1" 200 OK
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 2474ec93cdb5, initial_schema
+2026-02-16 17:13:04 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 session_id=7e2931de-a704-4e93-afe9-2ce5912c5271 slug=pmqtcizg tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000a1
+2026-02-16 17:13:05 [info     ] session.start                  gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 session_id=bf8ec019-95ad-40fa-94ef-c79b52ccd45d slug=mei5mlhy tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000b2
+2026-02-16 17:13:09 [info     ] session.stop                   gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=requested session_id=7e2931de-a704-4e93-afe9-2ce5912c5271 slug=pmqtcizg tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000a1
+2026-02-16 17:13:09 [info     ] session.recovery.decision      container_id=2b8f290586e5f3a0a34c66ecf204c9a58e1732f396b9ec52637014039bfb403b session_id=bf8ec019-95ad-40fa-94ef-c79b52ccd45d slug=mei5mlhy state=running user_id=00000000-0000-0000-0000-0000000000b2
+2026-02-16 17:13:09 [info     ] session.poll.updated           updated=1
+2026-02-16 17:13:14 [info     ] session.stop                   gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=requested session_id=bf8ec019-95ad-40fa-94ef-c79b52ccd45d slug=mei5mlhy tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000b2
+2026-02-16 17:13:14 [info     ] session.poll.updated           updated=1
+2026-02-16 17:13:28 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 session_id=c62f05bf-83b8-4a97-b8e2-33b5c27ebdab slug=kjyqddb5 tier=PUBLIC user_id=762b9771-9b90-4964-8967-12c9a22d4a2d
+2026-02-16 17:13:29 [info     ] session.recovery.decision      container_id=795223d64a235eb9b3e574ac5f6502d009b3e745f461afcc4e599fb56bdbe551 session_id=c62f05bf-83b8-4a97-b8e2-33b5c27ebdab slug=kjyqddb5 state=running user_id=762b9771-9b90-4964-8967-12c9a22d4a2d
 ```
 
 ### Web Log Snippet
@@ -108,52 +77,52 @@ INFO:     172.30.0.2:54458 - "POST /api/sessions/9d78243b-538c-4c09-b03f-b86adb7
 - Network:       http://0.0.0.0:3000
 
 ✓ Starting...
-✓ Ready in 218ms
+✓ Ready in 241ms
 ⨯ TypeError: fetch failed
-    at async apiGet (lib/api.ts:84:15)
-    at async HomePage (app/page.tsx:5:24)
-  82 |
-  83 | export async function apiGet<T>(path: string): Promise<T> {
-> 84 |   const res = await fetch(`${API_BASE}${path}`, {
-     |               ^
-  85 |     cache: "no-store",
-  86 |     credentials: "include"
-  87 |   }); {
-  digest: '2179944820',
+    at async apiGet (lib/api.ts:103:15)
+    at async HomePage (app/page.tsx:11:24)
+  101 | }
+  102 | export async function apiGet<T>(path: string): Promise<T> {
+> 103 |   const res = await fetch(toApiUrl(path), {
+      |               ^
+  104 |     cache: "no-store",
+  105 |     credentials: "include"
+  106 |   }); {
+  digest: '2415382319',
   [cause]: AggregateError: 
       at ignore-listed frames {
     code: 'ECONNREFUSED'
   }
 }
- GET / 500 in 166ms (compile: 87ms, render: 80ms)
- GET / 200 in 35ms (compile: 2ms, render: 33ms)
- GET /auth/login 200 in 31ms (compile: 10ms, render: 21ms)
+ GET / 500 in 594ms (compile: 262ms, render: 332ms)
+ GET / 200 in 42ms (compile: 1442µs, render: 41ms)
+ GET /auth/login 200 in 76ms (compile: 42ms, render: 34ms)
 ⚠ Cross origin request detected from medforge.localtest.me to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
- GET /auth/signup 200 in 27ms (compile: 10ms, render: 18ms)
- GET /sessions 200 in 33ms (compile: 10ms, render: 23ms)
- GET /auth/login 200 in 15ms (compile: 1142µs, render: 14ms)
- GET /sessions 200 in 15ms (compile: 1310µs, render: 13ms)
+ GET /auth/signup 200 in 65ms (compile: 39ms, render: 26ms)
+ GET /sessions 200 in 43ms (compile: 21ms, render: 23ms)
+ GET /auth/login 200 in 17ms (compile: 1500µs, render: 16ms)
+ GET /sessions 200 in 17ms (compile: 1280µs, render: 16ms)
 ```
 
 ### Caddy Log Snippet
 
 ```text
-{"level":"info","ts":1771215192.3129485,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
-{"level":"info","ts":1771215192.3130355,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097521868,"previous":9223372036854775807}
-{"level":"info","ts":1771215192.3130515,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
-{"level":"warn","ts":1771215192.3134456,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
-{"level":"warn","ts":1771215192.3134704,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
-{"level":"info","ts":1771215192.3138373,"msg":"adapted config to JSON","adapter":"caddyfile"}
-{"level":"warn","ts":1771215192.3138406,"msg":"Caddyfile input is not formatted; run 'caddy fmt --overwrite' to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":2}
-{"level":"info","ts":1771215192.3152885,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
-{"level":"info","ts":1771215192.3154635,"logger":"http.auto_https","msg":"automatic HTTPS is completely disabled for server","server_name":"srv0"}
-{"level":"info","ts":1771215192.3155525,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xc0003e8500"}
-{"level":"warn","ts":1771215192.3160837,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":18080"}
-{"level":"warn","ts":1771215192.3161044,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":18080"}
-{"level":"info","ts":1771215192.3161068,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
-{"level":"info","ts":1771215192.3243036,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
-{"level":"info","ts":1771215192.3243115,"msg":"serving initial configuration"}
-{"level":"info","ts":1771215192.329054,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
-{"level":"info","ts":1771215192.3318272,"logger":"tls","msg":"finished cleaning storage units"}
+{"level":"info","ts":1771229596.4012024,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+{"level":"info","ts":1771229596.4016628,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097521868,"previous":9223372036854775807}
+{"level":"info","ts":1771229596.4018667,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+{"level":"warn","ts":1771229596.4028778,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1771229596.4029255,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"info","ts":1771229596.40329,"msg":"adapted config to JSON","adapter":"caddyfile"}
+{"level":"warn","ts":1771229596.4032934,"msg":"Caddyfile input is not formatted; run 'caddy fmt --overwrite' to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":2}
+{"level":"info","ts":1771229596.403983,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+{"level":"info","ts":1771229596.4041147,"logger":"http.auto_https","msg":"automatic HTTPS is completely disabled for server","server_name":"srv0"}
+{"level":"info","ts":1771229596.404168,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xc000998000"}
+{"level":"warn","ts":1771229596.4048302,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":18080"}
+{"level":"warn","ts":1771229596.404845,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":18080"}
+{"level":"info","ts":1771229596.4048471,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+{"level":"info","ts":1771229596.4162877,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+{"level":"info","ts":1771229596.4162965,"msg":"serving initial configuration"}
+{"level":"info","ts":1771229596.421188,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+{"level":"info","ts":1771229596.4241002,"logger":"tls","msg":"finished cleaning storage units"}
 ```

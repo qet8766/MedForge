@@ -7,7 +7,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - `sessions.status` active set is `starting | running | stopping`; terminal set is `stopped | error`.
 - GPU lock is enforced only by DB constraint (`UNIQUE(gpu_id, gpu_active)`), where `gpu_active` is non-null only for active states.
 - Every session has its own workspace dataset path in `sessions.workspace_zfs` and paths are unique.
-- No session may remain in `starting` or `stopping` after reconciliation finishes.
+- Reconciliation must not leave `starting` rows stranded; `stopping` rows may remain only when stop command execution fails and must be retried by poller.
 - `tier=PRIVATE` remains modeled everywhere but `POST /api/sessions` must return `501`.
 
 ### API Checklist
@@ -28,10 +28,12 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 - Require owner or admin.
 - Be idempotent for repeated requests.
-- Transition `starting` or `running` to `stopping`, terminate container, snapshot dataset, then finalize.
-- On snapshot success finalize `stopped` with `stopped_at`.
-- On snapshot failure finalize `error` with `stopped_at` and `error_message`.
-- If already terminal (`stopped` or `error`), return current state without changing it.
+- Return `202 Accepted`.
+- Return action-only payload (`{detail: ...}`), not the full session object.
+- Transition `starting` or `running` to `stopping`.
+- If already `stopping`, return `Session stop requested.` without changing state.
+- If already terminal (`stopped` or `error`), return `Session already terminal.` without changing state.
+- Do not execute runtime stop/snapshot in request path; recovery handles completion.
 
 #### `GET /api/auth/session-proxy`
 
@@ -85,6 +87,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 | `running` | stop request | set `stopping` | `stopping` |
 | `stopping` | stop flow complete + snapshot success | set `stopped_at` | `stopped` |
 | `stopping` | stop flow complete + snapshot failure | set `stopped_at`, set `error_message` | `error` |
+| `stopping` | stop command execution failure | keep pending for retry | `stopping` |
 | `running` | poll detects container death | set `stopped_at`, set `error_message` | `error` |
 | `starting` | poll sees container running | set `started_at` if null | `running` |
 | `starting` | poll sees container absent/exited | set `stopped_at`, set `error_message` | `error` |
@@ -136,21 +139,23 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 #### Ticket 5: Stop Flow
 
 - Lock session row and apply compare-and-set transition into `stopping` from `starting` or `running`.
-- Terminate container with grace period then force-kill if needed.
-- Snapshot `<workspace_zfs>@stop-<unixms>`.
-- Finalize as `stopped` on success.
+- Return `202 Accepted` from API stop request path (no runtime side effects in request path).
+- Execute terminate/snapshot/finalize from recovery worker for `stopping` rows.
+- Finalize as `stopped` on stop+snapshot success.
 - Finalize as `error` on snapshot failure.
-- Emit `session.stop` with reason `user`, `admin`, or `snapshot_failed`.
+- Keep `stopping` and retry if stop command fails.
+- Emit `session.stop` with reason `requested`, `container_death`, or `snapshot_failed`.
 
 #### Ticket 6: Poller
 
 - Run at `SESSION_POLL_INTERVAL_SECONDS` base interval.
-- Query sessions in `starting` and `running`.
+- Query sessions in `starting`, `running`, and `stopping`.
 - Inspect container process state.
 - Retry `unknown` container state a bounded number of times, then finalize `error` if still `unknown`.
 - Normalize `starting -> running` when container is up.
 - Mark `error` with `stopped_at` when container is gone/exited.
 - Emit `session.stop` reason `container_death` when transitioning from active to `error`.
+- Complete stop flow for `stopping` rows and retry when stop command fails.
 - On poll loop failures, apply exponential backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`, then reset to base interval after a successful poll.
 - Report recovery degradation through `GET /healthz` returning `503` when the recovery thread is unavailable; return `200` when healthy.
 
@@ -159,8 +164,8 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - On API startup, scan sessions in `starting | running | stopping`.
 - For `starting/running` with running container, normalize to `running`.
 - For `starting/running` without running container, mark `error`.
-- For `stopping`, run full stop completion logic and finalize to terminal state.
-- Guarantee no rows remain in `starting` or `stopping` after reconciliation pass.
+- For `stopping`, run stop completion logic; if stop command fails, leave `stopping` for poller retry.
+- Guarantee no rows remain in `starting` after reconciliation pass.
 
 #### Ticket 8: Auth + Wildcard Routing
 
@@ -195,8 +200,9 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 #### Lifecycle and Recovery
 
 - Force container death (`docker kill`) and verify poller marks `error` within 30 seconds.
-- Restart API with sessions in mixed active states and verify reconciliation leaves only `running`, `stopped`, or `error`.
+- Restart API with sessions in mixed active states and verify reconciliation normalizes `starting` rows and retries pending `stopping` rows.
 - Simulate snapshot command failure and verify stop finalizes as `error` with message.
+- Simulate stop command failure and verify session remains `stopping` and is retried by poller.
 - Simulate recovery-thread unavailability and verify `GET /healthz` returns `503`, then returns `200` after thread health is restored.
 
 #### Routing and Isolation

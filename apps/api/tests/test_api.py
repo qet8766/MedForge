@@ -389,23 +389,26 @@ def test_session_create_exhausts_gpu_capacity(client, db_engine) -> None:
     assert statuses.count(409) == 1
 
 
-def test_session_stop_owner_success_and_idempotent(client) -> None:
+def test_session_stop_owner_marks_stopping_and_is_idempotent(client) -> None:
     created = client.post("/api/sessions", json={"tier": "PUBLIC"}, headers={"X-User-Id": USER_A})
     assert created.status_code == 201
     session_id = created.json()["session"]["id"]
 
     stopped = client.post(f"/api/sessions/{session_id}/stop", headers={"X-User-Id": USER_A})
-    assert stopped.status_code == 200
+    assert stopped.status_code == 202
     payload = stopped.json()
-    assert payload["detail"] == "Session stopped."
-    assert payload["session"]["status"] == "stopped"
-    assert payload["session"]["stopped_at"] is not None
+    assert payload["detail"] == "Session stop requested."
 
     repeated = client.post(f"/api/sessions/{session_id}/stop", headers={"X-User-Id": USER_A})
-    assert repeated.status_code == 200
+    assert repeated.status_code == 202
     repeated_payload = repeated.json()
-    assert repeated_payload["detail"] == "Session already terminal."
-    assert repeated_payload["session"]["status"] == "stopped"
+    assert repeated_payload["detail"] == "Session stop requested."
+
+    current = client.get("/api/sessions/current", headers={"X-User-Id": USER_A})
+    assert current.status_code == 200
+    current_payload = current.json()
+    assert current_payload["session"] is not None
+    assert current_payload["session"]["status"] == "stopping"
 
 
 def test_session_stop_forbidden_for_other_user(client) -> None:
@@ -417,27 +420,26 @@ def test_session_stop_forbidden_for_other_user(client) -> None:
     assert denied.status_code == 403
 
 
-def test_session_stop_snapshot_failure_marks_error(client, monkeypatch) -> None:
+def test_session_stop_terminal_row_returns_current_state(client, db_engine) -> None:
     created = client.post("/api/sessions", json={"tier": "PUBLIC"}, headers={"X-User-Id": USER_A})
     assert created.status_code == 201
-    session_id = created.json()["session"]["id"]
-
-    class SnapshotFailureRuntime(MockSessionRuntime):
-        def snapshot_workspace(self, workspace_zfs: str, *, snapshot_name: str) -> None:
-            _ = (workspace_zfs, snapshot_name)
-            raise SessionRuntimeError("simulated snapshot failure")
-
-    monkeypatch.setattr(
-        "app.session_lifecycle.get_session_runtime",
-        lambda _settings: SnapshotFailureRuntime(),
-    )
+    payload = created.json()
+    session_id = payload["session"]["id"]
+    with Session(db_engine) as session:
+        row = session.exec(select(SessionRecord).where(SessionRecord.id == UUID(session_id))).one()
+        row.status = SessionStatus.STOPPED
+        row.stopped_at = row.created_at
+        session.add(row)
+        session.commit()
 
     response = client.post(f"/api/sessions/{session_id}/stop", headers={"X-User-Id": USER_A})
-    assert response.status_code == 200
+    assert response.status_code == 202
     payload = response.json()
-    assert payload["detail"] == "Session stop failed; marked error."
-    assert payload["session"]["status"] == "error"
-    assert "snapshot failed" in payload["session"]["error_message"]
+    assert payload["detail"] == "Session already terminal."
+
+    with Session(db_engine) as session:
+        row = session.exec(select(SessionRecord).where(SessionRecord.id == UUID(session_id))).one()
+        assert row.status == SessionStatus.STOPPED
 
 
 def test_session_create_runtime_failure_marks_error(client, db_engine, monkeypatch) -> None:

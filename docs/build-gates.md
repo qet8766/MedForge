@@ -4,7 +4,7 @@ Implementation status note (2026-02-16):
 
 - Gate 7 competition API/UI is implemented and tested in this repo.
 - Gate 2 auth endpoints are implemented (`/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/me`) with cookie sessions and an optional `X-User-Id` legacy fallback flag.
-- Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/sessions`, `/api/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, and snapshot-on-stop terminalization.
+- Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/sessions`, `/api/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, async stop requests, and recovery-driven snapshot terminalization.
 - Gate 4 recovery logic (poller + startup reconciliation) is implemented in API and covered by tests.
 - Gate 5/6 host evidence run completed via `bash infra/host/validate-gate56.sh --with-browser` for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket frame activity (`@docs/host-validation-2026-02-16.md`).
 
@@ -28,15 +28,15 @@ Signup/login, cookie sessions, `/api/me`. forward_auth endpoint for session prox
 
 ### Gate 3 -- Session Lifecycle
 
-`POST /api/sessions` creates GPU-only PUBLIC session (PRIVATE returns 501). Transaction-safe GPU allocation. Stop endpoint + ZFS snapshot-on-stop.
+`POST /api/sessions` creates GPU-only PUBLIC session (PRIVATE returns 501). Transaction-safe GPU allocation. Stop endpoint records async stop intent (`202 Accepted`); recovery performs stop + ZFS snapshot finalization.
 
-**Acceptance:** 7 concurrent sessions succeed; 8th fails "no GPUs available". Per-user limit enforced under concurrent requests. Each created session has a distinct `workspace_zfs` dataset path. Session stop produces a ZFS snapshot. If snapshot creation fails, session ends in `error` (not stranded in `stopping`).
+**Acceptance:** 7 concurrent sessions succeed; 8th fails "no GPUs available". Per-user limit enforced under concurrent requests. Each created session has a distinct `workspace_zfs` dataset path. Stop request returns `202` and sets/keeps `stopping`. Recovery produces a ZFS snapshot and finalizes to `stopped` or `error`; if stop command execution fails, session may temporarily remain `stopping` until a later retry.
 
 ### Gate 4 -- Fault Recovery
 
 Container state poller detects dead containers. Boot-time reconciliation frees stranded sessions.
 
-**Acceptance:** Abrupt container kill (`docker kill`) is detected and marked `error` within 30s at the base poll interval (`SESSION_POLL_INTERVAL_SECONDS`), with failure backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`. API restart reconciles all orphaned sessions to terminal states (`running`, `stopped`, or `error`) with no rows left in `starting`/`stopping`. `GET /healthz` returns `503` when recovery is enabled but its thread is unavailable, and `200` when healthy.
+**Acceptance:** Abrupt container kill (`docker kill`) is detected and marked `error` within 30s at the base poll interval (`SESSION_POLL_INTERVAL_SECONDS`), with failure backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`. API restart reconciles orphaned sessions and retries pending `stopping` sessions; `stopping` rows are allowed to remain when stop command execution fails and must be retried by poller. `GET /healthz` returns `503` when recovery is enabled but its thread is unavailable, and `200` when healthy.
 
 ### Gate 5 -- Routing & Isolation
 
@@ -79,6 +79,6 @@ Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `r
 - GPU exclusivity is enforced by DB constraint and race-safe allocation.
 - Per-user concurrent session limits are enforced.
 - Work persists in per-session ZFS datasets and snapshots occur on stop.
-- Poller + boot-time reconciliation prevents stranded sessions/GPU locks after failures/restarts.
+- Poller + boot-time reconciliation prevent GPU lock leaks and continuously retry pending `stopping` sessions after failures/restarts.
 - PRIVATE exists in enums/policies/networks but session creation returns 501.
 - Permanent competition flows are available with hidden-holdout official `primary_score` runs and daily submission cap enforcement.

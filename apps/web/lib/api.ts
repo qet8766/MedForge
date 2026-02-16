@@ -68,9 +68,8 @@ export type SessionCreateResponse = {
   detail: string;
   session: SessionRead;
 };
-export type SessionStopResponse = {
+export type SessionActionResponse = {
   detail: string;
-  session: SessionRead;
 };
 export type SessionCurrentResponse = {
   session: SessionRead | null;

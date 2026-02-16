@@ -4,12 +4,12 @@ Implementation status note (2026-02-16):
 
 - Core Gate 3 alpha flow is implemented for PUBLIC sessions:
   - `POST /api/sessions` performs allocation + launch and returns running/error terminalization.
-  - `POST /api/sessions/{id}/stop` performs stop + snapshot and is idempotent for terminal states.
+  - `POST /api/sessions/{id}/stop` records an async stop request (`202 Accepted`) and is idempotent.
   - `GET /api/sessions/current` returns the caller's most recent active (`starting|running|stopping`) session, or `null`.
   - `apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
 - Gate 4 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
-  - active-session poller for `starting|running` container state transitions
+  - active-session poller for `starting|running|stopping` transitions
 - Host evidence confirms GPU/session create-stop-snapshot behavior on this machine (`@docs/host-validation-2026-02-16.md`).
 
 ### Packs
@@ -83,12 +83,15 @@ Update session: set `container_id`, `status='running'`, `started_at`. On failure
 
 If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
 
-1. Set `status='stopping'`.
-2. SIGTERM container, wait up to 30s.
-3. Force-kill if still running.
-4. Snapshot workspace dataset: `<workspace_zfs>@stop-<unixms>`.
-5. If snapshot succeeds: set `status='stopped'`, `stopped_at`.
-6. If snapshot fails: set `status='error'`, `stopped_at`, `error_message="snapshot failed: <details>"`.
+1. If row is `starting` or `running`, set `status='stopping'` and return **202** with `{detail:"Session stop requested."}`.
+2. If row is already `stopping`, return **202** with the same detail (idempotent intent).
+3. If row is terminal (`stopped` or `error`), return **202** with `{detail:"Session already terminal."}`.
+4. Runtime stop/snapshot is not executed in request path.
+5. Recovery loop finalizes `stopping` rows:
+   - stop + snapshot success -> `stopped`, set `stopped_at`.
+   - stop success + snapshot failure -> `error`, set `stopped_at`, set `error_message`.
+   - stop command failure -> remain `stopping` and retry on later recovery pass.
+6. Clients read session state from `GET /api/sessions/current` after issuing stop.
 
 #### Read Current -- `GET /api/sessions/current`
 
@@ -99,11 +102,12 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
 
 #### Container State Poller (`SESSION_POLL_INTERVAL_SECONDS` base interval)
 
-- Query sessions with `status IN ('starting', 'running')`.
+- Query sessions with `status IN ('starting', 'running', 'stopping')`.
 - `docker inspect` container state.
 - If state is `unknown`, retry inspect a bounded number of times (`UNKNOWN_STATE_MAX_RETRIES`, currently `3`); if still unknown, mark `error`.
 - If running and status is `starting`: set `status='running'` and ensure `started_at` is set.
 - If not running: set `status='error'`, `stopped_at`, `error_message="container exited unexpectedly"`; emit `session.stop` event with `reason: container_death`.
+- If status is `stopping`: execute stop completion flow (stop + snapshot -> `stopped`/`error`; stop command failure leaves `stopping`).
 - Polling uses exponential backoff after poll-loop failures, capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`, and resets to the base interval after a successful poll.
 
 #### API Health
@@ -116,10 +120,10 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
 On medforge-api startup, reconcile sessions in `starting | running | stopping`:
 
 - If container is running and status is `starting` or `running`: set `status='running'` and ensure `started_at` is set.
-- If status is `stopping`: complete stop flow (terminate if still running, then snapshot, then set `stopped`; if snapshot fails, set `error`).
+- If status is `stopping`: run stop completion flow.
 - If container is missing/not running and status is `starting` or `running`: set `status='error'`, `stopped_at`, and `error_message`.
 
-Reconciliation must leave every examined session in either `running`, `stopped`, or `error` (never stranded in `starting`/`stopping`).
+Reconciliation can leave `stopping` rows when stop command execution fails; poll loop retries those rows.
 
 ### Event Logging
 
@@ -129,4 +133,4 @@ One JSON object per line to stdout.
 | --------------- | ---------------------------------------------------- |
 | `user.login`    |                                                      |
 | `session.start` | `{session_id, user_id, tier, gpu_id, pack_id, slug}` |
-| `session.stop`  | `{reason: user \| admin \| container_death \| snapshot_failed}` |
+| `session.stop`  | `{reason: requested \| container_death \| snapshot_failed}` |

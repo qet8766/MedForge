@@ -24,6 +24,7 @@ class RecoveryRuntime(MockSessionRuntime):
         states: dict[str, RuntimeContainerState | list[RuntimeContainerState] | tuple[RuntimeContainerState, ...]]
         | None = None,
         snapshot_error: bool = False,
+        stop_error: bool = False,
     ) -> None:
         self._states: dict[str, list[RuntimeContainerState]] = {}
         for key, raw in (states or {}).items():
@@ -35,6 +36,7 @@ class RecoveryRuntime(MockSessionRuntime):
                     raise ValueError(f"State fixture for {key} cannot be empty.")
                 self._states[key] = normalized
         self._snapshot_error = snapshot_error
+        self._stop_error = stop_error
         self.inspect_calls: dict[str, int] = {}
 
     def inspect_session_container(self, *, container_id: str | None, slug: str) -> ContainerInspection:
@@ -53,6 +55,11 @@ class RecoveryRuntime(MockSessionRuntime):
         _ = (workspace_zfs, snapshot_name)
         if self._snapshot_error:
             raise SessionRuntimeError("simulated snapshot failure")
+
+    def stop_session_container(self, container_id: str | None, *, timeout_seconds: int) -> None:
+        _ = (container_id, timeout_seconds)
+        if self._stop_error:
+            raise SessionRuntimeError("simulated stop failure")
 
 
 def _insert_session_row(
@@ -344,6 +351,32 @@ def test_reconcile_on_startup_snapshot_failure_marks_error(db_engine, test_setti
         session.refresh(stopping_row)
         assert stopping_row.status == SessionStatus.ERROR
         assert "snapshot failed" in (stopping_row.error_message or "")
+
+
+def test_reconcile_on_startup_stop_failure_keeps_stopping(db_engine, test_settings: Settings) -> None:
+    with Session(db_engine) as session:
+        pack = session.exec(select(Pack)).first()
+        assert pack is not None
+        user = User(id=uuid4(), email="recover-stop-failure@example.com", password_hash="x")
+        session.add(user)
+        session.commit()
+
+        stopping_row = _insert_session_row(
+            session,
+            status=SessionStatus.STOPPING,
+            user_id=user.id,
+            pack_id=pack.id,
+            gpu_id=4,
+            container_id="startup-stopping-stop-failed",
+        )
+
+        runtime = RecoveryRuntime(stop_error=True)
+        updated = reconcile_on_startup(session, settings=test_settings, runtime=runtime)
+        assert updated == 0
+
+        session.refresh(stopping_row)
+        assert stopping_row.status == SessionStatus.STOPPING
+        assert stopping_row.error_message is None
 
 
 def test_poll_and_reconcile_return_zero_with_no_active_sessions(db_engine, test_settings: Settings) -> None:

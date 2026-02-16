@@ -4,12 +4,14 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models import CompetitionStatus, CompetitionTier, Role, ScoreStatus, SessionStatus, Tier
 
 
 class CompetitionSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     slug: str
     title: str
     competition_tier: CompetitionTier
@@ -31,6 +33,8 @@ class CompetitionDetail(CompetitionSummary):
 
 
 class DatasetSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     slug: str
     title: str
     source: str
@@ -120,11 +124,6 @@ class SessionRead(BaseModel):
 
 
 class SessionCreateResponse(BaseModel):
-    detail: str
-    session: SessionRead
-
-
-class SessionStopResponse(BaseModel):
     detail: str
     session: SessionRead
 
