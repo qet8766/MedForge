@@ -49,7 +49,6 @@ Caddy wildcard route proxies to running sessions (`@infra/caddy/Caddyfile`). Eas
 - `bash infra/host/validate-gate56.sh --with-browser`
 - `curl -i -H "Host: s-<slug>.medforge.<domain>" https://api.medforge.<domain>/api/auth/session-proxy`
 - `docker exec -it mf-session-<slugA> curl -sS --max-time 3 http://mf-session-<slugB>:8080`
-- Local browser harness note: wildcard browser auth uses `X-User-Id` derived from `/api/me` while `ALLOW_LEGACY_HEADER_AUTH=true`.
 
 ### Gate 6 -- End-to-End
 

@@ -302,7 +302,8 @@ http://*.medforge.${BROWSER_DOMAIN}:${CADDY_PORT} {
       header_up Host {host}
       header_up X-Forwarded-For {remote}
       header_up Cookie {http.request.header.Cookie}
-      header_up X-User-Id {http.request.header.X-User-Id}
+      header_up -Connection
+      header_up -Upgrade
     }
 
     reverse_proxy mf-session-{re.session.1}:8080 {
@@ -339,6 +340,10 @@ run_browser_smoke() {
 
   require_cmd node
   require_cmd npm
+  local api_log_lines_before=0
+  if [ -f "${API_LOG}" ]; then
+    api_log_lines_before="$(wc -l < "${API_LOG}")"
+  fi
 
   start_local_web
   start_local_caddy
@@ -361,17 +366,39 @@ run_browser_smoke() {
     exit 1
   fi
 
-  local session_url websocket_count slug
+  local session_url websocket_attempted websocket_with_frames slug
   session_url="$(json_file_key "${E2E_RESULT_FILE}" "session_url")"
-  websocket_count="$(json_file_key "${E2E_RESULT_FILE}" "websocket_count")"
+  websocket_attempted="$(json_file_key "${E2E_RESULT_FILE}" "websocket_attempted")"
+  websocket_with_frames="$(json_file_key "${E2E_RESULT_FILE}" "websocket_with_frames")"
   slug="$(json_file_key "${E2E_RESULT_FILE}" "slug")"
+  if ! [[ "${websocket_attempted}" =~ ^[0-9]+$ ]] || [ "${websocket_attempted}" -lt 1 ]; then
+    echo "ERROR: expected at least one websocket attempt, got '${websocket_attempted}'."
+    exit 1
+  fi
+  if ! [[ "${websocket_with_frames}" =~ ^[0-9]+$ ]] || [ "${websocket_with_frames}" -lt 1 ]; then
+    echo "ERROR: expected at least one websocket with frame traffic, got '${websocket_with_frames}'."
+    exit 1
+  fi
+
+  local ws_auth_403=0
+  if [ -f "${API_LOG}" ]; then
+    ws_auth_403="$(tail -n +"$((api_log_lines_before + 1))" "${API_LOG}" | rg -c 'WebSocket /api/auth/session-proxy.* 403' || true)"
+  fi
+  if ! [[ "${ws_auth_403}" =~ ^[0-9]+$ ]]; then
+    ws_auth_403=0
+  fi
+  if [ "${ws_auth_403}" -gt 0 ]; then
+    echo "ERROR: observed ${ws_auth_403} websocket auth 403 entries during browser validation."
+    exit 1
+  fi
 
   record "- browser base URL: \`${BROWSER_BASE_URL}\`"
   record "- e2e user: \`${E2E_USER_EMAIL}\`"
-  record "- wildcard auth mode: \`X-User-Id\` header derived from \`/api/me\` (local harness)"
   record "- wildcard session URL: \`${session_url}\`"
   record "- wildcard slug: \`${slug}\`"
-  record "- websocket connections observed: \`${websocket_count}\`"
+  record "- websocket attempts observed: \`${websocket_attempted}\`"
+  record "- websocket connections with frame traffic: \`${websocket_with_frames}\`"
+  record "- websocket auth 403 entries: \`${ws_auth_403}\`"
 }
 
 main() {

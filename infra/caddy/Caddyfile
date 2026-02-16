@@ -36,6 +36,8 @@ api.medforge.{$DOMAIN} {
 		header_up Host {host}
 		header_up X-Forwarded-For {remote}
 		header_up Cookie {http.request.header.Cookie}
+		header_up -Connection
+		header_up -Upgrade
 		copy_headers X-Upstream
 	}
 

@@ -76,18 +76,6 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
   await page.getByTestId("session-create").click();
   await page.getByTestId("session-current").waitFor({ state: "visible", timeout: 20_000 });
 
-  const me = await page.evaluate(async () => {
-    const response = await fetch("/api/me", {
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      return null;
-    }
-    return response.json() as Promise<{ user_id: string }>;
-  });
-  expect(me?.user_id).toBeTruthy();
-
   const slugRaw = await page.getByTestId("session-slug").textContent();
   const slug = slugRaw?.trim() || "";
   expect(slug).toMatch(/^[a-z0-9]{8}$/);
@@ -96,14 +84,30 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
   const sessionOrigin = `${base.protocol}//s-${slug}.medforge.${domain}${base.port ? `:${base.port}` : ""}`;
 
   const sessionPage = await page.context().newPage();
-  await sessionPage.setExtraHTTPHeaders({
-    "X-User-Id": me?.user_id ?? "",
+  const websocketState = {
+    attempted: 0,
+    withFrames: 0,
+  };
+  sessionPage.on("websocket", (ws) => {
+    websocketState.attempted += 1;
+    let countedFrames = false;
+    ws.on("framereceived", () => {
+      if (!countedFrames) {
+        websocketState.withFrames += 1;
+        countedFrames = true;
+      }
+    });
+    ws.on("framesent", () => {
+      if (!countedFrames) {
+        websocketState.withFrames += 1;
+        countedFrames = true;
+      }
+    });
   });
-  const websocketUrls: string[] = [];
-  sessionPage.on("websocket", (ws) => websocketUrls.push(ws.url()));
 
   await sessionPage.goto(sessionOrigin, { waitUntil: "domcontentloaded" });
-  await expect.poll(() => websocketUrls.length, { timeout: 30_000 }).toBeGreaterThan(0);
+  await expect(sessionPage.getByText("Session upstream missing")).toHaveCount(0);
+  await expect.poll(() => websocketState.withFrames, { timeout: 30_000 }).toBeGreaterThan(0);
   await sessionPage.close();
 
   await page.getByTestId("session-stop").click();
@@ -115,7 +119,8 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
       base_url: baseURL,
       session_url: sessionOrigin,
       slug,
-      websocket_count: websocketUrls.length,
+      websocket_attempted: websocketState.attempted,
+      websocket_with_frames: websocketState.withFrames,
       timestamp: new Date().toISOString(),
     };
     fs.writeFileSync(resultFile, JSON.stringify(result, null, 2), "utf8");

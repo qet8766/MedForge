@@ -8,7 +8,6 @@ Implementation status note (2026-02-16):
 - Gate 4 recovery orchestration is implemented (startup reconciliation + active-session poller).
 - Gate 5 routing/isolation controls are in place; API auth matrix + spoof + east-west block + wildcard browser routing + websocket activity were validated on host (`@docs/host-validation-2026-02-16.md`).
 - Competition APIs still allow temporary header identity fallback (`X-User-Id`) when `ALLOW_LEGACY_HEADER_AUTH=true`.
-- The local browser validation harness currently injects `X-User-Id` (from `/api/me`) for wildcard route checks while that compatibility flag remains enabled.
 
 ### Cookie Sessions
 
