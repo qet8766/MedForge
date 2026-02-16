@@ -25,9 +25,16 @@ def test_settings(tmp_path: Path) -> Settings:
 
     (competitions_dir / "titanic-survival").mkdir(parents=True, exist_ok=True)
     (competitions_dir / "rsna-pneumonia-detection").mkdir(parents=True, exist_ok=True)
+    (competitions_dir / "cifar-100-classification").mkdir(parents=True, exist_ok=True)
 
     (competitions_dir / "titanic-survival" / "manifest.json").write_text(
-        '{"evaluation_split_version":"titanic-test"}', encoding="utf-8"
+        (
+            '{"evaluation_split_version":"titanic-test","scoring_mode":"single_realtime_hidden",'
+            '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
+            '"id_column":"PassengerId","target_columns":["Survived"],'
+            '"label_source":"test-fixture:titanic","expected_row_count":3}'
+        ),
+        encoding="utf-8",
     )
     (competitions_dir / "titanic-survival" / "holdout_labels.csv").write_text(
         "PassengerId,Survived\n892,0\n893,1\n894,0\n",
@@ -35,10 +42,34 @@ def test_settings(tmp_path: Path) -> Settings:
     )
 
     (competitions_dir / "rsna-pneumonia-detection" / "manifest.json").write_text(
-        '{"evaluation_split_version":"rsna-test"}', encoding="utf-8"
+        (
+            '{"evaluation_split_version":"rsna-test","scoring_mode":"single_realtime_hidden",'
+            '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
+            '"id_column":"patientId","target_columns":["x","y","width","height","Target"],'
+            '"label_source":"test-fixture:rsna","expected_row_count":4}'
+        ),
+        encoding="utf-8",
     )
     (competitions_dir / "rsna-pneumonia-detection" / "holdout_labels.csv").write_text(
-        "patientId,Target\np1,1\np2,0\np3,1\n",
+        "patientId,x,y,width,height,Target\n"
+        "p1,100.0,150.0,200.0,250.0,1\n"
+        "p1,300.0,400.0,180.0,220.0,1\n"
+        "p2,,,,,0\n"
+        "p3,50.0,60.0,150.0,160.0,1\n",
+        encoding="utf-8",
+    )
+
+    (competitions_dir / "cifar-100-classification" / "manifest.json").write_text(
+        (
+            '{"evaluation_split_version":"cifar100-test","scoring_mode":"single_realtime_hidden",'
+            '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
+            '"id_column":"image_id","target_columns":["label"],'
+            '"label_source":"test-fixture:cifar100","expected_row_count":3}'
+        ),
+        encoding="utf-8",
+    )
+    (competitions_dir / "cifar-100-classification" / "holdout_labels.csv").write_text(
+        "image_id,label\n0,42\n1,7\n2,99\n",
         encoding="utf-8",
     )
 

@@ -21,7 +21,11 @@ def test_list_competitions(client) -> None:
     slugs = {item["slug"] for item in payload}
     assert "titanic-survival" in slugs
     assert "rsna-pneumonia-detection" in slugs
+    assert "cifar-100-classification" in slugs
     assert all(item["competition_tier"] == "PUBLIC" for item in payload)
+    assert all(item["scoring_mode"] == "single_realtime_hidden" for item in payload)
+    assert all(item["leaderboard_rule"] == "best_per_user" for item in payload)
+    assert all(item["evaluation_policy"] == "canonical_test_first" for item in payload)
 
 
 def test_competition_detail_status(client) -> None:
@@ -29,6 +33,9 @@ def test_competition_detail_status(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "active"
+    assert payload["scoring_mode"] == "single_realtime_hidden"
+    assert payload["leaderboard_rule"] == "best_per_user"
+    assert payload["evaluation_policy"] == "canonical_test_first"
 
 
 def test_submit_and_score_titanic(client) -> None:
@@ -451,3 +458,50 @@ def test_session_create_runtime_failure_marks_error(client, db_engine, monkeypat
     assert rows[0].status == SessionStatus.ERROR
     assert rows[0].error_message is not None
     assert "create failed" in rows[0].error_message
+
+
+def test_submit_and_score_rsna_detection(client) -> None:
+    # Submit a perfect-match detection CSV for the RSNA holdout fixture:
+    #   p1: two GT boxes (100,150,200,250) and (300,400,180,220)
+    #   p2: negative (no boxes)
+    #   p3: one GT box (50,60,150,160)
+    csv_payload = (
+        "patientId,confidence,x,y,width,height\n"
+        "p1,0.99,100.0,150.0,200.0,250.0\n"
+        "p1,0.95,300.0,400.0,180.0,220.0\n"
+        "p2,,,,,\n"
+        "p3,0.90,50.0,60.0,150.0,160.0\n"
+    )
+    response = client.post(
+        "/api/competitions/rsna-pneumonia-detection/submissions",
+        headers={"X-User-Id": USER_A},
+        files={"file": ("preds.csv", csv_payload, "text/csv")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["submission"]["score_status"] == "scored"
+    assert payload["submission"]["leaderboard_score"] == 1.0
+
+
+def test_submit_and_score_cifar100(client) -> None:
+    # Submit a perfect-match classification CSV for the CIFAR-100 holdout fixture:
+    #   image_id=0 → label=42, image_id=1 → label=7, image_id=2 → label=99
+    csv_payload = "image_id,label\n0,42\n1,7\n2,99\n"
+    response = client.post(
+        "/api/competitions/cifar-100-classification/submissions",
+        headers={"X-User-Id": USER_A},
+        files={"file": ("preds.csv", csv_payload, "text/csv")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["submission"]["score_status"] == "scored"
+    assert payload["submission"]["leaderboard_score"] == 1.0
+
+    leaderboard = client.get("/api/competitions/cifar-100-classification/leaderboard")
+    assert leaderboard.status_code == 200
+    entries = leaderboard.json()["entries"]
+    assert len(entries) == 1
+    assert entries[0]["rank"] == 1
+    assert entries[0]["leaderboard_score"] == 1.0

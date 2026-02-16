@@ -91,6 +91,9 @@ Important terminology:
 
 - `competition_tier` (`PUBLIC` | `PRIVATE`) is platform policy (internet/data controls), not label visibility.
 - `leaderboard_score` is computed on hidden holdout labels.
+- `scoring_mode` is realtime hidden scoring contract (`single_realtime_hidden` in alpha).
+- `leaderboard_rule` defines ranking (`best_per_user` in alpha).
+- `evaluation_policy` captures split provenance policy (`canonical_test_first`).
 - Alpha competitions are permanent (`is_permanent=true`) and have no due dates/final phase.
 
 ### Enums
@@ -126,8 +129,11 @@ Important terminology:
 | competition_tier       | CompetitionTier   | policy tier |
 | status                 | CompetitionStatus | |
 | is_permanent           | bool              | true for alpha |
-| metric                 | string            | e.g. `accuracy`, `roc_auc` |
+| metric                 | string            | e.g. `accuracy`, `map_iou` |
 | higher_is_better       | bool              | default true |
+| scoring_mode           | string            | e.g. `single_realtime_hidden` |
+| leaderboard_rule       | string            | e.g. `best_per_user` |
+| evaluation_policy      | string            | e.g. `canonical_test_first` |
 | submission_cap_per_day | int               | per-user cap |
 | dataset_id             | UUID              | FK -> datasets |
 | created_at             | datetime          | |

@@ -13,7 +13,7 @@ Current implementation note (2026-02-16):
 ### Goals
 
 - Launch PUBLIC sessions: browser VS Code (code-server) + terminal + GPU access.
-- Launch permanent PUBLIC mock competitions with leaderboard scoring (`titanic-survival`, `rsna-pneumonia-detection`).
+- Launch permanent PUBLIC mock competitions with leaderboard scoring (`titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`).
 - Enforce 1 GPU per session and max 7 concurrent sessions (one per physical GPU).
 - Enforce per-user concurrent session limits.
 - Wildcard subdomains per session: `s-<slug>.medforge.<domain>`.
@@ -25,7 +25,7 @@ Current implementation note (2026-02-16):
 - Single host (Ubuntu 24.04 LTS).
 - Stack: **Next.js + TypeScript**, **FastAPI + SQLModel**, **MariaDB**.
 - code-server is the in-browser IDE.
-- Competition scoring uses a hidden holdout split and `leaderboard_score` only (no alpha finals phase).
+- Competition scoring uses hidden holdout labels with `scoring_mode=single_realtime_hidden` and `leaderboard_rule=best_per_user` (no alpha finals phase).
 - PRIVATE tier defined but returns 501; no egress restrictions, audited access, or UI transfer controls enforced.
 
 ### Non-Goals

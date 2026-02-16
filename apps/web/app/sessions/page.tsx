@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
 import {
   apiGet,
   apiPostJson,
@@ -8,8 +9,28 @@ import {
   type SessionCreateResponse,
   type SessionCurrentResponse,
   type SessionRead,
-  type SessionStopResponse
-} from "../../lib/api";
+  type SessionStopResponse,
+} from "@/lib/api";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "running":
+      return "default";
+    case "starting":
+      return "outline";
+    case "stopped":
+    case "stopping":
+      return "secondary";
+    case "error":
+      return "destructive";
+    default:
+      return "outline";
+  }
+}
 
 export default function SessionsPage(): React.JSX.Element {
   const [status, setStatus] = useState<string>("No session action yet.");
@@ -95,29 +116,65 @@ export default function SessionsPage(): React.JSX.Element {
   }
 
   return (
-    <section className="card">
-      <h1>Sessions</h1>
-      <p>
-        Create a PUBLIC session, then stop it. The API now returns live lifecycle state for each action.
-      </p>
-      <div className="grid" style={{ gap: 10, maxWidth: 280 }}>
-        <button type="button" onClick={handleCreateSession} data-testid="session-create">Create PUBLIC Session</button>
-        <button type="button" onClick={handleStopSession} disabled={!currentSession} data-testid="session-stop">Stop Current Session</button>
-        <button type="button" onClick={handleWhoAmI} data-testid="session-whoami">Check /api/me</button>
-        <button type="button" onClick={handleLogout} data-testid="session-logout">Sign out</button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Sessions</h1>
+        <p className="text-muted-foreground">
+          Create a PUBLIC session, then stop it. The API now returns live lifecycle state for each action.
+        </p>
       </div>
-      <p className="muted" data-testid="session-status">{status}</p>
-      {currentSession ? (
-        <p className="muted" data-testid="session-current">
-          Session: {currentSession.id} | slug: {currentSession.slug} | status: {currentSession.status}
-        </p>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Session Controls</CardTitle>
+          <CardDescription>Manage your GPU-backed development sessions</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleCreateSession} data-testid="session-create">
+              Create PUBLIC Session
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleStopSession}
+              disabled={!currentSession}
+              data-testid="session-stop"
+            >
+              Stop Current Session
+            </Button>
+            <Button variant="secondary" onClick={handleWhoAmI} data-testid="session-whoami">
+              Check /api/me
+            </Button>
+            <Button variant="ghost" onClick={handleLogout} data-testid="session-logout">
+              Sign out
+            </Button>
+          </div>
+
+          <p className="text-sm text-muted-foreground" data-testid="session-status">{status}</p>
+
+          {currentSession ? (
+            <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-2">
+              <p className="text-sm" data-testid="session-current">
+                <span className="text-muted-foreground">Session:</span>{" "}
+                <span className="font-mono">{currentSession.id}</span>
+                {" | slug: "}
+                <span className="font-mono">{currentSession.slug}</span>
+                {" | status: "}
+                <Badge variant={statusVariant(currentSession.status)}>{currentSession.status}</Badge>
+              </p>
+              <p className="font-mono text-sm" data-testid="session-slug">
+                {currentSession.slug}
+              </p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      {error ? (
+        <Alert variant="destructive" data-testid="session-error">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
-      {currentSession ? (
-        <p className="muted" data-testid="session-slug">
-          {currentSession.slug}
-        </p>
-      ) : null}
-      {error ? <p className="muted" style={{ color: "#a11" }} data-testid="session-error">{error}</p> : null}
-    </section>
+    </div>
   );
 }

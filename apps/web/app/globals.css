@@ -1,123 +1,126 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
 :root {
-  --bg: #f4f7fb;
-  --card: #ffffff;
-  --text: #10213a;
-  --muted: #4a5a75;
-  --accent: #1773eb;
-  --border: #d8e1ee;
+  --radius: 0.625rem;
+  --background: oklch(0.98 0.005 260);
+  --foreground: oklch(0.13 0.03 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0.03 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.13 0.03 260);
+  --primary: oklch(0.55 0.17 195);
+  --primary-foreground: oklch(0.98 0.005 260);
+  --secondary: oklch(0.95 0.007 260);
+  --secondary-foreground: oklch(0.20 0.03 260);
+  --muted: oklch(0.95 0.007 260);
+  --muted-foreground: oklch(0.50 0.03 260);
+  --accent: oklch(0.95 0.007 260);
+  --accent-foreground: oklch(0.20 0.03 260);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.01 260);
+  --input: oklch(0.90 0.01 260);
+  --ring: oklch(0.55 0.17 195);
+  --chart-1: oklch(0.55 0.17 195);
+  --chart-2: oklch(0.65 0.15 160);
+  --chart-3: oklch(0.45 0.10 230);
+  --chart-4: oklch(0.70 0.18 85);
+  --chart-5: oklch(0.60 0.20 340);
+  --sidebar: oklch(0.97 0.005 260);
+  --sidebar-foreground: oklch(0.13 0.03 260);
+  --sidebar-primary: oklch(0.55 0.17 195);
+  --sidebar-primary-foreground: oklch(0.98 0.005 260);
+  --sidebar-accent: oklch(0.95 0.007 260);
+  --sidebar-accent-foreground: oklch(0.20 0.03 260);
+  --sidebar-border: oklch(0.90 0.01 260);
+  --sidebar-ring: oklch(0.55 0.17 195);
 }
 
-* {
-  box-sizing: border-box;
+.dark {
+  --background: oklch(0.12 0.02 260);
+  --foreground: oklch(0.93 0.01 260);
+  --card: oklch(0.16 0.02 260);
+  --card-foreground: oklch(0.93 0.01 260);
+  --popover: oklch(0.16 0.02 260);
+  --popover-foreground: oklch(0.93 0.01 260);
+  --primary: oklch(0.72 0.19 195);
+  --primary-foreground: oklch(0.12 0.02 260);
+  --secondary: oklch(0.20 0.025 260);
+  --secondary-foreground: oklch(0.93 0.01 260);
+  --muted: oklch(0.20 0.025 260);
+  --muted-foreground: oklch(0.65 0.025 260);
+  --accent: oklch(0.20 0.025 260);
+  --accent-foreground: oklch(0.93 0.01 260);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.26 0.02 260);
+  --input: oklch(0.22 0.025 260);
+  --ring: oklch(0.72 0.19 195);
+  --chart-1: oklch(0.72 0.19 195);
+  --chart-2: oklch(0.65 0.15 160);
+  --chart-3: oklch(0.55 0.12 230);
+  --chart-4: oklch(0.70 0.18 85);
+  --chart-5: oklch(0.60 0.20 340);
+  --sidebar: oklch(0.14 0.02 260);
+  --sidebar-foreground: oklch(0.93 0.01 260);
+  --sidebar-primary: oklch(0.72 0.19 195);
+  --sidebar-primary-foreground: oklch(0.12 0.02 260);
+  --sidebar-accent: oklch(0.20 0.025 260);
+  --sidebar-accent-foreground: oklch(0.93 0.01 260);
+  --sidebar-border: oklch(0.26 0.02 260);
+  --sidebar-ring: oklch(0.72 0.19 195);
 }
 
-body {
-  margin: 0;
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  color: var(--text);
-  background: linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%);
-}
-
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-main {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-nav {
-  border-bottom: 1px solid var(--border);
-  background: var(--card);
-}
-
-.nav-inner {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.nav-links {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.grid {
-  display: grid;
-  gap: 14px;
-}
-
-.grid-2 {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.table th,
-.table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-}
-
-.table tr:last-child td {
-  border-bottom: none;
-}
-
-button,
-input[type="submit"] {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-input,
-textarea {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  font: inherit;
-}
-
-label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-form {
-  display: grid;
-  gap: 12px;
-}
-
-.muted {
-  color: var(--muted);
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

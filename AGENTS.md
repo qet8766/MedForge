@@ -42,6 +42,9 @@ Git history is minimal (`Initial commit`), so use clear imperative commits and i
 - config/security impact (`.env`, networking, auth headers)
 - UI/routing screenshots when behavior changes
 
+## Error Handling
+- **No graceful fallbacks**: do not swallow errors with try/catch to show fallback UI. Let errors propagate and show real error messages. If something is broken the user needs to see what failed, not a "something went wrong" placeholder.
+
 ## Code Hygiene
 - **File splitting**: when a file exceeds ~150 lines, split it into smaller focused files. Always add `@filename` references in the relevant places so readers can trace where code moved.
 - **TODO tracking**: use `TODO(MF-###)` format so every TODO is tied to a tracked issue. Unlinked TODOs rot.

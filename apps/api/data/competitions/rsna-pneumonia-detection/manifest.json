@@ -1,1 +1,1 @@
-{"evaluation_split_version": "v1-split42"}
+{"evaluation_split_version":"v2-objdet-split42","scoring_mode":"single_realtime_hidden","leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first","id_column":"patientId","target_columns":["x","y","width","height","Target"],"label_source":"medforge-curated:rsna-train-split42","expected_row_count":6085}

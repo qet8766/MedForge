@@ -3,6 +3,9 @@ export type CompetitionSummary = {
   title: string;
   competition_tier: "PUBLIC" | "PRIVATE";
   metric: string;
+  scoring_mode: string;
+  leaderboard_rule: string;
+  evaluation_policy: string;
   is_permanent: boolean;
   submission_cap_per_day: number;
 };

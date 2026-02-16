@@ -8,6 +8,12 @@ from sqlalchemy import CheckConstraint, Column, Index, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
+from app.competition_policy import (
+    DEFAULT_EVALUATION_POLICY,
+    DEFAULT_LEADERBOARD_RULE,
+    DEFAULT_SCORING_MODE,
+)
+
 
 def utcnow() -> datetime:
     return datetime.now(UTC)
@@ -157,6 +163,9 @@ class Competition(SQLModel, table=True):
     is_permanent: bool = Field(default=True)
     metric: str = Field(max_length=64)
     higher_is_better: bool = Field(default=True)
+    scoring_mode: str = Field(default=DEFAULT_SCORING_MODE, max_length=64)
+    leaderboard_rule: str = Field(default=DEFAULT_LEADERBOARD_RULE, max_length=64)
+    evaluation_policy: str = Field(default=DEFAULT_EVALUATION_POLICY, max_length=64)
     submission_cap_per_day: int = Field(default=10)
     dataset_id: uuid.UUID = Field(foreign_key="datasets.id", index=True)
     created_at: datetime = Field(default_factory=utcnow)

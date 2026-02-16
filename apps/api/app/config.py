@@ -115,6 +115,9 @@ class Settings:
     session_runtime_use_sudo: bool = field(default_factory=lambda: _env_bool("SESSION_RUNTIME_USE_SUDO", "false"))
     session_recovery_enabled: bool = field(default_factory=lambda: _env_bool("SESSION_RECOVERY_ENABLED", "true"))
     session_poll_interval_seconds: int = field(default_factory=lambda: max(_env_int("SESSION_POLL_INTERVAL_SECONDS", 30), 1))
+    session_poll_backoff_max_seconds: int = field(
+        default_factory=lambda: max(_env_int("SESSION_POLL_BACKOFF_MAX_SECONDS", 300), 1)
+    )
     # Container resource limits.
     session_cpu_shares: int = field(default_factory=lambda: _env_int("SESSION_CPU_SHARES", 1024))
     session_cpu_limit: int | None = field(default_factory=lambda: _env_optional_int("SESSION_CPU_LIMIT"))

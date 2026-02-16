@@ -229,19 +229,36 @@ class DockerZfsSessionRuntime:
             container = self._client.containers.get(container_id)
         except docker.errors.NotFound:
             return
+        except docker.errors.APIError as exc:
+            raise SessionRuntimeError(f"Unable to find container for stop: {exc.explanation}") from exc
 
+        stop_timeout = max(timeout_seconds, 1)
         try:
-            container.stop(timeout=max(timeout_seconds, 1))
+            container.reload()
         except docker.errors.NotFound:
             return
         except docker.errors.APIError as exc:
+            raise SessionRuntimeError(f"Unable to inspect container before stop: {exc.explanation}") from exc
+
+        if container.status not in {"dead", "exited"}:
             try:
-                container.kill()
+                container.stop(timeout=stop_timeout)
             except docker.errors.NotFound:
                 return
-            except docker.errors.APIError as kill_exc:
-                raise SessionRuntimeError(f"Unable to stop container: {kill_exc.explanation}") from kill_exc
-            raise SessionRuntimeError(f"Container stop fallback triggered: {exc.explanation}") from exc
+            except docker.errors.APIError:
+                try:
+                    container.kill()
+                except docker.errors.NotFound:
+                    return
+                except docker.errors.APIError:
+                    pass
+
+        try:
+            container.remove(force=True)
+        except docker.errors.NotFound:
+            return
+        except docker.errors.APIError as exc:
+            raise SessionRuntimeError(f"Unable to remove container: {exc.explanation}") from exc
 
     def snapshot_workspace(self, workspace_zfs: str, *, snapshot_name: str) -> None:
         self._run_cmd(["zfs", "snapshot", f"{workspace_zfs}@{snapshot_name}"])

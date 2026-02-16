@@ -47,19 +47,22 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 - `competition_tier` means deployment/data policy (`PUBLIC | PRIVATE`), not label visibility.
 - Alpha competitions are permanent (`is_permanent=true`) and always `status=active`.
+- `scoring_mode` is `single_realtime_hidden`.
+- `leaderboard_rule` is `best_per_user`.
+- `evaluation_policy` is `canonical_test_first`.
 - Only `leaderboard_score` is published; no `final_score` phase in alpha.
 - Hidden holdout labels are never mounted in session containers.
 
 #### Competition/Dataset APIs
 
-- `GET /api/competitions` returns active competitions with `competition_tier`, `metric`, `is_permanent`, and `submission_cap_per_day`.
+- `GET /api/competitions` returns active competitions with `competition_tier`, `metric`, `scoring_mode`, `leaderboard_rule`, `evaluation_policy`, `is_permanent`, and `submission_cap_per_day`.
 - `GET /api/competitions/{slug}` returns dataset linkage and competition metadata.
 - `GET /api/datasets` and `GET /api/datasets/{slug}` return mirrored dataset metadata.
 
 #### Submission APIs
 
 - `POST /api/competitions/{slug}/submissions` accepts CSV only, validates competition-specific schema, persists artifact hash/path, and sets `score_status=queued`.
-- Enforce daily cap per competition per user (Titanic `20/day`, RSNA `10/day`).
+- Enforce daily cap per competition per user (Titanic `20/day`, RSNA `10/day`, CIFAR `20/day`).
 - `GET /api/competitions/{slug}/submissions/me` returns submission history with `score_status`, `leaderboard_score`, and errors.
 - `GET /api/competitions/{slug}/leaderboard` ranks by best per-user `leaderboard_score`; tie-break by earliest `created_at`.
 
@@ -69,6 +72,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - On success, persist `leaderboard_score`, `scorer_version`, `evaluation_split_version`, and `scored_at`.
 - On failure, persist `score_error` and terminal `failed` state.
 - Scoring must be deterministic for same submission + same `evaluation_split_version`.
+- Scoring manifest must include `evaluation_split_version`, `scoring_mode`, `leaderboard_rule`, `evaluation_policy`, `id_column`, `target_columns`, `label_source`, and `expected_row_count`.
 
 ### State Machine Checklist
 
@@ -140,12 +144,15 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 #### Ticket 6: Poller
 
-- Run every 30 seconds.
+- Run at `SESSION_POLL_INTERVAL_SECONDS` base interval.
 - Query sessions in `starting` and `running`.
 - Inspect container process state.
+- Retry `unknown` container state a bounded number of times, then finalize `error` if still `unknown`.
 - Normalize `starting -> running` when container is up.
 - Mark `error` with `stopped_at` when container is gone/exited.
 - Emit `session.stop` reason `container_death` when transitioning from active to `error`.
+- On poll loop failures, apply exponential backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`, then reset to base interval after a successful poll.
+- Report recovery degradation through `GET /healthz` returning `503` when the recovery thread is unavailable; return `200` when healthy.
 
 #### Ticket 7: Boot Reconciliation
 
@@ -190,6 +197,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Force container death (`docker kill`) and verify poller marks `error` within 30 seconds.
 - Restart API with sessions in mixed active states and verify reconciliation leaves only `running`, `stopped`, or `error`.
 - Simulate snapshot command failure and verify stop finalizes as `error` with message.
+- Simulate recovery-thread unavailability and verify `GET /healthz` returns `503`, then returns `200` after thread health is restored.
 
 #### Routing and Isolation
 
@@ -200,8 +208,10 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 #### Competition API and Scoring
 
-- Verify `GET /api/competitions` includes `titanic-survival` and `rsna-pneumonia-detection` with `competition_tier=PUBLIC`.
+- Verify `GET /api/competitions` includes `titanic-survival`, `rsna-pneumonia-detection`, and `cifar-100-classification` with `competition_tier=PUBLIC`.
+- Verify all returned competitions include `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, and `evaluation_policy=canonical_test_first`.
 - Submit valid Titanic CSV and verify `score_status=scored` and non-null `leaderboard_score`.
+- Verify Titanic holdout manifest expects 418 labelled test IDs (`evaluation_split_version=v2-kaggle-labelled-test418`).
 - Submit invalid schema and verify `422` with actionable validation error.
 - Exhaust daily cap and verify next submission returns `429`.
 - Confirm leaderboard returns best score per user and deterministic rank ordering.

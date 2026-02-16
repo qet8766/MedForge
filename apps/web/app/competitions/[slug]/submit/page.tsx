@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { apiSubmitFile } from "../../../../lib/api";
+
+import { apiSubmitFile } from "@/lib/api";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CompetitionSubmitPage({
-  params
+  params,
 }: {
   params: { slug: string };
 }): React.JSX.Element {
@@ -35,29 +41,50 @@ export default function CompetitionSubmitPage({
   }
 
   return (
-    <section className="grid" style={{ maxWidth: 680 }}>
-      <h1>Submit · {params.slug}</h1>
-      <p className="muted">
-        Alpha scoring is always-on with hidden holdout labels. Only CSV submissions are accepted.
-      </p>
-      <form onSubmit={handleSubmit} className="card">
-        <div>
-          <label htmlFor="submission">Prediction CSV</label>
-          <input
-            id="submission"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-        </div>
-        <div>
-          <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit"}
-          </button>
-        </div>
-      </form>
-      {error ? <pre className="card" style={{ color: "#a11" }}>{error}</pre> : null}
-      {result ? <pre className="card">{result}</pre> : null}
-    </section>
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Submit</h1>
+        <p className="text-muted-foreground">{params.slug}</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload Predictions</CardTitle>
+          <CardDescription>
+            Alpha scoring is always-on with hidden holdout labels. Only CSV submissions are accepted.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="submission">Prediction CSV</Label>
+              <Input
+                id="submission"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              />
+            </div>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {result ? (
+        <Card>
+          <CardContent className="pt-6">
+            <pre className="overflow-x-auto font-mono text-sm">{result}</pre>
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
   );
 }

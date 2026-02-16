@@ -14,6 +14,9 @@ class CompetitionSummary(BaseModel):
     title: str
     competition_tier: CompetitionTier
     metric: str
+    scoring_mode: str
+    leaderboard_rule: str
+    evaluation_policy: str
     is_permanent: bool
     submission_cap_per_day: int
 

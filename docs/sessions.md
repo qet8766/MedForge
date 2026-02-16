@@ -97,12 +97,19 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
 - Only the caller's own sessions are considered.
 - The selected row is the newest active session (`starting|running|stopping`) by `created_at DESC`.
 
-#### Container State Poller (every 30s)
+#### Container State Poller (`SESSION_POLL_INTERVAL_SECONDS` base interval)
 
 - Query sessions with `status IN ('starting', 'running')`.
 - `docker inspect` container state.
+- If state is `unknown`, retry inspect a bounded number of times (`UNKNOWN_STATE_MAX_RETRIES`, currently `3`); if still unknown, mark `error`.
 - If running and status is `starting`: set `status='running'` and ensure `started_at` is set.
 - If not running: set `status='error'`, `stopped_at`, `error_message="container exited unexpectedly"`; emit `session.stop` event with `reason: container_death`.
+- Polling uses exponential backoff after poll-loop failures, capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`, and resets to the base interval after a successful poll.
+
+#### API Health
+
+- `GET /healthz` returns `200` when API + recovery loop are healthy.
+- `GET /healthz` returns `503` when recovery is enabled but the recovery thread is unavailable.
 
 #### Boot-Time Reconciliation
 

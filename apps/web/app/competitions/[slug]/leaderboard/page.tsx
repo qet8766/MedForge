@@ -1,4 +1,13 @@
-import { apiGet, type LeaderboardEntry } from "../../../../lib/api";
+import { apiGet, type LeaderboardEntry } from "@/lib/api";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +17,7 @@ type LeaderboardResponse = {
 };
 
 export default async function CompetitionLeaderboardPage({
-  params
+  params,
 }: {
   params: { slug: string };
 }): Promise<React.JSX.Element> {
@@ -17,33 +26,43 @@ export default async function CompetitionLeaderboardPage({
   );
 
   return (
-    <section>
-      <h1>Leaderboard · {leaderboard.competition_slug}</h1>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>User</th>
-            <th>Score</th>
-            <th>Scored At</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboard.entries.map((entry) => (
-            <tr key={entry.best_submission_id}>
-              <td>{entry.rank}</td>
-              <td>{entry.user_id}</td>
-              <td>{entry.leaderboard_score.toFixed(6)}</td>
-              <td>{entry.scored_at ?? "pending"}</td>
-            </tr>
-          ))}
-          {leaderboard.entries.length === 0 ? (
-            <tr>
-              <td colSpan={4}>No scored submissions yet.</td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </section>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
+        <p className="text-muted-foreground">{leaderboard.competition_slug}</p>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Rank</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead>Scored At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leaderboard.entries.map((entry) => (
+                <TableRow key={entry.best_submission_id}>
+                  <TableCell className="font-mono font-medium">{entry.rank}</TableCell>
+                  <TableCell>{entry.user_id}</TableCell>
+                  <TableCell className="font-mono">{entry.leaderboard_score.toFixed(6)}</TableCell>
+                  <TableCell className="text-muted-foreground">{entry.scored_at ?? "pending"}</TableCell>
+                </TableRow>
+              ))}
+              {leaderboard.entries.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No scored submissions yet.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

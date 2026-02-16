@@ -5,6 +5,11 @@ from typing import TypedDict
 
 from sqlmodel import Session, select
 
+from app.competition_policy import (
+    DEFAULT_EVALUATION_POLICY,
+    DEFAULT_LEADERBOARD_RULE,
+    DEFAULT_SCORING_MODE,
+)
 from app.config import get_settings
 from app.models import Competition, CompetitionStatus, CompetitionTier, Dataset, GpuDevice, Pack, PackTier
 
@@ -25,6 +30,9 @@ class CompetitionSeed(TypedDict):
     description: str
     dataset_slug: str
     metric: str
+    scoring_mode: str
+    leaderboard_rule: str
+    evaluation_policy: str
     submission_cap_per_day: int
 
 
@@ -49,6 +57,15 @@ SEED_DATASETS: list[DatasetSeed] = [
         "bytes": 0,
         "checksum": "pending",
     },
+    {
+        "slug": "cifar-100",
+        "title": "CIFAR-100",
+        "source": "toronto-cs",
+        "license": "MIT-like (Alex Krizhevsky, internal mirror)",
+        "storage_path": "/data/medforge/datasets/cifar-100",
+        "bytes": 0,
+        "checksum": "pending",
+    },
 ]
 
 SEED_COMPETITIONS: list[CompetitionSeed] = [
@@ -58,6 +75,9 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "description": "Permanent mock competition based on Titanic Kaggle data.",
         "dataset_slug": "titanic-kaggle",
         "metric": "accuracy",
+        "scoring_mode": DEFAULT_SCORING_MODE,
+        "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
+        "evaluation_policy": DEFAULT_EVALUATION_POLICY,
         "submission_cap_per_day": 20,
     },
     {
@@ -65,8 +85,22 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "title": "RSNA Pneumonia Detection",
         "description": "Permanent mock competition based on RSNA pneumonia imaging data.",
         "dataset_slug": "rsna-pneumonia-detection-challenge",
-        "metric": "roc_auc",
+        "metric": "map_iou",
+        "scoring_mode": DEFAULT_SCORING_MODE,
+        "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
+        "evaluation_policy": DEFAULT_EVALUATION_POLICY,
         "submission_cap_per_day": 10,
+    },
+    {
+        "slug": "cifar-100-classification",
+        "title": "CIFAR-100 Classification",
+        "description": "Permanent mock competition — classify 32x32 images into 100 fine-grained categories.",
+        "dataset_slug": "cifar-100",
+        "metric": "accuracy",
+        "scoring_mode": DEFAULT_SCORING_MODE,
+        "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
+        "evaluation_policy": DEFAULT_EVALUATION_POLICY,
+        "submission_cap_per_day": 20,
     },
 ]
 
@@ -135,6 +169,9 @@ def seed_defaults(session: Session) -> None:
             is_permanent=True,
             metric=competition_payload["metric"],
             higher_is_better=True,
+            scoring_mode=competition_payload["scoring_mode"],
+            leaderboard_rule=competition_payload["leaderboard_rule"],
+            evaluation_policy=competition_payload["evaluation_policy"],
             submission_cap_per_day=competition_payload["submission_cap_per_day"],
             dataset_id=dataset.id,
         )

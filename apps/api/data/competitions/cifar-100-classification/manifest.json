@@ -1,0 +1,1 @@
+{"evaluation_split_version":"v1-test","scoring_mode":"single_realtime_hidden","leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first","id_column":"image_id","target_columns":["label"],"label_source":"cifar100-original-test","expected_row_count":10000}

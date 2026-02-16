@@ -36,7 +36,7 @@ Signup/login, cookie sessions, `/api/me`. forward_auth endpoint for session prox
 
 Container state poller detects dead containers. Boot-time reconciliation frees stranded sessions.
 
-**Acceptance:** Abrupt container kill (`docker kill`) is detected and marked `error` within 30s. API restart reconciles all orphaned sessions to terminal states (`running`, `stopped`, or `error`) with no rows left in `starting`/`stopping`.
+**Acceptance:** Abrupt container kill (`docker kill`) is detected and marked `error` within 30s at the base poll interval (`SESSION_POLL_INTERVAL_SECONDS`), with failure backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`. API restart reconciles all orphaned sessions to terminal states (`running`, `stopped`, or `error`) with no rows left in `starting`/`stopping`. `GET /healthz` returns `503` when recovery is enabled but its thread is unavailable, and `200` when healthy.
 
 ### Gate 5 -- Routing & Isolation
 
@@ -69,9 +69,9 @@ Use `--with-browser` for end-to-end UI/browser verification; without it, only th
 
 ### Gate 7 -- Competition Portal (Alpha)
 
-Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `rsna-pneumonia-detection`). Users can upload predictions, receive scores, and view ranked leaderboards.
+Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`). Users can upload predictions, receive scores, and view ranked leaderboards.
 
-**Acceptance:** `GET /api/competitions` returns both competition slugs with `competition_tier=PUBLIC` and `is_permanent=true`. Valid CSV submission returns `score_status=scored` and `leaderboard_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA). Leaderboard ranks by best per-user score with deterministic tie-break by earliest submission timestamp.
+**Acceptance:** `GET /api/competitions` returns all competition slugs with `competition_tier=PUBLIC`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, and `evaluation_policy=canonical_test_first`. Valid CSV submission returns `score_status=scored` and `leaderboard_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user score with deterministic tie-break by earliest submission timestamp. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
 
 ### Definition of Done
 
