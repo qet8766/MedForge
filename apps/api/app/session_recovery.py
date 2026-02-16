@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from datetime import UTC, datetime
 from typing import Any, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import structlog
 from sqlalchemy import asc
@@ -83,6 +83,11 @@ class SessionRecoveryRunner:
         return self._run_once(startup=True)
 
     def _run_once(self, *, startup: bool) -> int:
+        correlation_id = str(uuid4())
+        structlog.contextvars.bind_contextvars(
+            correlation_id=correlation_id,
+            recovery_mode="startup" if startup else "poll",
+        )
         updated = 0
         rows = _list_sessions_by_statuses(self._session, statuses=POLL_STATUSES)
         for row in rows:

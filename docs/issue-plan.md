@@ -37,11 +37,11 @@ Phase 1 total estimated effort: `25.5d`.
 
 | Issue | Scope | Depends On | Estimate | Status |
 | --- | --- | --- | --- | --- |
-| `MF-101` | Automated gate test suite (concurrency, kill/reconcile, auth spoof, isolation) | Phase 1 complete | `2.0d` | Pending |
-| `MF-102` | Operational scripts/runbook: reconciliation trigger, snapshot inspection, emergency cleanup | Phase 1 complete | `1.0d` | Pending |
-| `MF-103` | Logging hardening: correlation IDs, normalized error codes, log schema checks | `MF-013` | `1.0d` | Pending |
-| `MF-104` | Security hardening pass: auth rate limits, cookie/session abuse protections, header policy tests | `MF-004`, `MF-005` | `1.5d` | Pending |
-| `MF-105` | Soak/load pass: repeated create/stop cycles and failure-injection checks | Phase 1 complete | `1.5d` | Pending |
+| `MF-101` | Automated gate test suite (concurrency, kill/reconcile, auth spoof, isolation) | Phase 1 complete | `2.0d` | Done |
+| `MF-102` | Operational scripts/runbook: reconciliation trigger, snapshot inspection, emergency cleanup | Phase 1 complete | `1.0d` | Done |
+| `MF-103` | Logging hardening: correlation IDs, normalized error codes, log schema checks | `MF-013` | `1.0d` | Done |
+| `MF-104` | Security hardening pass: auth rate limits, cookie/session abuse protections, header policy tests | `MF-004`, `MF-005` | `1.5d` | Done |
+| `MF-105` | Soak/load pass: repeated create/stop cycles and failure-injection checks | Phase 1 complete | `1.5d` | Done |
 
 Phase 2 total estimated effort: `7.0d`.
 
@@ -61,4 +61,9 @@ Phase 1 exit criteria met as of 2026-02-16 (see `docs/host-validation-2026-02-16
 - [x] Gates 0-7 acceptance checks pass as written in `docs/build-gates.md`.
 - [x] No open defect that can strand sessions in `starting`/`stopping` or break GPU exclusivity.
 
-Phase 2 hardening (`MF-101` through `MF-105`) not yet started.
+Phase 2 hardening complete as of 2026-02-16:
+
+- [x] All Phase 2 issues (`MF-101` through `MF-105`) completed.
+- [x] 112 total tests (108 fast CI + 2 docker + 2 load).
+- [x] Operational scripts and runbook in `infra/host/ops-*.sh` and `docs/runbook.md`.
+- [x] Structured logging with correlation IDs and error code registry.

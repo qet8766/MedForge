@@ -116,6 +116,10 @@ ignore_missing_imports = true
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+  "docker: tests requiring real Docker runtime (deselect with -m 'not docker')",
+  "load: load/soak tests run manually (deselect with -m 'not load')",
+]
 filterwarnings = [
   "ignore:'crypt' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
 ]

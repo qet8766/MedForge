@@ -227,10 +227,46 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Exhaust daily cap and verify next submission returns `429`.
 - Confirm leaderboard returns best score per user and deterministic rank ordering.
 
+### Phase 2: Hardening (MF-101 through MF-105)
+
+#### MF-101: Automated Gate Test Suite — Done
+
+- `tests/test_concurrency.py` — 8-way parallel session create; assert exactly 7 succeed, 8th returns GPU exhaustion error.
+- `tests/test_poller_sla.py` — Force container states via `RecoveryRuntime`, verify poller detects within configurable interval.
+- `tests/test_auth_hardening.py` — X-Upstream spoof rejection, origin validation matrix, rate limit 429, session fixation, idle/max TTL.
+- `tests/test_isolation.py` — Docker-dependent east-west isolation tests (mark `@pytest.mark.docker`).
+
+#### MF-102: Operational Scripts/Runbook — Done
+
+- `infra/host/ops-reconcile.sh` — Trigger manual reconciliation via API service restart.
+- `infra/host/ops-snapshots.sh` — List/inspect ZFS snapshots by slug or user.
+- `infra/host/ops-cleanup.sh` — Find orphaned `mf-session-*` containers, optionally remove.
+- `docs/runbook.md` — Operational procedures: restart, reconcile, inspect, cleanup, escalation.
+
+#### MF-103: Logging Hardening — Done
+
+- `app/main.py` — Bind `request_id` to structlog contextvars in request middleware.
+- `app/session_recovery.py` — Bind `correlation_id` and `recovery_mode` to recovery thread logs.
+- `app/problem_details.py` — Add centralized `ERROR_CODE_REGISTRY` mapping code → HTTP status + problem type.
+- `tests/test_log_schema.py` — Validate required fields (`session_id`, `user_id`, `correlation_id`) in lifecycle log events.
+
+#### MF-104: Security Hardening Pass — Done
+
+- `app/routers/auth.py` — `require_auth_rate_limit` already wired to `/signup` and `/login`.
+- `app/deps.py` — Idle TTL and max TTL enforcement already in `_principal_from_cookie()`.
+- `tests/test_auth_hardening.py` — Session fixation, idle TTL expiry, max TTL expiry, rate limit 429 tests.
+
+#### MF-105: Soak/Load Pass — Done
+
+- `tests/test_load.py` (mark `@pytest.mark.load`) — 50 sequential + 20 concurrent create/stop cycles.
+- `tests/test_chaos.py` — Stop errors, snapshot errors, mixed failure recovery sequences.
+- `tests/test_invariants.py` — Post-load assertions: no stuck STARTING, GPU uniqueness, STOPPING resolved, GPU freed.
+
 ### Definition of "Implementation Complete"
 
 All criteria met as of 2026-02-16:
 
-- [x] All tickets above are implemented.
+- [x] All Phase 1 tickets (1-10) are implemented.
 - [x] Gate acceptance checks in `docs/build-gates.md` pass.
 - [x] No known path leaves a session stuck in an active non-running state.
+- [x] Phase 2 hardening (MF-101 to MF-105) complete: 112 total tests, operational scripts, runbook.

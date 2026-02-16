@@ -142,9 +142,12 @@ register_problem_exception_handler(app)
 
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
-    request.state.request_id = str(uuid4())
+    request_id = str(uuid4())
+    request.state.request_id = request_id
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(request_id=request_id)
     response = await call_next(request)
-    response.headers["X-Request-Id"] = request.state.request_id
+    response.headers["X-Request-Id"] = request_id
     return response
 
 
