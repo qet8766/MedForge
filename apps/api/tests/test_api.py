@@ -457,7 +457,6 @@ def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens
             pack_id=default_pack.id,
             status=SessionStatus.RUNNING,
             gpu_id=0,
-            gpu_active=1,
             slug="abc12345",
             workspace_zfs="tank/medforge/workspaces/owner/session",
         )
@@ -487,7 +486,6 @@ def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens
     with Session(db_engine) as session:
         session_row = session.exec(select(SessionRecord).where(SessionRecord.slug == "abc12345")).one()
         session_row.status = SessionStatus.STOPPED
-        session_row.gpu_active = None
         session.add(session_row)
         session.commit()
 

@@ -8,16 +8,15 @@ Validates system-wide invariants that must hold after any load test:
 from __future__ import annotations
 
 from typing import Any, cast
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlmodel import Session, select
 
 from app.config import Settings
-from app.models import Pack, SessionRecord, SessionStatus, Tier, User
+from app.models import Pack, SessionRecord, SessionStatus, User
 from app.session_recovery import poll_active_sessions_once, reconcile_on_startup
 from app.session_repo import ACTIVE_SESSION_STATUSES
 from app.session_runtime import RuntimeContainerState
-
 from tests.test_session_recovery import RecoveryRuntime, _insert_session_row
 
 
@@ -144,6 +143,3 @@ def test_gpu_released_after_terminal_state(db_engine, test_settings: Settings) -
 
         session.refresh(row)
         assert row.status == SessionStatus.ERROR
-        assert row.gpu_active is None, (
-            f"GPU active hint not cleared: gpu_active={row.gpu_active}"
-        )

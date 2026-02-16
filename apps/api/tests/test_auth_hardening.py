@@ -17,8 +17,8 @@ from uuid import UUID
 import pytest
 from sqlmodel import Session, select
 
-from app.config import Settings, get_settings
-from app.models import AuthSession, User
+from app.config import get_settings
+from app.models import AuthSession
 from app.security import hash_session_token
 
 USER_A = "00000000-0000-0000-0000-000000000011"
@@ -67,7 +67,6 @@ def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens)
             pack_id=pack.id,
             status=SessionStatus.RUNNING,
             gpu_id=0,
-            gpu_active=1,
             slug="spoof123",
             workspace_zfs="tank/medforge/workspaces/test/spoof",
         )

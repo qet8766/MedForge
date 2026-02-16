@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from fastapi import Request
 from pydantic import BaseModel, Field
@@ -19,7 +19,7 @@ class ApiMeta(BaseModel):
     has_more: bool | None = None
 
 
-class ApiEnvelope(BaseModel, Generic[T]):
+class ApiEnvelope[T](BaseModel):
     data: T
     meta: ApiMeta
 
@@ -40,7 +40,7 @@ def build_meta(
     )
 
 
-def envelope(
+def envelope[T](
     request: Request,
     data: T,
     *,
@@ -48,7 +48,7 @@ def envelope(
     next_cursor: str | None = None,
     has_more: bool | None = None,
 ) -> ApiEnvelope[T]:
-    return ApiEnvelope[T](
+    return ApiEnvelope(
         data=data,
         meta=build_meta(
             request,

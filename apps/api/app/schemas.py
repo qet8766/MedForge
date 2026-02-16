@@ -11,7 +11,7 @@ from app.models import CompetitionStatus, Role, ScoreStatus, SessionStatus
 
 def _lower_enum_value(value: object) -> str:
     if hasattr(value, "value"):
-        value = getattr(value, "value")
+        value = value.value
     if not isinstance(value, str):
         raise TypeError("Expected enum/string value.")
     return value.lower()

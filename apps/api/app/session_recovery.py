@@ -38,11 +38,6 @@ def _utc_millis() -> int:
     return int(datetime.now(UTC).timestamp() * 1000)
 
 
-def _is_sqlite(session: Session) -> bool:
-    bind = session.get_bind()
-    return bind.dialect.name == "sqlite"
-
-
 def _list_sessions_by_statuses(session: Session, *, statuses: tuple[SessionStatus, ...]) -> list[SessionRecord]:
     status_col = cast(Any, SessionRecord.status)
     created_col = cast(Any, SessionRecord.created_at)
@@ -64,9 +59,7 @@ def _log_session_stop(row: SessionRecord, *, reason: str) -> None:
 
 
 def _get_row_for_update(session: Session, *, row_id: UUID) -> SessionRecord | None:
-    statement = select(SessionRecord).where(SessionRecord.id == row_id)
-    if not _is_sqlite(session):
-        statement = statement.with_for_update()
+    statement = select(SessionRecord).where(SessionRecord.id == row_id).with_for_update()
     return session.exec(statement).first()
 
 

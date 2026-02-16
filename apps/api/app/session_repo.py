@@ -28,11 +28,6 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-def _is_sqlite(session: Session) -> bool:
-    bind = session.get_bind()
-    return bind.dialect.name == "sqlite"
-
-
 def _slug_token() -> str:
     encoded = base64.b32encode(secrets.token_bytes(8)).decode("ascii").lower().rstrip("=")
     return encoded[:8]
@@ -91,9 +86,7 @@ def resolve_pack(session: Session, *, pack_id: UUID | None, tier: Tier) -> Pack:
 
 
 def _lock_user_for_allocation(session: Session, *, user_id: UUID) -> User | None:
-    statement = select(User).where(User.id == user_id)
-    if not _is_sqlite(session):
-        statement = statement.with_for_update()
+    statement = select(User).where(User.id == user_id).with_for_update()
     return session.exec(statement).first()
 
 
@@ -118,9 +111,8 @@ def _select_free_gpu(session: Session) -> int | None:
         .where(enabled_col.is_(True))
         .where(~gpu_id_col.in_(active_gpu_ids))
         .order_by(gpu_id_col)
+        .with_for_update()
     )
-    if not _is_sqlite(session):
-        statement = statement.with_for_update()
     return cast(int | None, session.exec(statement).first())
 
 
@@ -166,8 +158,6 @@ def allocate_starting_session(
                 slug=_slug_token(),
                 workspace_zfs=_workspace_path(workspace_zfs_root, user_id=user.id, session_id=session_id),
             )
-            if _is_sqlite(session):
-                row.gpu_active = 1
 
             session.add(row)
             session.commit()
@@ -188,17 +178,8 @@ def allocate_starting_session(
     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session allocation failed.")
 
 
-def _set_gpu_active_hint(session: Session, row: SessionRecord) -> None:
-    if _is_sqlite(session):
-        if row.status in ACTIVE_SESSION_STATUSES:
-            row.gpu_active = 1
-        else:
-            row.gpu_active = None
-
-
 def mark_session_stopping(session: Session, *, row: SessionRecord) -> SessionRecord:
     row.status = SessionStatus.STOPPING
-    _set_gpu_active_hint(session, row)
     session.add(row)
     session.commit()
     session.refresh(row)
@@ -210,7 +191,6 @@ def finalize_running(session: Session, *, row: SessionRecord, container_id: str)
     row.container_id = container_id
     row.started_at = _utcnow()
     row.error_message = None
-    _set_gpu_active_hint(session, row)
     session.add(row)
     session.commit()
     session.refresh(row)
@@ -221,7 +201,6 @@ def finalize_stopped(session: Session, *, row: SessionRecord) -> SessionRecord:
     row.status = SessionStatus.STOPPED
     row.stopped_at = _utcnow()
     row.error_message = None
-    _set_gpu_active_hint(session, row)
     session.add(row)
     session.commit()
     session.refresh(row)
@@ -232,7 +211,6 @@ def finalize_error(session: Session, *, row: SessionRecord, error_message: str) 
     row.status = SessionStatus.ERROR
     row.stopped_at = _utcnow()
     row.error_message = error_message[:2000]
-    _set_gpu_active_hint(session, row)
     session.add(row)
     session.commit()
     session.refresh(row)
@@ -241,10 +219,6 @@ def finalize_error(session: Session, *, row: SessionRecord, error_message: str) 
 
 def get_session_row(session: Session, *, session_id: UUID) -> SessionRecord | None:
     return session.get(SessionRecord, session_id)
-
-
-def get_session_row_by_slug(session: Session, *, slug: str) -> SessionRecord | None:
-    return session.exec(select(SessionRecord).where(SessionRecord.slug == slug)).first()
 
 
 def list_sessions_for_user(

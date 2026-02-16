@@ -7,15 +7,14 @@ Validates system self-healing when runtime operations fail:
 """
 from __future__ import annotations
 
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlmodel import Session, select
 
 from app.config import Settings
-from app.models import Pack, SessionRecord, SessionStatus, Tier, User
+from app.models import Pack, SessionStatus, User
 from app.session_recovery import poll_active_sessions_once, reconcile_on_startup
 from app.session_runtime import RuntimeContainerState
-
 from tests.test_session_recovery import RecoveryRuntime, _insert_session_row
 
 

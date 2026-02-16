@@ -16,14 +16,8 @@ def _normalized_database_url(url: str) -> str:
     return url
 
 
-def _connect_args(url: str) -> dict[str, object]:
-    if url.startswith("sqlite"):
-        return {"check_same_thread": False}
-    return {}
-
-
 DATABASE_URL = _normalized_database_url(get_settings().database_url)
-engine = create_engine(DATABASE_URL, connect_args=_connect_args(DATABASE_URL), pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, isolation_level="READ COMMITTED")
 
 
 def _alembic_config(database_url: str) -> Config:

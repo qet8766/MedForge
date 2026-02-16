@@ -95,7 +95,6 @@ def _insert_session_row(
         status=status,
         container_id=container_id,
         gpu_id=gpu_id,
-        gpu_active=1 if status in {SessionStatus.STARTING, SessionStatus.RUNNING, SessionStatus.STOPPING} else None,
         slug=uuid4().hex[:8],
         workspace_zfs=f"tank/medforge/workspaces/{user_id}/{uuid4()}",
     )
@@ -237,7 +236,6 @@ def test_poll_active_sessions_handles_stop_race_without_clobbering_stopping(
             _ = request
             if not self._did_race:
                 self._row.status = SessionStatus.STOPPING
-                self._row.gpu_active = 1
                 self._session.add(self._row)
                 self._session.commit()
                 self._session.refresh(self._row)

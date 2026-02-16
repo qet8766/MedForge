@@ -94,7 +94,7 @@ def list_submissions_for_user(
             select(Submission)
             .where(Submission.competition_id == competition_id)
             .where(Submission.user_id == user_id)
-            .order_by(desc(cast(Any, Submission.created_at)))
+            .order_by(desc(cast(Any, Submission.created_at)), desc(cast(Any, Submission.id)))
             .offset(offset)
             .limit(limit)
         ).all()

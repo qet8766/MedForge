@@ -14,6 +14,7 @@ from app.schemas import (
     LeaderboardEntry,
     LeaderboardResponse,
 )
+
 from .leaderboard import fetch_leaderboard_rows
 from .queries import (
     competition_or_404,

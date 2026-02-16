@@ -12,7 +12,6 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
-from app.config import Settings
 from app.models import SessionRecord, SessionStatus, User
 
 USER_A = "00000000-0000-0000-0000-000000000011"

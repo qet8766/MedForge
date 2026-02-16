@@ -38,7 +38,7 @@ def upgrade() -> None:
         batch_op.create_index(batch_op.f('ix_datasets_slug'), ['slug'], unique=True)
 
     op.create_table('gpu_devices',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Integer(), autoincrement=False, nullable=False),
     sa.Column('enabled', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )

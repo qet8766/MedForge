@@ -132,10 +132,6 @@ def get_current_user(
     )
 
 
-def get_current_user_id(principal: AuthPrincipal = Depends(get_current_user)) -> UUID:
-    return principal.user_id
-
-
 def require_admin_access(
     principal: AuthPrincipal = Depends(get_current_user),
 ) -> None:

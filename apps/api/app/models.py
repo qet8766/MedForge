@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 
 from sqlalchemy import CheckConstraint, Column, Index, Text, UniqueConstraint
@@ -13,10 +13,7 @@ from app.competition_policy import (
     DEFAULT_LEADERBOARD_RULE,
     DEFAULT_SCORING_MODE,
 )
-
-
-def utcnow() -> datetime:
-    return datetime.now(UTC)
+from app.util import utcnow
 
 
 class Tier(StrEnum):
@@ -101,14 +98,13 @@ class Pack(SQLModel, table=True):
 class GpuDevice(SQLModel, table=True):
     __tablename__ = "gpu_devices"
 
-    id: int = Field(primary_key=True)
+    id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": False})
     enabled: bool = Field(default=True)
 
 
 class SessionRecord(SQLModel, table=True):
     __tablename__ = "sessions"
     __table_args__ = (
-        UniqueConstraint("gpu_id", "gpu_active", name="uq_sessions_gpu_active"),
         Index("ix_sessions_user_status", "user_id", "status"),
     )
 
@@ -119,7 +115,6 @@ class SessionRecord(SQLModel, table=True):
     status: SessionStatus = Field(sa_column=Column(SAEnum(SessionStatus, name="session_status"), nullable=False))
     container_id: str | None = Field(default=None, max_length=128)
     gpu_id: int = Field(foreign_key="gpu_devices.id", index=True)
-    gpu_active: int | None = Field(default=None)
     slug: str = Field(index=True, unique=True, min_length=8, max_length=8)
     workspace_zfs: str = Field(unique=True, max_length=255)
     created_at: datetime = Field(default_factory=utcnow)

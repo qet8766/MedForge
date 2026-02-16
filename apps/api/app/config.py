@@ -94,7 +94,7 @@ def _default_cors_origins() -> tuple[str, ...]:
 @dataclass(frozen=True)
 class Settings:
     app_name: str = _env("APP_NAME", "MedForge API")
-    database_url: str = _env("DATABASE_URL", "sqlite:///./medforge.db")
+    database_url: str = _env("DATABASE_URL", "mysql+pymysql://medforge:medforge@localhost:3306/medforge")
     domain: str = _env("DOMAIN", "example.com", lower=True)
     pack_image: str = _env("PACK_IMAGE", "")
     session_secret: str = _env("SESSION_SECRET", "dev-session-secret")

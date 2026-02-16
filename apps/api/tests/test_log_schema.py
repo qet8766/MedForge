@@ -5,40 +5,15 @@ for multi-tenant debugging: session_id, user_id, event name.
 """
 from __future__ import annotations
 
-from io import StringIO
 from uuid import uuid4
 
-import structlog
 from sqlmodel import Session, select
 
 from app.config import Settings
 from app.models import Pack, SessionStatus, User
 from app.session_recovery import poll_active_sessions_once
 from app.session_runtime import RuntimeContainerState
-
 from tests.test_session_recovery import RecoveryRuntime, _insert_session_row
-
-
-def _capture_structlog(func, *args, **kwargs):
-    """Run func while capturing structlog output via a temporary processor."""
-    captured: list[str] = []
-
-    def _capture_processor(logger, method_name, event_dict):
-        """Capture the rendered log line before it goes to the real output."""
-        captured.append(str(event_dict))
-        return event_dict
-
-    old_processors = structlog.get_config().get("processors", [])
-    structlog.configure(
-        processors=[_capture_processor] + list(old_processors),
-        wrapper_class=structlog.get_config().get("wrapper_class", structlog.stdlib.BoundLogger),
-    )
-    try:
-        result = func(*args, **kwargs)
-    finally:
-        structlog.configure(processors=old_processors)
-
-    return result, "\n".join(captured)
 
 
 def test_poll_log_contains_session_and_user_ids(db_engine, test_settings: Settings, capsys) -> None:

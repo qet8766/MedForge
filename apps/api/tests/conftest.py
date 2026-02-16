@@ -7,13 +7,15 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
+from testcontainers.mysql import MySqlContainer
 
 # Ensure SESSION_SECRET is always available for tests that construct
 # Settings() without explicit keyword args (e.g. test_main_lifecycle.py).
 os.environ.setdefault("SESSION_SECRET", "test-session-secret")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import Session, create_engine, select
+from sqlalchemy import text
+from sqlmodel import Session, SQLModel, create_engine, select
 
 import app.config as config_module
 from app.config import Settings, get_settings
@@ -26,9 +28,26 @@ from app.routers.control_plane import router as control_plane_router
 from app.security import create_session_token, hash_password, hash_session_token
 from app.seed import seed_defaults
 
+MARIADB_IMAGE = "mariadb:11"
+
+
+@pytest.fixture(scope="session")
+def mariadb_url():
+    container = MySqlContainer(
+        image=MARIADB_IMAGE,
+        dbname="medforge_test",
+        username="test",
+        password="test",
+        root_password="roottest",
+    )
+    with container:
+        host = container.get_container_host_ip()
+        port = container.get_exposed_port(3306)
+        yield f"mysql+pymysql://test:test@{host}:{port}/medforge_test"
+
 
 @pytest.fixture()
-def test_settings(tmp_path: Path) -> Settings:
+def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
     competitions_dir = tmp_path / "competitions"
     submissions_dir = tmp_path / "submissions"
 
@@ -83,7 +102,7 @@ def test_settings(tmp_path: Path) -> Settings:
     )
 
     return Settings(
-        database_url=f"sqlite:///{tmp_path / 'test.db'}",
+        database_url=mariadb_url,
         competitions_data_dir=competitions_dir,
         submissions_dir=submissions_dir,
         auto_score_on_submit=True,
@@ -102,15 +121,11 @@ def test_settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture()
 def db_engine(test_settings: Settings):
-    # Keep seed_defaults aligned with per-test settings instead of process env defaults.
     config_module._SETTINGS = test_settings
 
     run_migrations(test_settings.database_url)
 
-    engine = create_engine(
-        test_settings.database_url,
-        connect_args={"check_same_thread": False},
-    )
+    engine = create_engine(test_settings.database_url, pool_pre_ping=True, isolation_level="READ COMMITTED")
 
     with Session(engine) as session:
         seed_defaults(session)
@@ -119,7 +134,15 @@ def db_engine(test_settings: Settings):
         session.add(titanic)
         session.commit()
 
-    return engine
+    yield engine
+
+    # Truncate all tables between tests for isolation
+    with engine.connect() as conn:
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            conn.execute(text(f"TRUNCATE TABLE `{table.name}`"))
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        conn.commit()
 
 
 @pytest.fixture()
