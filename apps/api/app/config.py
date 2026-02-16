@@ -34,6 +34,14 @@ def _env_optional_int(name: str) -> int | None:
         return None
 
 
+def _env_optional_str(name: str, default: str | None = None) -> str | None:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    value = raw.strip()
+    return value if value else default
+
+
 def _default_cookie_domain() -> str:
     domain = os.getenv("DOMAIN", "").strip().lower()
     if not domain or domain in {"localhost", "127.0.0.1"}:
@@ -104,6 +112,13 @@ class Settings:
     session_runtime_use_sudo: bool = field(default_factory=lambda: _env_bool("SESSION_RUNTIME_USE_SUDO", "false"))
     session_recovery_enabled: bool = field(default_factory=lambda: _env_bool("SESSION_RECOVERY_ENABLED", "true"))
     session_poll_interval_seconds: int = field(default_factory=lambda: max(_env_int("SESSION_POLL_INTERVAL_SECONDS", 30), 1))
+    # Container resource limits.
+    session_cpu_shares: int = field(default_factory=lambda: _env_int("SESSION_CPU_SHARES", 1024))
+    session_cpu_limit: int | None = field(default_factory=lambda: _env_optional_int("SESSION_CPU_LIMIT"))
+    session_mem_limit: str | None = field(default_factory=lambda: _env_optional_str("SESSION_MEM_LIMIT", "64g"))
+    session_mem_reservation: str | None = field(default_factory=lambda: _env_optional_str("SESSION_MEM_RESERVATION", "8g"))
+    session_shm_size: str | None = field(default_factory=lambda: _env_optional_str("SESSION_SHM_SIZE", "4g"))
+    session_pids_limit: int | None = field(default_factory=lambda: _env_optional_int("SESSION_PIDS_LIMIT"))
 
 
 _SETTINGS: Settings | None = None

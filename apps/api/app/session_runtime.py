@@ -180,6 +180,21 @@ class DockerZfsSessionRuntime:
             capabilities=[["gpu"]],
         )
 
+        resource_kwargs: dict[str, object] = {
+            "cpu_shares": self._settings.session_cpu_shares,
+        }
+        if self._settings.session_cpu_limit is not None:
+            resource_kwargs["nano_cpus"] = self._settings.session_cpu_limit * 10**9
+        if self._settings.session_mem_limit is not None:
+            resource_kwargs["mem_limit"] = self._settings.session_mem_limit
+            resource_kwargs["memswap_limit"] = self._settings.session_mem_limit
+        if self._settings.session_mem_reservation is not None:
+            resource_kwargs["mem_reservation"] = self._settings.session_mem_reservation
+        if self._settings.session_shm_size is not None:
+            resource_kwargs["shm_size"] = self._settings.session_shm_size
+        if self._settings.session_pids_limit is not None:
+            resource_kwargs["pids_limit"] = self._settings.session_pids_limit
+
         try:
             container = self._client.containers.run(
                 pack.image_ref,
@@ -193,6 +208,7 @@ class DockerZfsSessionRuntime:
                 environment=env,
                 volumes={workspace_mount: {"bind": "/workspace", "mode": "rw"}},
                 device_requests=[device_request],
+                **resource_kwargs,
             )
             container_id = str(container.id)
             self._wait_until_running(container_id, self._settings.session_container_start_timeout_seconds)
