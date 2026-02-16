@@ -15,6 +15,7 @@
 #   DB_PATH=apps/api/gate-evidence.db
 #   BROWSER_DOMAIN=localtest.me
 #   CADDY_PORT=18080
+#   CADDY_IMAGE=caddy:2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
 #   WEB_PORT=3000
 #   E2E_USER_EMAIL=e2e@example.com
 #   E2E_USER_PASSWORD=Password123!
@@ -41,6 +42,7 @@ E2E_RESULT_FILE="${E2E_RESULT_FILE:-/tmp/medforge-e2e-result.json}"
 WEB_LOG="${ROOT_DIR}/apps/web/.gate56-web.log"
 CADDY_LOG="${ROOT_DIR}/infra/host/.gate56-caddy.log"
 CADDY_CONTAINER="medforge-gate56-caddy"
+CADDY_IMAGE="${CADDY_IMAGE:-caddy:2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d}"
 CADDYFILE=""
 
 USER_A="00000000-0000-0000-0000-0000000000a1"
@@ -329,7 +331,7 @@ CADDY
     --add-host host.docker.internal:host-gateway \
     -p "${CADDY_PORT}:${CADDY_PORT}" \
     -v "${CADDYFILE}:/etc/caddy/Caddyfile:ro" \
-    caddy:2-alpine >/dev/null
+    "${CADDY_IMAGE}" >/dev/null
 
   docker logs -f "${CADDY_CONTAINER}" >"${CADDY_LOG}" 2>&1 &
   wait_for_http "${BROWSER_BASE_URL}" "Caddy wildcard proxy"

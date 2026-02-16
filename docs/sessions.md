@@ -5,6 +5,8 @@ Implementation status note (2026-02-16):
 - Core Gate 3 alpha flow is implemented for PUBLIC sessions:
   - `POST /api/sessions` performs allocation + launch and returns running/error terminalization.
   - `POST /api/sessions/{id}/stop` performs stop + snapshot and is idempotent for terminal states.
+  - `GET /api/sessions/current` returns the caller's most recent active (`starting|running|stopping`) session, or `null`.
+  - `apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
 - Gate 4 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
   - active-session poller for `starting|running` container state transitions
@@ -55,6 +57,7 @@ Inputs: `tier` (PUBLIC | PRIVATE), optional `pack_id` (defaults to seeded pack).
 
 - `tier=PRIVATE` returns **501**.
 - Every session allocates exactly one GPU.
+- If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
 
 **Race-safe allocation (single transaction):**
 
@@ -78,12 +81,21 @@ Update session: set `container_id`, `status='running'`, `started_at`. On failure
 
 #### Stop -- `POST /api/sessions/{id}/stop`
 
+If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
+
 1. Set `status='stopping'`.
 2. SIGTERM container, wait up to 30s.
 3. Force-kill if still running.
 4. Snapshot workspace dataset: `<workspace_zfs>@stop-<unixms>`.
 5. If snapshot succeeds: set `status='stopped'`, `stopped_at`.
 6. If snapshot fails: set `status='error'`, `stopped_at`, `error_message="snapshot failed: <details>"`.
+
+#### Read Current -- `GET /api/sessions/current`
+
+- Auth required (`/api/me` auth model).
+- Returns `{ "session": SessionRead | null }`.
+- Only the caller's own sessions are considered.
+- The selected row is the newest active session (`starting|running|stopping`) by `created_at DESC`.
 
 #### Container State Poller (every 30s)
 

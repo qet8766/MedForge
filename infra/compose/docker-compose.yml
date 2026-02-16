@@ -16,7 +16,7 @@ volumes:
 services:
   # ── Database ──────────────────────────────────────────────
   medforge-db:
-    image: mariadb:11
+    image: mariadb:11@sha256:7fcb6109db2ba31b22a5709c1eaf9e84f76c9f1b9b9031ef09f24092f7f207cc
     container_name: medforge-db
     restart: unless-stopped
     environment:

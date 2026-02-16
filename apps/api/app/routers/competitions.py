@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.database import get_session
-from app.deps import get_current_user_id, require_admin_access
+from app.deps import get_current_user_id, require_admin_access, require_allowed_origin
 from app.models import Competition, CompetitionStatus, Dataset, ScoreStatus, Submission
 from app.schemas import (
     CompetitionDetail,
@@ -23,7 +23,7 @@ from app.schemas import (
 )
 from app.scoring import validate_submission_schema
 from app.services import enforce_submission_cap, process_submission_by_id
-from app.storage import store_submission_file
+from app.storage import SubmissionUploadTooLargeError, store_submission_file
 
 router = APIRouter(prefix="/api", tags=["competitions"])
 
@@ -58,6 +58,14 @@ def _to_submission_read(submission: Submission, competition_slug: str) -> Submis
         created_at=submission.created_at,
         scored_at=submission.scored_at,
     )
+
+
+def _mark_submission_failed(session: Session, submission: Submission, error: str) -> None:
+    submission.score_status = ScoreStatus.FAILED
+    submission.score_error = error
+    session.add(submission)
+    session.commit()
+    session.refresh(submission)
 
 
 @router.get("/competitions", response_model=list[CompetitionSummary])
@@ -153,6 +161,7 @@ async def create_submission(
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
+    _origin_guard: None = Depends(require_allowed_origin),
     user_id: UUID = Depends(get_current_user_id),
 ) -> SubmissionCreateResponse:
     competition = _competition_or_404(session, slug, for_update=True)
@@ -187,12 +196,24 @@ async def create_submission(
         session.add(submission)
         session.commit()
         session.refresh(submission)
+    except SubmissionUploadTooLargeError as exc:
+        _mark_submission_failed(session, submission, str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=[
+                {
+                    "loc": ["body", "file"],
+                    "msg": str(exc),
+                    "type": "value_error.submission_too_large",
+                    "ctx": {
+                        "max_bytes": exc.max_bytes,
+                        "size_bytes": exc.size_bytes,
+                    },
+                }
+            ],
+        ) from exc
     except Exception as exc:
-        submission.score_status = ScoreStatus.FAILED
-        submission.score_error = str(exc)
-        session.add(submission)
-        session.commit()
-        session.refresh(submission)
+        _mark_submission_failed(session, submission, str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
 
     if settings.auto_score_on_submit:
@@ -252,6 +273,7 @@ def score_submission_once(
     submission_id: UUID,
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
+    _origin_guard: None = Depends(require_allowed_origin),
     _admin: None = Depends(require_admin_access),
 ) -> SubmissionRead:
     submission = process_submission_by_id(session, submission_id=submission_id, settings=settings)

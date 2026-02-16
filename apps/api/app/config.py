@@ -84,8 +84,11 @@ class Settings:
         default_factory=lambda: UUID(os.getenv("DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001"))
     )
     auto_score_on_submit: bool = field(default_factory=lambda: _env_bool("AUTO_SCORE_ON_SUBMIT", "true"))
-    allow_legacy_header_auth: bool = field(default_factory=lambda: _env_bool("ALLOW_LEGACY_HEADER_AUTH", "true"))
+    allow_legacy_header_auth: bool = field(default_factory=lambda: _env_bool("ALLOW_LEGACY_HEADER_AUTH", "false"))
     require_user_header: bool = field(default_factory=lambda: _env_bool("REQUIRE_USER_HEADER", "false"))
+    submission_upload_max_bytes: int = field(
+        default_factory=lambda: max(_env_int("SUBMISSION_UPLOAD_MAX_BYTES", 10 * 1024 * 1024), 1)
+    )
     auth_idle_ttl_seconds: int = field(default_factory=lambda: _env_int("AUTH_IDLE_TTL_SECONDS", 604800))
     auth_max_ttl_seconds: int = field(default_factory=lambda: _env_int("AUTH_MAX_TTL_SECONDS", 2592000))
     cookie_name: str = field(default_factory=lambda: os.getenv("COOKIE_NAME", "medforge_session").strip())

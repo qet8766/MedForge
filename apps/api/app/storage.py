@@ -16,6 +16,13 @@ class StoredFile(NamedTuple):
     row_count: int
 
 
+class SubmissionUploadTooLargeError(ValueError):
+    def __init__(self, *, max_bytes: int, size_bytes: int) -> None:
+        super().__init__(f"Submission file exceeds maximum size of {max_bytes} bytes.")
+        self.max_bytes = max_bytes
+        self.size_bytes = size_bytes
+
+
 async def store_submission_file(
     *,
     settings: Settings,
@@ -33,6 +40,11 @@ async def store_submission_file(
 
     destination = destination_dir / f"{submission_id}.csv"
     payload = await upload.read()
+    if len(payload) > settings.submission_upload_max_bytes:
+        raise SubmissionUploadTooLargeError(
+            max_bytes=settings.submission_upload_max_bytes,
+            size_bytes=len(payload),
+        )
     destination.write_bytes(payload)
 
     digest = hashlib.sha256(payload).hexdigest()

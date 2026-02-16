@@ -1,0 +1,1 @@
+source apps/api/.venv/bin/activate

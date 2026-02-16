@@ -4,7 +4,7 @@ Implementation status note (2026-02-16):
 
 - Competition-plane components are implemented (`medforge-web`, `medforge-api`, `medforge-db`, `medforge-caddy`, and `medforge-api-worker`).
 - Session lifecycle and recovery orchestration are implemented in API for PUBLIC alpha sessions.
-- Full host-level routing/isolation and end-to-end acceptance checks remain to be validated.
+- Host-level Gate 5/6 validation is completed (auth matrix, upstream-header spoof resistance, east-west session isolation, GPU/workspace/snapshot checks, and browser wildcard websocket lane) with evidence in `@docs/host-validation-2026-02-16.md`.
 
 ### Control Plane
 

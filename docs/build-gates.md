@@ -6,7 +6,7 @@ Implementation status note (2026-02-16):
 - Gate 2 auth endpoints are implemented (`/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/me`) with cookie sessions and an optional `X-User-Id` legacy fallback flag.
 - Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/sessions`, `/api/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, and snapshot-on-stop terminalization.
 - Gate 4 recovery logic (poller + startup reconciliation) is implemented in API and covered by tests.
-- Gate 5/6 host evidence run completed for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket activity (`@docs/host-validation-2026-02-16.md`).
+- Gate 5/6 host evidence run completed via `bash infra/host/validate-gate56.sh --with-browser` for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket frame activity (`@docs/host-validation-2026-02-16.md`).
 
 ### Gate 0 -- Host Foundation
 
@@ -50,6 +50,8 @@ Caddy wildcard route proxies to running sessions (`@infra/caddy/Caddyfile`). Eas
 - `curl -i -H "Host: s-<slug>.medforge.<domain>" https://api.medforge.<domain>/api/auth/session-proxy`
 - `docker exec -it mf-session-<slugA> curl -sS --max-time 3 http://mf-session-<slugB>:8080`
 
+Use `--with-browser` for complete Gate 5 coverage (wildcard browser routing + websocket traffic checks); running without it only covers the API/core lane.
+
 ### Gate 6 -- End-to-End
 
 Full user flow through the UI: log in, create a PUBLIC session, land in code-server, run a CUDA program in the terminal, stop the session, verify ZFS snapshot exists.
@@ -62,6 +64,8 @@ Full user flow through the UI: log in, create a PUBLIC session, land in code-ser
 - `docker exec -it mf-session-<slug> nvidia-smi`
 - `docker exec -it mf-session-<slug> sh -lc 'echo alpha > /workspace/alpha.txt && cat /workspace/alpha.txt'`
 - `zfs list -t snapshot | grep "tank/medforge/workspaces/.*/<session_id>@stop-"`
+
+Use `--with-browser` for end-to-end UI/browser verification; without it, only the non-browser core checks are exercised.
 
 ### Gate 7 -- Competition Portal (Alpha)
 

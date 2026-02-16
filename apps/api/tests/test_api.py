@@ -5,7 +5,7 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.models import Competition, Pack, SessionRecord, SessionStatus, Tier, User
 from app.session_runtime import MockSessionRuntime, SessionRuntimeError
 
@@ -131,6 +131,81 @@ def test_me_supports_legacy_header_when_enabled(client) -> None:
     assert payload["email"] is None
 
 
+def test_submission_rejects_disallowed_origin(client) -> None:
+    csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
+    response = client.post(
+        "/api/competitions/titanic-survival/submissions",
+        headers={"X-User-Id": USER_A, "Origin": "https://evil.example"},
+        files={"file": ("preds.csv", csv_payload, "text/csv")},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Request origin is not allowed."
+
+
+def test_admin_score_rejects_disallowed_origin(client, test_settings) -> None:
+    client.app.dependency_overrides[get_settings] = lambda: replace(
+        test_settings,
+        admin_api_token="test-admin-token",
+        cookie_secure=False,
+        cookie_domain="",
+    )
+
+    csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
+    created = client.post(
+        "/api/competitions/titanic-survival/submissions",
+        headers={"X-User-Id": USER_A},
+        files={"file": ("preds.csv", csv_payload, "text/csv")},
+    )
+    assert created.status_code == 200
+    submission_id = created.json()["submission"]["id"]
+
+    disallowed = client.post(
+        f"/api/admin/submissions/{submission_id}/score",
+        headers={
+            "X-User-Id": USER_A,
+            "X-Admin-Token": "test-admin-token",
+            "Origin": "https://evil.example",
+        },
+    )
+    assert disallowed.status_code == 403
+    assert disallowed.json()["detail"] == "Request origin is not allowed."
+
+    allowed = client.post(
+        f"/api/admin/submissions/{submission_id}/score",
+        headers={
+            "X-User-Id": USER_A,
+            "X-Admin-Token": "test-admin-token",
+            "Origin": "http://localhost:3000",
+        },
+    )
+    assert allowed.status_code == 200
+    assert allowed.json()["id"] == submission_id
+
+
+def test_submission_upload_size_limit_returns_structured_422(client, test_settings) -> None:
+    client.app.dependency_overrides[get_settings] = lambda: replace(
+        test_settings,
+        submission_upload_max_bytes=16,
+        cookie_secure=False,
+        cookie_domain="",
+    )
+
+    csv_payload = "PassengerId,Survived\n892,0\n"
+    response = client.post(
+        "/api/competitions/titanic-survival/submissions",
+        headers={"X-User-Id": USER_A},
+        files={"file": ("preds.csv", csv_payload, "text/csv")},
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert isinstance(detail, list)
+    assert detail[0]["loc"] == ["body", "file"]
+    assert detail[0]["type"] == "value_error.submission_too_large"
+    assert detail[0]["ctx"]["max_bytes"] == 16
+    assert detail[0]["ctx"]["size_bytes"] > 16
+
+
 def test_signup_login_logout_cookie_flow(client) -> None:
     signup = client.post(
         "/api/auth/signup",
@@ -174,6 +249,11 @@ def test_legacy_header_disabled_returns_401(client, test_settings) -> None:
 
     response = client.get("/api/me", headers={"X-User-Id": USER_A})
     assert response.status_code == 401
+
+
+def test_settings_disable_legacy_header_auth_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("ALLOW_LEGACY_HEADER_AUTH", raising=False)
+    assert Settings().allow_legacy_header_auth is False
 
 
 def test_session_proxy_requires_auth(client) -> None:

@@ -7,7 +7,8 @@ Implementation status note (2026-02-16):
   - `/api/auth/session-proxy` owner/admin authorization with running-session checks
 - Gate 4 recovery orchestration is implemented (startup reconciliation + active-session poller).
 - Gate 5 routing/isolation controls are in place; API auth matrix + spoof + east-west block + wildcard browser routing + websocket activity were validated on host (`@docs/host-validation-2026-02-16.md`).
-- Competition APIs still allow temporary header identity fallback (`X-User-Id`) when `ALLOW_LEGACY_HEADER_AUTH=true`.
+- Legacy header identity fallback (`X-User-Id`) is disabled by default and can be re-enabled only when `ALLOW_LEGACY_HEADER_AUTH=true` (for local/test compatibility).
+- Competition submission uploads are bounded by `SUBMISSION_UPLOAD_MAX_BYTES` (default `10485760`).
 
 ### Cookie Sessions
 
@@ -16,6 +17,7 @@ HTTP-only cookie session auth.
 - Cookie attributes: `HttpOnly; Secure; SameSite=Lax; Domain=.medforge.<domain>; Path=/`
 - CSRF/Origin guard: for all state-changing endpoints, reject if `Origin` is not an allowed MedForge origin.
 - Cookie stores a random token (base64url). DB stores only a hash of the token (never raw).
+- Competition write endpoints covered by origin guard: `POST /api/competitions/{slug}/submissions` and `POST /api/admin/submissions/{submission_id}/score`.
 
 ### Wildcard Session Routing (Caddy + forward_auth)
 
