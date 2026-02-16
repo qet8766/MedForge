@@ -14,8 +14,11 @@ from app.models import SessionRecord, SessionStatus
 from app.session_repo import finalize_error, finalize_running, finalize_stopped
 from app.session_runtime import (
     RuntimeContainerState,
+    SessionInspectRequest,
     SessionRuntime,
     SessionRuntimeError,
+    SessionStopRequest,
+    WorkspaceSnapshotRequest,
     get_session_runtime,
 )
 
@@ -120,9 +123,11 @@ class SessionRecoveryRunner:
 
     def _complete_stopping_session(self, *, row: SessionRecord) -> bool:
         try:
-            self._runtime.stop_session_container(
-                row.container_id,
-                timeout_seconds=self._settings.session_container_stop_timeout_seconds,
+            self._runtime.stop_session(
+                SessionStopRequest(
+                    container_id=row.container_id,
+                    timeout_seconds=self._settings.session_container_stop_timeout_seconds,
+                )
             )
         except Exception as exc:
             logger.warning(
@@ -131,7 +136,7 @@ class SessionRecoveryRunner:
                 user_id=str(row.user_id),
                 slug=row.slug,
                 mutation="complete_stopping_session",
-                operation="stop_session_container",
+                operation="stop_session",
                 error_code="stop_failed",
                 error=str(exc),
             )
@@ -139,7 +144,12 @@ class SessionRecoveryRunner:
 
         snapshot_error: Exception | None = None
         try:
-            self._runtime.snapshot_workspace(row.workspace_zfs, snapshot_name=f"stop-{_utc_millis()}")
+            self._runtime.snapshot_workspace(
+                WorkspaceSnapshotRequest(
+                    workspace_zfs=row.workspace_zfs,
+                    snapshot_name=f"stop-{_utc_millis()}",
+                )
+            )
         except Exception as exc:
             snapshot_error = exc
             logger.warning(
@@ -215,7 +225,9 @@ class SessionRecoveryRunner:
         return False
 
     def _inspect_state(self, *, row: SessionRecord) -> tuple[RuntimeContainerState, str | None]:
-        inspection = self._runtime.inspect_session_container(container_id=row.container_id, slug=row.slug)
+        inspection = self._runtime.inspect_session(
+            SessionInspectRequest(container_id=row.container_id, slug=row.slug)
+        )
         retries = 0
         while inspection.state == RuntimeContainerState.UNKNOWN and retries < UNKNOWN_STATE_MAX_RETRIES:
             retries += 1
@@ -228,7 +240,9 @@ class SessionRecoveryRunner:
                 max_retries=UNKNOWN_STATE_MAX_RETRIES,
             )
             time.sleep(UNKNOWN_STATE_RETRY_DELAY_SECONDS)
-            inspection = self._runtime.inspect_session_container(container_id=row.container_id, slug=row.slug)
+            inspection = self._runtime.inspect_session(
+                SessionInspectRequest(container_id=row.container_id, slug=row.slug)
+            )
         return inspection.state, inspection.container_id
 
     def _mark_container_not_running(
@@ -248,9 +262,11 @@ class SessionRecoveryRunner:
 
         cleanup_container_id = container_id or locked.container_id
         try:
-            self._runtime.stop_session_container(
-                cleanup_container_id,
-                timeout_seconds=self._settings.session_container_stop_timeout_seconds,
+            self._runtime.stop_session(
+                SessionStopRequest(
+                    container_id=cleanup_container_id,
+                    timeout_seconds=self._settings.session_container_stop_timeout_seconds,
+                )
             )
         except Exception as exc:
             logger.warning(
@@ -264,7 +280,12 @@ class SessionRecoveryRunner:
 
         snapshot_error: Exception | None = None
         try:
-            self._runtime.snapshot_workspace(locked.workspace_zfs, snapshot_name=f"death-{_utc_millis()}")
+            self._runtime.snapshot_workspace(
+                WorkspaceSnapshotRequest(
+                    workspace_zfs=locked.workspace_zfs,
+                    snapshot_name=f"death-{_utc_millis()}",
+                )
+            )
         except Exception as exc:
             snapshot_error = exc
             logger.warning(
@@ -348,6 +369,7 @@ class SessionRecoveryRunner:
             )
             return None
         return locked
+
 
 def poll_active_sessions_once(
     session: Session,

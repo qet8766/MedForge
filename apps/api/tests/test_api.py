@@ -7,7 +7,13 @@ from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.models import Competition, Pack, SessionRecord, SessionStatus, Tier, User
-from app.session_runtime import MockSessionRuntime, SessionRuntimeError
+from app.session_runtime import (
+    MockSessionRuntime,
+    RuntimeErrorCode,
+    SessionRuntimeError,
+    SessionStartRequest,
+    SessionStartResult,
+)
 
 USER_A = "00000000-0000-0000-0000-000000000011"
 USER_B = "00000000-0000-0000-0000-000000000012"
@@ -444,9 +450,13 @@ def test_session_stop_terminal_row_returns_current_state(client, db_engine) -> N
 
 def test_session_create_runtime_failure_marks_error(client, db_engine, monkeypatch) -> None:
     class StartFailureRuntime(MockSessionRuntime):
-        def start_session_container(self, session_row: SessionRecord, pack: Pack) -> str:
-            _ = (session_row, pack)
-            raise SessionRuntimeError("simulated container failure")
+        def start_session(self, request: SessionStartRequest) -> SessionStartResult:
+            _ = request
+            raise SessionRuntimeError(
+                code=RuntimeErrorCode.CONTAINER_START_FAILED,
+                operation="test.start_session",
+                message="simulated container failure",
+            )
 
     monkeypatch.setattr(
         "app.session_lifecycle.get_session_runtime",

@@ -42,6 +42,10 @@ All are `competition_tier=PUBLIC`.
 - `GET /api/datasets`
 - `GET /api/datasets/{slug}`
 
+### Admin API
+
+- `POST /api/admin/submissions/{submission_id}/score` — trigger scoring for a specific submission (requires admin token)
+
 ### Security and Data Policy
 
 - Hidden holdout labels are stored server-side only and are never mounted in user sessions.

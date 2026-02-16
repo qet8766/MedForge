@@ -51,16 +51,7 @@ def _dataset_or_404(session: Session, dataset_id: UUID) -> Dataset:
 
 def _score_components(score: SubmissionScore) -> dict[str, float]:
     payload = json.loads(score.score_components_json)
-    if not isinstance(payload, dict):
-        raise ValueError("score_components_json must decode to an object.")
-    mapped: dict[str, float] = {}
-    for key, value in payload.items():
-        if not isinstance(key, str):
-            raise ValueError("score component key must be a string.")
-        if not isinstance(value, (int, float)) or isinstance(value, bool):
-            raise ValueError("score component value must be numeric.")
-        mapped[key] = float(value)
-    return mapped
+    return {str(k): float(v) for k, v in payload.items()}
 
 
 def _score_to_read(score: SubmissionScore) -> SubmissionScoreRead:
@@ -129,22 +120,7 @@ def list_competitions(session: Session = Depends(get_session)) -> list[Competiti
         select(Competition).where(Competition.status == CompetitionStatus.ACTIVE).order_by(Competition.slug)
     ).all()
 
-    return [
-        CompetitionSummary(
-            slug=competition.slug,
-            title=competition.title,
-            competition_tier=competition.competition_tier,
-            metric=competition.metric,
-            metric_version=competition.metric_version,
-            scoring_mode=competition.scoring_mode,
-            leaderboard_rule=competition.leaderboard_rule,
-            evaluation_policy=competition.evaluation_policy,
-            competition_spec_version=competition.competition_spec_version,
-            is_permanent=competition.is_permanent,
-            submission_cap_per_day=competition.submission_cap_per_day,
-        )
-        for competition in competitions
-    ]
+    return [CompetitionSummary.model_validate(c) for c in competitions]
 
 
 @router.get("/competitions/{slug}", response_model=CompetitionDetail)
@@ -152,17 +128,7 @@ def get_competition(slug: str, session: Session = Depends(get_session)) -> Compe
     competition = _competition_or_404(session, slug)
     dataset = _dataset_or_404(session, competition.dataset_id)
     return CompetitionDetail(
-        slug=competition.slug,
-        title=competition.title,
-        competition_tier=competition.competition_tier,
-        metric=competition.metric,
-        metric_version=competition.metric_version,
-        scoring_mode=competition.scoring_mode,
-        leaderboard_rule=competition.leaderboard_rule,
-        evaluation_policy=competition.evaluation_policy,
-        competition_spec_version=competition.competition_spec_version,
-        is_permanent=competition.is_permanent,
-        submission_cap_per_day=competition.submission_cap_per_day,
+        **CompetitionSummary.model_validate(competition).model_dump(),
         description=competition.description,
         status=competition.status,
         dataset_slug=dataset.slug,
@@ -352,7 +318,7 @@ def list_my_submissions(
 @router.get("/datasets", response_model=list[DatasetSummary])
 def list_datasets(session: Session = Depends(get_session)) -> list[DatasetSummary]:
     datasets = session.exec(select(Dataset).order_by(Dataset.slug)).all()
-    return [DatasetSummary(slug=dataset.slug, title=dataset.title, source=dataset.source) for dataset in datasets]
+    return [DatasetSummary.model_validate(d) for d in datasets]
 
 
 @router.get("/datasets/{slug}", response_model=DatasetDetail)
@@ -361,15 +327,7 @@ def get_dataset(slug: str, session: Session = Depends(get_session)) -> DatasetDe
     if dataset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found.")
 
-    return DatasetDetail(
-        slug=dataset.slug,
-        title=dataset.title,
-        source=dataset.source,
-        license=dataset.license,
-        storage_path=dataset.storage_path,
-        bytes=dataset.bytes,
-        checksum=dataset.checksum,
-    )
+    return DatasetDetail.model_validate(dataset)
 
 
 @router.post("/admin/submissions/{submission_id}/score", response_model=SubmissionRead)

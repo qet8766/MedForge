@@ -10,6 +10,7 @@ Implementation status note (2026-02-16):
 - Gate 4 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
   - active-session poller for `starting|running|stopping` transitions
+- Runtime internals are split into `app/session_runtime/` ports/adapters with DTO-based method contracts (no ORM models in runtime API).
 - Host evidence confirms GPU/session create-stop-snapshot behavior on this machine (`@docs/host-validation-2026-02-16.md`).
 
 ### Packs
@@ -48,6 +49,7 @@ CUDA_VISIBLE_DEVICES=0
 Optional runtime toggle:
 
 - `SESSION_RUNTIME_USE_SUDO=true` runs ZFS/chown shell commands via `sudo -n` (useful when API process is not root on host installs).
+- `SESSION_RUNTIME_MODE=mock|docker` chooses runtime assembly in `app/session_runtime/factory.py`.
 
 ### Session Lifecycle
 
@@ -104,7 +106,7 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
 
 - Query sessions with `status IN ('starting', 'running', 'stopping')`.
 - `docker inspect` container state.
-- If state is `unknown`, retry inspect a bounded number of times (`UNKNOWN_STATE_MAX_RETRIES`, currently `3`); if still unknown, mark `error`.
+- If state is `unknown`, retry inspect a bounded number of times (hard-coded constant `UNKNOWN_STATE_MAX_RETRIES = 3` in `app/session_recovery.py`, with `0.25s` delay between retries); if still unknown, mark `error`.
 - If running and status is `starting`: set `status='running'` and ensure `started_at` is set.
 - If not running: set `status='error'`, `stopped_at`, `error_message="container exited unexpectedly"`; emit `session.stop` event with `reason: container_death`.
 - If status is `stopping`: execute stop completion flow (stop + snapshot -> `stopped`/`error`; stop command failure leaves `stopping`).

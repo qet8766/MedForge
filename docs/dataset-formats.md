@@ -2,6 +2,11 @@
 
 Storage root: `/data/medforge/datasets/`
 
+**Two distinct paths exist — don't confuse them:**
+
+- `/data/medforge/datasets/` — full dataset mirrors stored at the host level (training data, images, CSVs). Managed outside the API.
+- `{COMPETITIONS_DATA_DIR}` (default `data/competitions` relative to API root) — holdout labels + scoring manifests only. Used by the scoring engine at runtime.
+
 Retention policy:
 
 - Keep full source datasets under the storage root; do not keep only holdout labels.
@@ -71,7 +76,7 @@ PassengerId,Survived
 
 ### 2. RSNA Pneumonia Detection
 
-**Dataset slug:** `rsna-pneumonia-detection-challenge` | **Competition slug:** `rsna-pneumonia-detection`
+**Dataset slug:** `rsna-pneumonia-detection` | **Competition slug:** `rsna-pneumonia-detection`
 **Path:** `/data/medforge/datasets/rsna-pneumonia-detection/`
 **Metric:** mAP @ IoU [0.4–0.75] | **Source:** [Kaggle](https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge)
 

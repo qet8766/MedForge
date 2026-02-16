@@ -9,6 +9,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 - Every session has its own workspace dataset path in `sessions.workspace_zfs` and paths are unique.
 - Reconciliation must not leave `starting` rows stranded; `stopping` rows may remain only when stop command execution fails and must be retried by poller.
 - `tier=PRIVATE` remains modeled everywhere but `POST /api/sessions` must return `501`.
+- Runtime interface uses typed DTO request/result contracts; runtime methods must not accept ORM models (`SessionRecord`, `Pack`).
 
 ### API Checklist
 

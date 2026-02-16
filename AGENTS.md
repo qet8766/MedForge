@@ -10,7 +10,6 @@
 Application stack: Next.js + TypeScript (web) and FastAPI + SQLModel + Pydantic (API/data models).
 
 Primary app code lives in `apps/web` and `apps/api`; infra and spec docs remain in `infra/` and `docs/`.
-Utility/data prep scripts live in `scripts/`.
 
 ## Build, Test, and Development Commands
 - `cp infra/compose/.env.example infra/compose/.env`: create local environment file.

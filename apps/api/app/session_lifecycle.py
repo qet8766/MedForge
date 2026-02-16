@@ -19,7 +19,13 @@ from app.session_repo import (
     mark_session_stopping,
     resolve_pack,
 )
-from app.session_runtime import SessionRuntimeError, get_session_runtime
+from app.session_runtime import (
+    SessionResourceLimits,
+    SessionRuntimeError,
+    SessionStartRequest,
+    WorkspaceProvisionRequest,
+    get_session_runtime,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -70,14 +76,36 @@ def create_session_for_principal(
 
     runtime = get_session_runtime(settings)
     try:
-        runtime.ensure_workspace_dataset(
-            row.workspace_zfs,
-            uid=1000,
-            gid=1000,
-            quota_gb=settings.session_workspace_quota_gb,
+        runtime.provision_workspace(
+            WorkspaceProvisionRequest(
+                workspace_zfs=row.workspace_zfs,
+                uid=1000,
+                gid=1000,
+                quota_gb=settings.session_workspace_quota_gb,
+            )
         )
-        container_id = runtime.start_session_container(row, pack)
-        row = finalize_running(session, row=row, container_id=container_id)
+        start_result = runtime.start_session(
+            SessionStartRequest(
+                session_id=row.id,
+                user_id=row.user_id,
+                tier=row.tier.value,
+                slug=row.slug,
+                gpu_id=row.gpu_id,
+                workspace_zfs=row.workspace_zfs,
+                pack_image_ref=pack.image_ref,
+                public_sessions_network=settings.public_sessions_network,
+                start_timeout_seconds=settings.session_container_start_timeout_seconds,
+                resource_limits=SessionResourceLimits(
+                    cpu_shares=settings.session_cpu_shares,
+                    cpu_limit=settings.session_cpu_limit,
+                    mem_limit=settings.session_mem_limit,
+                    mem_reservation=settings.session_mem_reservation,
+                    shm_size=settings.session_shm_size,
+                    pids_limit=settings.session_pids_limit,
+                ),
+            )
+        )
+        row = finalize_running(session, row=row, container_id=start_result.container_id)
     except SessionRuntimeError as exc:
         row = finalize_error(session, row=row, error_message=f"create failed: {exc}")
         raise HTTPException(

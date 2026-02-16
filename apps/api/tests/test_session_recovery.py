@@ -10,10 +10,16 @@ from app.config import Settings
 from app.models import Pack, SessionRecord, SessionStatus, Tier, User
 from app.session_recovery import UNKNOWN_STATE_MAX_RETRIES, poll_active_sessions_once, reconcile_on_startup
 from app.session_runtime import (
-    ContainerInspection,
     MockSessionRuntime,
     RuntimeContainerState,
+    RuntimeErrorCode,
+    SessionInspectRequest,
+    SessionInspectResult,
     SessionRuntimeError,
+    SessionStopRequest,
+    SessionStopResult,
+    WorkspaceSnapshotRequest,
+    WorkspaceSnapshotResult,
 )
 
 
@@ -26,6 +32,7 @@ class RecoveryRuntime(MockSessionRuntime):
         snapshot_error: bool = False,
         stop_error: bool = False,
     ) -> None:
+        super().__init__()
         self._states: dict[str, list[RuntimeContainerState]] = {}
         for key, raw in (states or {}).items():
             if isinstance(raw, RuntimeContainerState):
@@ -39,8 +46,8 @@ class RecoveryRuntime(MockSessionRuntime):
         self._stop_error = stop_error
         self.inspect_calls: dict[str, int] = {}
 
-    def inspect_session_container(self, *, container_id: str | None, slug: str) -> ContainerInspection:
-        key = container_id or f"mf-session-{slug}"
+    def inspect_session(self, request: SessionInspectRequest) -> SessionInspectResult:
+        key = request.container_id or f"mf-session-{request.slug}"
         self.inspect_calls[key] = self.inspect_calls.get(key, 0) + 1
         if key not in self._states:
             raise AssertionError(f"Missing state fixture for key={key}")
@@ -48,18 +55,28 @@ class RecoveryRuntime(MockSessionRuntime):
         state = sequence[0]
         if len(sequence) > 1:
             sequence.pop(0)
-        resolved_container_id = None if state == RuntimeContainerState.MISSING else (container_id or key)
-        return ContainerInspection(state=state, container_id=resolved_container_id)
+        resolved_container_id = None if state == RuntimeContainerState.MISSING else (request.container_id or key)
+        return SessionInspectResult(state=state, container_id=resolved_container_id)
 
-    def snapshot_workspace(self, workspace_zfs: str, *, snapshot_name: str) -> None:
-        _ = (workspace_zfs, snapshot_name)
+    def snapshot_workspace(self, request: WorkspaceSnapshotRequest) -> WorkspaceSnapshotResult:
+        _ = request
         if self._snapshot_error:
-            raise SessionRuntimeError("simulated snapshot failure")
+            raise SessionRuntimeError(
+                code=RuntimeErrorCode.SNAPSHOT_FAILED,
+                operation="test.snapshot_workspace",
+                message="simulated snapshot failure",
+            )
+        return super().snapshot_workspace(request)
 
-    def stop_session_container(self, container_id: str | None, *, timeout_seconds: int) -> None:
-        _ = (container_id, timeout_seconds)
+    def stop_session(self, request: SessionStopRequest) -> SessionStopResult:
+        _ = request
         if self._stop_error:
-            raise SessionRuntimeError("simulated stop failure")
+            raise SessionRuntimeError(
+                code=RuntimeErrorCode.CONTAINER_STOP_FAILED,
+                operation="test.stop_session",
+                message="simulated stop failure",
+            )
+        return super().stop_session(request)
 
 
 def _insert_session_row(
@@ -211,12 +228,13 @@ def test_poll_active_sessions_handles_stop_race_without_clobbering_stopping(
 ) -> None:
     class PollStopRaceRuntime(MockSessionRuntime):
         def __init__(self, *, session_obj: Session, row: SessionRecord) -> None:
+            super().__init__()
             self._session = session_obj
             self._row = row
             self._did_race = False
 
-        def inspect_session_container(self, *, container_id: str | None, slug: str) -> ContainerInspection:
-            _ = slug
+        def inspect_session(self, request: SessionInspectRequest) -> SessionInspectResult:
+            _ = request
             if not self._did_race:
                 self._row.status = SessionStatus.STOPPING
                 self._row.gpu_active = 1
@@ -224,7 +242,10 @@ def test_poll_active_sessions_handles_stop_race_without_clobbering_stopping(
                 self._session.commit()
                 self._session.refresh(self._row)
                 self._did_race = True
-            return ContainerInspection(state=RuntimeContainerState.EXITED, container_id=container_id)
+            return SessionInspectResult(
+                state=RuntimeContainerState.EXITED,
+                container_id=request.container_id,
+            )
 
     with Session(db_engine) as session:
         pack = session.exec(select(Pack)).first()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from hmac import compare_digest
 from typing import Annotated
 from urllib.parse import urlparse
 from uuid import UUID
@@ -166,7 +167,7 @@ def require_admin_access(
     if principal.role == Role.ADMIN:
         return
 
-    if settings.admin_api_token and x_admin_token == settings.admin_api_token:
+    if settings.admin_api_token and x_admin_token is not None and compare_digest(x_admin_token, settings.admin_api_token):
         return
 
     raise HTTPException(
