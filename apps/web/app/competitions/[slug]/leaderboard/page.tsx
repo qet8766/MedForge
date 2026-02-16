@@ -1,5 +1,7 @@
 import { apiGet, type LeaderboardEntry } from "../../../../lib/api";
 
+export const dynamic = "force-dynamic";
+
 type LeaderboardResponse = {
   competition_slug: string;
   entries: LeaderboardEntry[];

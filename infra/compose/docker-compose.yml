@@ -103,6 +103,7 @@ services:
     depends_on:
       - medforge-api
     environment:
+      API_URL: http://medforge-api:8000
       NEXT_PUBLIC_API_URL: https://api.medforge.${DOMAIN}
       NEXT_PUBLIC_DOMAIN: ${DOMAIN}
     networks:

@@ -23,6 +23,7 @@ Implementation status note (2026-02-16):
 
 Full control-plane composition: `@infra/compose/docker-compose.yml`
 Compose env template: `@infra/compose/.env.example`
+`medforge-web` server-side data fetches can use `API_URL` (for example `http://medforge-api:8000` inside Compose).
 
 ### Docker Networking
 

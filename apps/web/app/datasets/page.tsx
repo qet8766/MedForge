@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { apiGet, type DatasetSummary } from "../../lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default async function DatasetsPage(): Promise<React.JSX.Element> {
   const datasets = await apiGet<DatasetSummary[]>("/api/datasets");
 

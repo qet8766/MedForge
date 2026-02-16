@@ -74,9 +74,10 @@ const NEXT_PUBLIC_DOMAIN = process.env.NEXT_PUBLIC_DOMAIN?.trim() ?? "";
 const API_BASE_FALLBACK = NEXT_PUBLIC_DOMAIN
   ? `https://api.medforge.${NEXT_PUBLIC_DOMAIN}`
   : DOMAIN ? `https://api.medforge.${DOMAIN}` : "";
+const DEFAULT_SERVER_API_URL = "http://127.0.0.1:8000";
 function resolveApiBase(): string {
   if (typeof window === "undefined") {
-    return API_URL || NEXT_PUBLIC_API_URL || API_BASE_FALLBACK;
+    return API_URL || NEXT_PUBLIC_API_URL || API_BASE_FALLBACK || DEFAULT_SERVER_API_URL;
   }
   return NEXT_PUBLIC_API_URL || API_BASE_FALLBACK;
 }
@@ -89,12 +90,7 @@ function toApiUrl(path: string): string {
   if (base) {
     return `${base}${path}`;
   }
-  if (typeof window !== "undefined") {
-    return path;
-  }
-  throw new Error(
-    "Server API base is not configured. Set API_URL, NEXT_PUBLIC_API_URL, DOMAIN, or NEXT_PUBLIC_DOMAIN."
-  );
+  return path;
 }
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(toApiUrl(path), {
