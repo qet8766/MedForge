@@ -111,7 +111,7 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
   await sessionPage.close();
 
   await page.getByTestId("session-stop").click();
-  await expect(page.getByTestId("session-status")).toContainText("Session stopped.");
+  await expect(page.getByTestId("session-status")).toContainText("Session stop requested.");
 
   const resultFile = process.env.E2E_RESULT_FILE?.trim();
   if (resultFile) {

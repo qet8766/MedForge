@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
@@ -12,6 +13,8 @@ from sqlmodel import Session, select
 from app.config import Settings
 from app.models import Competition, ScoreStatus, Submission, SubmissionScore
 from app.scoring import SCORER_VERSION, score_submission_file
+
+log = logging.getLogger("medforge.services")
 
 
 def utc_day_bounds(now: datetime | None = None) -> tuple[datetime, datetime]:
@@ -119,6 +122,12 @@ def process_submission_by_id(session: Session, *, submission_id: UUID, settings:
         submission.scored_at = datetime.now(UTC)
         submission.score_error = None
     except Exception as exc:
+        log.exception(
+            "scoring failed submission=%s user=%s competition=%s",
+            submission.id,
+            submission.user_id,
+            competition.slug,
+        )
         submission.score_status = ScoreStatus.FAILED
         submission.score_error = str(exc)
         submission.scored_at = datetime.now(UTC)

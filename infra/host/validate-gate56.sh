@@ -45,8 +45,9 @@ CADDY_CONTAINER="medforge-gate56-caddy"
 CADDY_IMAGE="${CADDY_IMAGE:-caddy:2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d}"
 CADDYFILE=""
 
-USER_A="00000000-0000-0000-0000-0000000000a1"
-USER_B="00000000-0000-0000-0000-0000000000b2"
+AUTH_USER_A_EMAIL="${AUTH_USER_A_EMAIL:-gate-user-a@medforge.test}"
+AUTH_USER_B_EMAIL="${AUTH_USER_B_EMAIL:-gate-user-b@medforge.test}"
+AUTH_USER_PASSWORD="${AUTH_USER_PASSWORD:-Password123!}"
 
 API_PID=""
 WEB_PID=""
@@ -54,6 +55,8 @@ SESSION_ID_A=""
 SLUG_A=""
 SESSION_ID_B=""
 SLUG_B=""
+COOKIE_JAR_A=""
+COOKIE_JAR_B=""
 
 usage() {
   cat <<'USAGE'
@@ -160,10 +163,10 @@ cleanup() {
   local exit_code=$?
 
   if [ -n "${SESSION_ID_A}" ]; then
-    curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_A}/stop" -H "X-User-Id: ${USER_A}" >/dev/null 2>&1 || true
+    curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}" >/dev/null 2>&1 || true
   fi
   if [ -n "${SESSION_ID_B}" ]; then
-    curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -H "X-User-Id: ${USER_B}" >/dev/null 2>&1 || true
+    curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}" >/dev/null 2>&1 || true
   fi
 
   docker ps -a --format '{{.ID}} {{.Names}}' | awk '/ mf-session-/{print $1}' | xargs -r docker rm -f >/dev/null 2>&1 || true
@@ -184,6 +187,13 @@ cleanup() {
 
   if [ -n "${CADDYFILE}" ] && [ -f "${CADDYFILE}" ]; then
     rm -f "${CADDYFILE}" || true
+  fi
+
+  if [ -n "${COOKIE_JAR_A}" ] && [ -f "${COOKIE_JAR_A}" ]; then
+    rm -f "${COOKIE_JAR_A}" || true
+  fi
+  if [ -n "${COOKIE_JAR_B}" ] && [ -f "${COOKIE_JAR_B}" ]; then
+    rm -f "${COOKIE_JAR_B}" || true
   fi
 
   exit "${exit_code}"
@@ -219,6 +229,82 @@ wait_for_api() {
   exit 1
 }
 
+ensure_cookie_session() {
+  local email="$1"
+  local password="$2"
+  local jar="$3"
+  local label="$4"
+
+  local signup_code
+  signup_code="$(curl -sS -o /tmp/g56_signup_"${label}".out -w '%{http_code}' \
+    -X POST "${API_URL}/api/auth/signup" \
+    -H 'content-type: application/json' \
+    -H 'Origin: http://localhost:3000' \
+    -c "${jar}" -b "${jar}" \
+    -d "{\"email\":\"${email}\",\"password\":\"${password}\"}")"
+
+  if [ "${signup_code}" = "201" ]; then
+    return
+  fi
+
+  if [ "${signup_code}" != "409" ]; then
+    echo "ERROR: failed to sign up ${label} user (code=${signup_code})"
+    cat /tmp/g56_signup_"${label}".out || true
+    exit 1
+  fi
+
+  local login_code
+  login_code="$(curl -sS -o /tmp/g56_login_"${label}".out -w '%{http_code}' \
+    -X POST "${API_URL}/api/auth/login" \
+    -H 'content-type: application/json' \
+    -H 'Origin: http://localhost:3000' \
+    -c "${jar}" -b "${jar}" \
+    -d "{\"email\":\"${email}\",\"password\":\"${password}\"}")"
+
+  if [ "${login_code}" != "200" ]; then
+    echo "ERROR: failed to log in ${label} user (code=${login_code})"
+    cat /tmp/g56_login_"${label}".out || true
+    exit 1
+  fi
+}
+
+wait_for_session_proxy_not_running() {
+  local host="$1"
+  local cookie_jar="$2"
+  local timeout_seconds="${3:-90}"
+  local code=""
+
+  for _ in $(seq 1 "${timeout_seconds}"); do
+    code="$(curl -sS -o /tmp/g5_stopped.out -w '%{http_code}' "${API_URL}/api/auth/session-proxy" -H "Host: ${host}" -b "${cookie_jar}")"
+    if [ "${code}" = "404" ]; then
+      echo "${code}"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "ERROR: timed out waiting for session host ${host} to stop routing (last=${code})"
+  return 1
+}
+
+wait_for_stop_snapshot() {
+  local session_id="$1"
+  local timeout_seconds="${2:-90}"
+  local snapshot=""
+
+  for _ in $(seq 1 "${timeout_seconds}"); do
+    snapshot="$(zfs list -t snapshot -H -o name | rg "tank/medforge/workspaces/.*/${session_id}@stop-" | tail -n1 || true)"
+    if [ -n "${snapshot}" ]; then
+      echo "${snapshot}"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "ERROR: timed out waiting for stop snapshot for session ${session_id}"
+  return 1
+}
+
 start_local_api() {
   cd "${ROOT_DIR}/apps/api"
   if [ ! -d ".venv" ]; then
@@ -239,7 +325,6 @@ start_local_api() {
     DATABASE_URL="sqlite:///${DB_PATH}" \
     DOMAIN="${BROWSER_DOMAIN}" \
     PACK_IMAGE="${PACK_IMAGE_RESOLVED}" \
-    ALLOW_LEGACY_HEADER_AUTH=true \
     SESSION_RUNTIME_MODE=docker \
     SESSION_RUNTIME_USE_SUDO=true \
     PUBLIC_SESSIONS_NETWORK=medforge-public-sessions \
@@ -445,10 +530,14 @@ main() {
   } >"${EVIDENCE_FILE}"
 
   start_local_api
+  COOKIE_JAR_A="$(mktemp /tmp/medforge-g56-cookie-a.XXXXXX)"
+  COOKIE_JAR_B="$(mktemp /tmp/medforge-g56-cookie-b.XXXXXX)"
+  ensure_cookie_session "${AUTH_USER_A_EMAIL}" "${AUTH_USER_PASSWORD}" "${COOKIE_JAR_A}" "user_a"
+  ensure_cookie_session "${AUTH_USER_B_EMAIL}" "${AUTH_USER_PASSWORD}" "${COOKIE_JAR_B}" "user_b"
 
   section "Create Sessions"
   local resp_a resp_a_code
-  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -H "X-User-Id: ${USER_A}" -d '{"tier":"PUBLIC"}')"
+  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_A}" -d '{"tier":"public"}')"
   assert_eq "${resp_a_code}" "201" "create session A"
   resp_a="$(cat /tmp/g6_create_a.out)"
   record "- create A: \`${resp_a}\`"
@@ -456,7 +545,7 @@ main() {
   SLUG_A="$(json_field "${resp_a}" "data['session']['slug']")"
 
   local resp_b resp_b_code
-  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -H "X-User-Id: ${USER_B}" -d '{"tier":"PUBLIC"}')"
+  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${API_URL}/api/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_B}" -d '{"tier":"public"}')"
   assert_eq "${resp_b_code}" "201" "create session B"
   resp_b="$(cat /tmp/g6_create_b.out)"
   record "- create B: \`${resp_b}\`"
@@ -472,12 +561,12 @@ main() {
   assert_eq "${code}" "401" "unauthenticated session-proxy"
   record "- unauthenticated: \`${code}\` body=\`$(cat /tmp/g5_unauth.out)\`"
 
-  code="$(curl -sS -o /tmp/g5_nonowner.out -w '%{http_code}' "${API_URL}/api/auth/session-proxy" -H "Host: ${host_a}" -H "X-User-Id: ${USER_B}")"
+  code="$(curl -sS -o /tmp/g5_nonowner.out -w '%{http_code}' "${API_URL}/api/auth/session-proxy" -H "Host: ${host_a}" -b "${COOKIE_JAR_B}")"
   assert_eq "${code}" "403" "non-owner session-proxy"
   record "- non-owner: \`${code}\` body=\`$(cat /tmp/g5_nonowner.out)\`"
 
   local headers
-  headers="$(curl -sS -D - -o /tmp/g5_owner.out "${API_URL}/api/auth/session-proxy" -H "Host: ${host_a}" -H "X-User-Id: ${USER_A}" -H 'X-Upstream: evil-target:8080')"
+  headers="$(curl -sS -D - -o /tmp/g5_owner.out "${API_URL}/api/auth/session-proxy" -H "Host: ${host_a}" -H 'X-Upstream: evil-target:8080' -b "${COOKIE_JAR_A}")"
   code="$(printf '%s\n' "${headers}" | awk 'NR==1{print $2}')"
   assert_eq "${code}" "200" "owner session-proxy"
   local upstream
@@ -519,23 +608,21 @@ main() {
   record "- workspace write/read: \`${ws_line}\`"
 
   local stop_a
-  stop_a="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_A}/stop" -H "X-User-Id: ${USER_A}")"
+  stop_a="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}")"
+  assert_eq "$(json_field "${stop_a}" "data['message']")" "Session stop requested." "stop A message"
   record "- stop A: \`${stop_a}\`"
 
-  code="$(curl -sS -o /tmp/g5_stopped.out -w '%{http_code}' "${API_URL}/api/auth/session-proxy" -H "Host: ${host_a}" -H "X-User-Id: ${USER_A}")"
-  assert_eq "${code}" "404" "stopped session-proxy"
+  code="$(wait_for_session_proxy_not_running "${host_a}" "${COOKIE_JAR_A}")"
   record "- stopped host check: \`${code}\` body=\`$(cat /tmp/g5_stopped.out)\`"
 
   local snapshot
-  snapshot="$(zfs list -t snapshot -H -o name | rg "tank/medforge/workspaces/.*/${SESSION_ID_A}@stop-" | tail -n1 || true)"
-  if [ -z "${snapshot}" ]; then
-    echo "ERROR: snapshot not found for session ${SESSION_ID_A}"
-    exit 1
-  fi
+  snapshot="$(wait_for_stop_snapshot "${SESSION_ID_A}")"
   record "- snapshot: \`${snapshot}\`"
 
   local stop_b
-  stop_b="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -H "X-User-Id: ${USER_B}")"
+  stop_b="$(curl -sS -X POST "${API_URL}/api/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}")"
+  assert_eq "$(json_field "${stop_b}" "data['message']")" "Session stop requested." "stop B message"
+  wait_for_stop_snapshot "${SESSION_ID_B}" >/dev/null
   record "- stop B: \`${stop_b}\`"
 
   SESSION_ID_A=""

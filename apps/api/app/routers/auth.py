@@ -7,11 +7,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlmodel import Session, select
 
+from app.api_contract import ApiEnvelope, envelope
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.deps import require_allowed_origin
 from app.models import AuthSession, User
-from app.schemas import AuthUserResponse, LoginRequest, SessionActionResponse, SignupRequest
+from app.rate_limit import require_auth_rate_limit
+from app.schemas import AuthCredentials, AuthUserResponse, SessionActionResponse
 from app.security import create_session_token, hash_password, hash_session_token, normalize_email, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -80,15 +82,16 @@ def _validate_email(email: str) -> str:
     return normalized
 
 
-@router.post("/signup", response_model=AuthUserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=ApiEnvelope[AuthUserResponse], status_code=status.HTTP_201_CREATED)
 def signup(
-    payload: SignupRequest,
+    payload: AuthCredentials,
     response: Response,
     request: Request,
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
     _origin_guard: None = Depends(require_allowed_origin),
-) -> AuthUserResponse:
+    _rate_limit: None = Depends(require_auth_rate_limit),
+) -> ApiEnvelope[AuthUserResponse]:
     email = _validate_email(payload.email)
     existing = session.exec(select(User).where(User.email == email)).first()
     if existing is not None:
@@ -105,18 +108,19 @@ def signup(
     token = _issue_auth_session(user_id=user.id, request=request, session=session, settings=settings)
     _set_session_cookie(response, token, settings)
 
-    return AuthUserResponse(user_id=user.id, email=user.email, role=user.role)
+    return envelope(request, AuthUserResponse(user_id=user.id, email=user.email, role=user.role))
 
 
-@router.post("/login", response_model=AuthUserResponse)
+@router.post("/login", response_model=ApiEnvelope[AuthUserResponse])
 def login(
-    payload: LoginRequest,
+    payload: AuthCredentials,
     response: Response,
     request: Request,
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
     _origin_guard: None = Depends(require_allowed_origin),
-) -> AuthUserResponse:
+    _rate_limit: None = Depends(require_auth_rate_limit),
+) -> ApiEnvelope[AuthUserResponse]:
     email = _validate_email(payload.email)
     user = session.exec(select(User).where(User.email == email)).first()
 
@@ -126,17 +130,17 @@ def login(
     token = _issue_auth_session(user_id=user.id, request=request, session=session, settings=settings)
     _set_session_cookie(response, token, settings)
 
-    return AuthUserResponse(user_id=user.id, email=user.email, role=user.role)
+    return envelope(request, AuthUserResponse(user_id=user.id, email=user.email, role=user.role))
 
 
-@router.post("/logout", response_model=SessionActionResponse)
+@router.post("/logout", response_model=ApiEnvelope[SessionActionResponse])
 def logout(
     response: Response,
     request: Request,
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
     _origin_guard: None = Depends(require_allowed_origin),
-) -> SessionActionResponse:
+) -> ApiEnvelope[SessionActionResponse]:
     token = request.cookies.get(settings.cookie_name)
     if token:
         token_hash = hash_session_token(token, settings.session_secret)
@@ -152,4 +156,4 @@ def logout(
             session.commit()
 
     _clear_session_cookie(response, settings)
-    return SessionActionResponse(detail="Signed out.")
+    return envelope(request, SessionActionResponse(message="Signed out."))

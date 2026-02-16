@@ -56,6 +56,15 @@ class AliveThread:
         return True
 
 
+class HealthRequest:
+    def __init__(self, request_id: str = "test-request-id") -> None:
+        class _State:
+            def __init__(self, value: str) -> None:
+                self.request_id = value
+
+        self.state = _State(request_id)
+
+
 @pytest.fixture()
 def main_module() -> ModuleType:
     import app.main as app_main
@@ -100,8 +109,8 @@ def _run_recovery_loop(
 
 def _health_response(module: ModuleType) -> tuple[int, dict[str, str]]:
     response = Response()
-    payload = module.healthz(response)
-    return response.status_code, payload
+    payload = module.healthz(HealthRequest(), response)
+    return response.status_code, payload.data.model_dump()
 
 
 @pytest.mark.asyncio

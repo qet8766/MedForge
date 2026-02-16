@@ -130,7 +130,7 @@ Detailed doc:
 ### Create (`POST /api/sessions`)
 
 - Validate auth and input (`tier`, optional `pack_id`).
-- Reject `tier=PRIVATE` with `501`.
+- Reject `tier=private` with `501`.
 - In one transaction:
 1. lock user row (`FOR UPDATE`)
 2. enforce per-user active-session limit
@@ -173,6 +173,7 @@ Detailed docs:
 ## 5. Security and Routing Snapshot
 
 - Auth is HTTP-only cookie session with DB-stored token hash.
+- Legacy header identity fallback (`X-User-Id`) is removed from auth flow.
 - Cookie scope: subdomain-wide for `*.medforge.<domain>`.
 - State-changing endpoints enforce Origin checks.
 - Wildcard session routing uses `GET /api/auth/session-proxy`.

@@ -62,6 +62,7 @@ apps/
   web/                  # Next.js App Router (competitions, datasets, submit flow)
   api/                  # FastAPI + SQLModel
     app/                # API routes, models, scoring, worker
+    app/session_runtime/ # Session runtime ports/adapters, DTOs, and factory
     tests/              # pytest coverage for competition API/scoring
     alembic/            # Alembic environment + versioned migrations
     data/competitions/  # holdout label sets + manifest versions

@@ -1,6 +1,11 @@
-## Dataset Formats
+## 5. Dataset Formats
 
 Storage root: `/data/medforge/datasets/`
+
+**Two distinct paths exist — don't confuse them:**
+
+- `/data/medforge/datasets/` — full dataset mirrors stored at the host level (training data, images, CSVs). Managed outside the API.
+- `{COMPETITIONS_DATA_DIR}` (default `data/competitions` relative to API root) — holdout labels + scoring manifests only. Used by the scoring engine at runtime.
 
 Retention policy:
 

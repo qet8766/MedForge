@@ -4,7 +4,7 @@ MedForge alpha includes permanent mock competitions with Kaggle-style submission
 
 ### Terminology
 
-- `competition_tier` means platform policy (`PUBLIC` or `PRIVATE`) and is not related to label visibility.
+- `competition_tier` means platform policy (`public` or `private`) and is not related to label visibility.
 - `primary_score` is computed from hidden holdout labels.
 - `scoring_mode` is `single_realtime_hidden` for alpha competitions.
 - `leaderboard_rule` is `best_per_user` with deterministic ordering:
@@ -20,7 +20,7 @@ MedForge alpha includes permanent mock competitions with Kaggle-style submission
 - `rsna-pneumonia-detection` (metric: `map_iou`, cap: `10/day/user`)
 - `cifar-100-classification` (metric: `accuracy`, cap: `20/day/user`)
 
-All are `competition_tier=PUBLIC`.
+All are `competition_tier=public`.
 
 ### Submission and Scoring Flow
 
@@ -34,13 +34,50 @@ All are `competition_tier=PUBLIC`.
 
 ### Alpha API Surface
 
-- `GET /api/competitions`
+- `GET /api/competitions` (`limit`, `cursor`)
 - `GET /api/competitions/{slug}`
-- `GET /api/competitions/{slug}/leaderboard`
-- `POST /api/competitions/{slug}/submissions`
-- `GET /api/competitions/{slug}/submissions/me`
-- `GET /api/datasets`
+- `GET /api/competitions/{slug}/leaderboard` (`limit`, `cursor`)
+- `POST /api/competitions/{slug}/submissions` (returns `201`)
+- `GET /api/competitions/{slug}/submissions/me` (`limit`, `cursor`)
+- `GET /api/datasets` (`limit`, `cursor`)
 - `GET /api/datasets/{slug}`
+
+### Router Module Structure
+
+The competition API is implemented as a modular router package at `apps/api/app/routers/competitions/`:
+
+- `public.py` — public competition and dataset endpoints
+- `submissions.py` — submission upload and history
+- `admin.py` — admin scoring trigger
+- `leaderboard.py` — leaderboard SQL ranking query
+- `submission_records.py` — submission row persistence helpers
+- `queries.py` — shared DB query helpers
+- `mappers.py` — ORM-to-response mapping
+- `dependencies.py` — shared FastAPI dependencies
+- `errors.py` — RFC 7807 error helpers
+
+### Admin API
+
+- `POST /api/admin/submissions/{submission_id}/score` — trigger scoring for a specific submission (requires authenticated admin principal cookie session)
+
+### Response Contract (Breaking)
+
+- Success responses use a universal envelope:
+  - `{ "data": ..., "meta": { request_id, api_version, timestamp, ... } }`
+- Errors use RFC 7807-style payloads (`application/problem+json`) with:
+  - `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`
+  - optional `errors` array for validation-style failures
+- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api`.
+
+### Migration Notes
+
+- Legacy error payloads used a loose shape like `{"detail":"..."}` or list-style validation details.
+- Current competition endpoints return envelope success payloads and RFC 7807 problem payloads.
+- Client parsing strategy for competition endpoints should be:
+  - use `detail` when present
+  - fall back to `title`
+  - finally fall back to a generic status message
+- This is a hard break for competition, dataset, leaderboard, submission, and admin score endpoints; no compatibility shim is provided.
 
 ### Security and Data Policy
 

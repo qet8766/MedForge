@@ -2,10 +2,7 @@ networks:
   medforge-control:
     driver: bridge
   medforge-public-sessions:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24          # Fixed subnet so Caddy gets a stable IP.
+    external: true                        # Created by bootstrap-easy.sh with 172.30.0.0/24.
   medforge-private-sessions:
     driver: bridge                        # Placeholder — unused until PRIVATE tier.
 
@@ -31,7 +28,10 @@ services:
 
   # ── API ───────────────────────────────────────────────────
   medforge-api:
-    build: ../../apps/api
+    build:
+      context: ../../apps/api
+      args:
+        DOCKER_GID: 995
     container_name: medforge-api
     restart: unless-stopped
     depends_on:
@@ -58,15 +58,12 @@ services:
       SESSION_PIDS_LIMIT: ${SESSION_PIDS_LIMIT}
       PACK_IMAGE: ${PACK_IMAGE}                   # e.g. medforge-pack-default@sha256:...
       AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
-      REQUIRE_USER_HEADER: ${REQUIRE_USER_HEADER}
-      ALLOW_LEGACY_HEADER_AUTH: ${ALLOW_LEGACY_HEADER_AUTH}
       AUTH_IDLE_TTL_SECONDS: ${AUTH_IDLE_TTL_SECONDS}
       AUTH_MAX_TTL_SECONDS: ${AUTH_MAX_TTL_SECONDS}
       COOKIE_NAME: ${COOKIE_NAME}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       COOKIE_SECURE: ${COOKIE_SECURE}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE}
-      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Manage session containers.
     # ZFS snapshot commands require host-level access.
@@ -90,8 +87,6 @@ services:
     environment:
       DATABASE_URL: mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@medforge-db:3306/medforge
       AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
-      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
-      REQUIRE_USER_HEADER: ${REQUIRE_USER_HEADER}
     networks:
       - medforge-control
 

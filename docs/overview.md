@@ -6,7 +6,7 @@ Current implementation note (2026-02-16):
 
 - Competition APIs/UI and scoring are implemented.
 - Gate 2 auth foundations are implemented (cookie auth endpoints, `/api/me`, and session-proxy auth checks).
-- Gate 3 alpha lifecycle is implemented for PUBLIC create/stop, including allocation and snapshot terminalization.
+- Gate 3 alpha lifecycle is implemented for PUBLIC create/stop, including allocation and async stop requests with recovery-driven snapshot terminalization.
 - Gate 4 recovery behavior is implemented (startup reconciliation + active-session poller).
 - Gate 5/6 host evidence is complete (`@docs/host-validation-2026-02-16.md`): auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot checks, wildcard browser routing, and websocket activity passed.
 
@@ -18,7 +18,7 @@ Current implementation note (2026-02-16):
 - Enforce per-user concurrent session limits.
 - Wildcard subdomains per session: `s-<slug>.medforge.<domain>`.
 - Persist per-session workspaces on ZFS; take a snapshot on session stop.
-- Structured JSON event logs to stdout (login + session lifecycle).
+- Structured JSON event logs to stdout (session lifecycle).
 
 ### Constraints
 
@@ -31,7 +31,7 @@ Current implementation note (2026-02-16):
 ### Non-Goals
 
 - Forums, marketplace.
-- Dataset registry / managed read-only mounts.
+- Managed read-only dataset mounts into sessions (metadata-only dataset catalog exists).
 - Exfiltration prevention against screenshots/copying.
 - Enterprise auth (SSO/SCIM).
 - Multi-node scheduling.

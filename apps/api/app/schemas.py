@@ -4,15 +4,25 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models import CompetitionStatus, CompetitionTier, Role, ScoreStatus, SessionStatus, Tier
+from app.models import CompetitionStatus, Role, ScoreStatus, SessionStatus
+
+
+def _lower_enum_value(value: object) -> str:
+    if hasattr(value, "value"):
+        value = getattr(value, "value")
+    if not isinstance(value, str):
+        raise TypeError("Expected enum/string value.")
+    return value.lower()
 
 
 class CompetitionSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     slug: str
     title: str
-    competition_tier: CompetitionTier
+    competition_tier: Literal["public", "private"]
     metric: str
     metric_version: str
     scoring_mode: str
@@ -21,6 +31,11 @@ class CompetitionSummary(BaseModel):
     competition_spec_version: str
     is_permanent: bool
     submission_cap_per_day: int
+
+    @field_validator("competition_tier", mode="before")
+    @classmethod
+    def normalize_competition_tier(cls, value: object) -> str:
+        return _lower_enum_value(value)
 
 
 class CompetitionDetail(CompetitionSummary):
@@ -31,6 +46,8 @@ class CompetitionDetail(CompetitionSummary):
 
 
 class DatasetSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     slug: str
     title: str
     source: str
@@ -43,6 +60,17 @@ class DatasetDetail(DatasetSummary):
     checksum: str
 
 
+class SubmissionScoreRead(BaseModel):
+    id: UUID
+    primary_score: float
+    score_components: dict[str, float]
+    scorer_version: str
+    metric_version: str
+    evaluation_split_version: str
+    manifest_sha256: str
+    created_at: datetime
+
+
 class SubmissionRead(BaseModel):
     id: UUID
     competition_slug: str
@@ -53,17 +81,6 @@ class SubmissionRead(BaseModel):
     created_at: datetime
     scored_at: datetime | None
     official_score: SubmissionScoreRead | None
-
-
-class SubmissionScoreRead(BaseModel):
-    id: UUID
-    primary_score: float
-    score_components: dict[str, float]
-    scorer_version: str
-    metric_version: str
-    evaluation_split_version: str
-    manifest_sha256: str
-    created_at: datetime
 
 
 class SubmissionCreateResponse(BaseModel):
@@ -95,18 +112,20 @@ class MeResponse(BaseModel):
 
 
 class SessionCreateRequest(BaseModel):
-    tier: Literal["PUBLIC", "PRIVATE"] = "PUBLIC"
+    tier: Literal["public", "private"] = "public"
     pack_id: UUID | None = None
 
 
 class SessionActionResponse(BaseModel):
-    detail: str
+    message: str
 
 
 class SessionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     user_id: UUID
-    tier: Tier
+    tier: Literal["public", "private"]
     pack_id: UUID
     status: SessionStatus
     container_id: str | None
@@ -118,14 +137,14 @@ class SessionRead(BaseModel):
     stopped_at: datetime | None
     error_message: str | None
 
+    @field_validator("tier", mode="before")
+    @classmethod
+    def normalize_tier(cls, value: object) -> str:
+        return _lower_enum_value(value)
+
 
 class SessionCreateResponse(BaseModel):
-    detail: str
-    session: SessionRead
-
-
-class SessionStopResponse(BaseModel):
-    detail: str
+    message: str
     session: SessionRead
 
 
@@ -133,12 +152,7 @@ class SessionCurrentResponse(BaseModel):
     session: SessionRead | None
 
 
-class SignupRequest(BaseModel):
-    email: str
-    password: str = Field(min_length=8, max_length=128)
-
-
-class LoginRequest(BaseModel):
+class AuthCredentials(BaseModel):
     email: str
     password: str = Field(min_length=8, max_length=128)
 
@@ -147,3 +161,7 @@ class AuthUserResponse(BaseModel):
     user_id: UUID
     email: str
     role: Role
+
+
+class HealthResponse(BaseModel):
+    status: Literal["ok", "degraded"]
