@@ -30,9 +30,11 @@ class CompetitionSeed(TypedDict):
     description: str
     dataset_slug: str
     metric: str
+    metric_version: str
     scoring_mode: str
     leaderboard_rule: str
     evaluation_policy: str
+    competition_spec_version: str
     submission_cap_per_day: int
 
 
@@ -75,9 +77,11 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "description": "Permanent mock competition based on Titanic Kaggle data.",
         "dataset_slug": "titanic-kaggle",
         "metric": "accuracy",
+        "metric_version": "accuracy-v1",
         "scoring_mode": DEFAULT_SCORING_MODE,
         "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
         "evaluation_policy": DEFAULT_EVALUATION_POLICY,
+        "competition_spec_version": "v1",
         "submission_cap_per_day": 20,
     },
     {
@@ -86,9 +90,11 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "description": "Permanent mock competition based on RSNA pneumonia imaging data.",
         "dataset_slug": "rsna-pneumonia-detection-challenge",
         "metric": "map_iou",
+        "metric_version": "map_iou-v1",
         "scoring_mode": DEFAULT_SCORING_MODE,
         "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
         "evaluation_policy": DEFAULT_EVALUATION_POLICY,
+        "competition_spec_version": "v1",
         "submission_cap_per_day": 10,
     },
     {
@@ -97,9 +103,11 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "description": "Permanent mock competition — classify 32x32 images into 100 fine-grained categories.",
         "dataset_slug": "cifar-100",
         "metric": "accuracy",
+        "metric_version": "accuracy-v1",
         "scoring_mode": DEFAULT_SCORING_MODE,
         "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
         "evaluation_policy": DEFAULT_EVALUATION_POLICY,
+        "competition_spec_version": "v1",
         "submission_cap_per_day": 20,
     },
 ]
@@ -168,10 +176,12 @@ def seed_defaults(session: Session) -> None:
             status=CompetitionStatus.ACTIVE,
             is_permanent=True,
             metric=competition_payload["metric"],
+            metric_version=competition_payload["metric_version"],
             higher_is_better=True,
             scoring_mode=competition_payload["scoring_mode"],
             leaderboard_rule=competition_payload["leaderboard_rule"],
             evaluation_policy=competition_payload["evaluation_policy"],
+            competition_spec_version=competition_payload["competition_spec_version"],
             submission_cap_per_day=competition_payload["submission_cap_per_day"],
             dataset_id=dataset.id,
         )

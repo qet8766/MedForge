@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, Column, Index, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Index, Text, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
@@ -162,10 +162,12 @@ class Competition(SQLModel, table=True):
     )
     is_permanent: bool = Field(default=True)
     metric: str = Field(max_length=64)
+    metric_version: str = Field(default="v1", max_length=64)
     higher_is_better: bool = Field(default=True)
     scoring_mode: str = Field(default=DEFAULT_SCORING_MODE, max_length=64)
     leaderboard_rule: str = Field(default=DEFAULT_LEADERBOARD_RULE, max_length=64)
     evaluation_policy: str = Field(default=DEFAULT_EVALUATION_POLICY, max_length=64)
+    competition_spec_version: str = Field(default="v1", max_length=64)
     submission_cap_per_day: int = Field(default=10)
     dataset_id: uuid.UUID = Field(foreign_key="datasets.id", index=True)
     created_at: datetime = Field(default_factory=utcnow)
@@ -194,10 +196,42 @@ class Submission(SQLModel, table=True):
         default=ScoreStatus.QUEUED,
         sa_column=Column(SAEnum(ScoreStatus, name="score_status"), nullable=False),
     )
-    leaderboard_score: float | None = Field(default=None)
     score_error: str | None = Field(default=None, max_length=2000)
-    scorer_version: str | None = Field(default=None, max_length=64)
-    evaluation_split_version: str | None = Field(default=None, max_length=64)
 
     created_at: datetime = Field(default_factory=utcnow)
     scored_at: datetime | None = Field(default=None)
+
+
+class SubmissionScore(SQLModel, table=True):
+    __tablename__ = "submission_scores"
+    __table_args__ = (
+        Index("ix_submission_scores_submission_created", "submission_id", "created_at"),
+        Index(
+            "ix_submission_scores_competition_user_official",
+            "competition_id",
+            "user_id",
+            "is_official",
+            "created_at",
+        ),
+        UniqueConstraint(
+            "submission_id",
+            "scorer_version",
+            "metric_version",
+            "evaluation_split_version",
+            "manifest_sha256",
+            name="uq_submission_scores_idempotent_run",
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    submission_id: uuid.UUID = Field(foreign_key="submissions.id", index=True)
+    competition_id: uuid.UUID = Field(foreign_key="competitions.id", index=True)
+    user_id: uuid.UUID = Field(index=True)
+    is_official: bool = Field(default=True)
+    primary_score: float = Field()
+    score_components_json: str = Field(sa_column=Column(Text, nullable=False))
+    scorer_version: str = Field(max_length=64)
+    metric_version: str = Field(max_length=64)
+    evaluation_split_version: str = Field(max_length=64)
+    manifest_sha256: str = Field(max_length=64)
+    created_at: datetime = Field(default_factory=utcnow)

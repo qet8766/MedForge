@@ -26,6 +26,7 @@ def test_list_competitions(client) -> None:
     assert all(item["scoring_mode"] == "single_realtime_hidden" for item in payload)
     assert all(item["leaderboard_rule"] == "best_per_user" for item in payload)
     assert all(item["evaluation_policy"] == "canonical_test_first" for item in payload)
+    assert all(item["competition_spec_version"] == "v1" for item in payload)
 
 
 def test_competition_detail_status(client) -> None:
@@ -36,6 +37,8 @@ def test_competition_detail_status(client) -> None:
     assert payload["scoring_mode"] == "single_realtime_hidden"
     assert payload["leaderboard_rule"] == "best_per_user"
     assert payload["evaluation_policy"] == "canonical_test_first"
+    assert payload["metric_version"] == "accuracy-v1"
+    assert payload["competition_spec_version"] == "v1"
 
 
 def test_submit_and_score_titanic(client) -> None:
@@ -50,7 +53,8 @@ def test_submit_and_score_titanic(client) -> None:
     payload = response.json()
 
     assert payload["submission"]["score_status"] == "scored"
-    assert payload["submission"]["leaderboard_score"] == 1.0
+    assert payload["submission"]["official_score"]["primary_score"] == 1.0
+    assert payload["submission"]["official_score"]["metric_version"] == "accuracy-v1"
     assert payload["remaining_today"] == 0
 
     leaderboard = client.get("/api/competitions/titanic-survival/leaderboard")
@@ -58,7 +62,7 @@ def test_submit_and_score_titanic(client) -> None:
     entries = leaderboard.json()["entries"]
     assert len(entries) == 1
     assert entries[0]["rank"] == 1
-    assert entries[0]["leaderboard_score"] == 1.0
+    assert entries[0]["primary_score"] == 1.0
 
 
 def test_submission_cap_enforced(client) -> None:
@@ -119,9 +123,9 @@ def test_leaderboard_respects_higher_is_better_flag(client, db_engine) -> None:
 
     assert len(entries) == 2
     assert entries[0]["user_id"] == USER_B
-    assert entries[0]["leaderboard_score"] == 0.0
+    assert entries[0]["primary_score"] == 0.0
     assert entries[1]["user_id"] == USER_A
-    assert entries[1]["leaderboard_score"] == 1.0
+    assert entries[1]["primary_score"] == 1.0
 
 
 def test_me_requires_auth(client) -> None:
@@ -481,7 +485,7 @@ def test_submit_and_score_rsna_detection(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["submission"]["score_status"] == "scored"
-    assert payload["submission"]["leaderboard_score"] == 1.0
+    assert payload["submission"]["official_score"]["primary_score"] == 1.0
 
 
 def test_submit_and_score_cifar100(client) -> None:
@@ -497,11 +501,11 @@ def test_submit_and_score_cifar100(client) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["submission"]["score_status"] == "scored"
-    assert payload["submission"]["leaderboard_score"] == 1.0
+    assert payload["submission"]["official_score"]["primary_score"] == 1.0
 
     leaderboard = client.get("/api/competitions/cifar-100-classification/leaderboard")
     assert leaderboard.status_code == 200
     entries = leaderboard.json()["entries"]
     assert len(entries) == 1
     assert entries[0]["rank"] == 1
-    assert entries[0]["leaderboard_score"] == 1.0
+    assert entries[0]["primary_score"] == 1.0

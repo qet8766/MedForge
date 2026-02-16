@@ -90,7 +90,7 @@ Enforces at most one active session per GPU at the DB level.
 Important terminology:
 
 - `competition_tier` (`PUBLIC` | `PRIVATE`) is platform policy (internet/data controls), not label visibility.
-- `leaderboard_score` is computed on hidden holdout labels.
+- `primary_score` is computed on hidden holdout labels and stored in append-only score runs.
 - `scoring_mode` is realtime hidden scoring contract (`single_realtime_hidden` in alpha).
 - `leaderboard_rule` defines ranking (`best_per_user` in alpha).
 - `evaluation_policy` captures split provenance policy (`canonical_test_first`).
@@ -130,10 +130,12 @@ Important terminology:
 | status                 | CompetitionStatus | |
 | is_permanent           | bool              | true for alpha |
 | metric                 | string            | e.g. `accuracy`, `map_iou` |
+| metric_version         | string            | e.g. `accuracy-v1`, `map_iou-v1` |
 | higher_is_better       | bool              | default true |
 | scoring_mode           | string            | e.g. `single_realtime_hidden` |
 | leaderboard_rule       | string            | e.g. `best_per_user` |
 | evaluation_policy      | string            | e.g. `canonical_test_first` |
+| competition_spec_version | string          | scoring contract version |
 | submission_cap_per_day | int               | per-user cap |
 | dataset_id             | UUID              | FK -> datasets |
 | created_at             | datetime          | |
@@ -151,9 +153,23 @@ Important terminology:
 | artifact_sha256          | string     | integrity hash |
 | row_count                | int        | |
 | score_status             | ScoreStatus | |
-| leaderboard_score        | float      | nullable until scored |
 | score_error              | string     | nullable |
-| scorer_version           | string     | evaluator version |
-| evaluation_split_version | string     | holdout version |
 | created_at               | datetime   | |
 | scored_at                | datetime   | nullable |
+
+### submission_scores
+
+| Column                   | Type      | Notes |
+| ------------------------ | --------- | ----- |
+| id                       | UUID      | PK |
+| submission_id            | UUID      | FK -> submissions |
+| competition_id           | UUID      | FK -> competitions |
+| user_id                  | UUID      | copied for leaderboard queries |
+| is_official              | bool      | one current official run per submission |
+| primary_score            | float     | canonical rank score |
+| score_components_json    | string    | JSON object of metric components |
+| scorer_version           | string    | evaluator build/version |
+| metric_version           | string    | metric algorithm version |
+| evaluation_split_version | string    | holdout split version |
+| manifest_sha256          | string    | manifest integrity hash |
+| created_at               | datetime  | scoring run timestamp |

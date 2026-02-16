@@ -48,7 +48,7 @@ export default async function CompetitionLeaderboardPage({
                 <TableRow key={entry.best_submission_id}>
                   <TableCell className="font-mono font-medium">{entry.rank}</TableCell>
                   <TableCell>{entry.user_id}</TableCell>
-                  <TableCell className="font-mono">{entry.leaderboard_score.toFixed(6)}</TableCell>
+                  <TableCell className="font-mono">{entry.primary_score.toFixed(6)}</TableCell>
                   <TableCell className="text-muted-foreground">{entry.scored_at ?? "pending"}</TableCell>
                 </TableRow>
               ))}

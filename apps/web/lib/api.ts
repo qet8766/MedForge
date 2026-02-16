@@ -3,9 +3,11 @@ export type CompetitionSummary = {
   title: string;
   competition_tier: "PUBLIC" | "PRIVATE";
   metric: string;
+  metric_version: string;
   scoring_mode: string;
   leaderboard_rule: string;
   evaluation_policy: string;
+  competition_spec_version: string;
   is_permanent: boolean;
   submission_cap_per_day: number;
 };
@@ -19,7 +21,10 @@ export type LeaderboardEntry = {
   rank: number;
   user_id: string;
   best_submission_id: string;
-  leaderboard_score: number;
+  best_score_id: string;
+  primary_score: number;
+  metric_version: string;
+  evaluation_split_version: string;
   scored_at: string | null;
 };
 export type DatasetSummary = {

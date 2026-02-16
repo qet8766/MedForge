@@ -5,9 +5,12 @@ MedForge alpha includes permanent mock competitions with Kaggle-style submission
 ### Terminology
 
 - `competition_tier` means platform policy (`PUBLIC` or `PRIVATE`) and is not related to label visibility.
-- `leaderboard_score` is computed from hidden holdout labels.
+- `primary_score` is computed from hidden holdout labels.
 - `scoring_mode` is `single_realtime_hidden` for alpha competitions.
-- `leaderboard_rule` is `best_per_user` (tie-break: earliest scored submission).
+- `leaderboard_rule` is `best_per_user` with deterministic ordering:
+  - best `primary_score` (respecting `higher_is_better`)
+  - then earliest score timestamp
+  - then smallest submission ID
 - `evaluation_policy` is `canonical_test_first`.
 - Alpha has no due dates, no phase switches, and no `final_score` field.
 
@@ -26,8 +29,8 @@ All are `competition_tier=PUBLIC`.
 3. Submission is created as `score_status=queued`.
 4. If `AUTO_SCORE_ON_SUBMIT=true` (default), API scores immediately; otherwise the worker scores asynchronously.
 5. Scoring reads holdout labels + `manifest.json` metadata (`evaluation_split_version`, policy fields, expected row count).
-6. Scoring writes `leaderboard_score`, `scorer_version`, and `evaluation_split_version`.
-7. Leaderboard ranks by best per-user `leaderboard_score`; tie-breaker is earliest submission timestamp.
+6. Scoring appends an official row in `submission_scores` with `primary_score`, `score_components_json`, `scorer_version`, `metric_version`, `evaluation_split_version`, and `manifest_sha256`.
+7. Leaderboard ranks by best per-user official `primary_score`; deterministic tie-break uses earliest score timestamp then submission ID.
 
 ### Alpha API Surface
 

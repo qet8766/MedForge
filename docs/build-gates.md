@@ -71,7 +71,7 @@ Use `--with-browser` for end-to-end UI/browser verification; without it, only th
 
 Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`). Users can upload predictions, receive scores, and view ranked leaderboards.
 
-**Acceptance:** `GET /api/competitions` returns all competition slugs with `competition_tier=PUBLIC`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, and `evaluation_policy=canonical_test_first`. Valid CSV submission returns `score_status=scored` and `leaderboard_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user score with deterministic tie-break by earliest submission timestamp. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
+**Acceptance:** `GET /api/competitions` returns all competition slugs with `competition_tier=PUBLIC`, `is_permanent=true`, `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, and explicit contract versions (`metric_version`, `competition_spec_version`). Valid CSV submission returns `score_status=scored` and non-null `official_score.primary_score`. Daily caps are enforced (`20/day` Titanic, `10/day` RSNA, `20/day` CIFAR). Leaderboard ranks by best per-user official `primary_score` with deterministic tie-break by earliest score timestamp and submission ID. Titanic scoring uses the full labelled Kaggle test IDs (`418`) as hidden realtime holdout.
 
 ### Definition of Done
 
@@ -81,4 +81,4 @@ Permanent PUBLIC competitions are available in web + API (`titanic-survival`, `r
 - Work persists in per-session ZFS datasets and snapshots occur on stop.
 - Poller + boot-time reconciliation prevents stranded sessions/GPU locks after failures/restarts.
 - PRIVATE exists in enums/policies/networks but session creation returns 501.
-- Permanent competition flows are available with hidden-holdout `leaderboard_score` and daily submission cap enforcement.
+- Permanent competition flows are available with hidden-holdout official `primary_score` runs and daily submission cap enforcement.

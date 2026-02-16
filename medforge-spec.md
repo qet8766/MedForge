@@ -213,7 +213,7 @@ Detailed doc:
 - Per-user concurrency limits hold under concurrent requests.
 - Each session has unique `workspace_zfs`; snapshots are created on stop.
 - Recovery paths prevent stranded active rows and stranded GPU locks.
-- Permanent PUBLIC competitions are available with hidden-holdout `leaderboard_score` and enforced daily submission caps.
+- Permanent PUBLIC competitions are available with hidden-holdout official score runs (`primary_score`) and enforced daily submission caps.
 
 Detailed docs:
 

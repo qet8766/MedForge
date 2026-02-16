@@ -2,10 +2,25 @@
 
 Storage root: `/data/medforge/datasets/`
 
+Retention policy:
+
+- Keep full source datasets under the storage root; do not keep only holdout labels.
+- `apps/api/data/competitions/*` contains scoring manifests + hidden holdout labels only, not the raw competition datasets.
+
 Competition evaluation uses a canonical-test-first policy:
 
 - Use official test split labels when available from a trusted source.
 - Otherwise use a documented internal holdout built from training data.
+
+### Local Mirror Requirements
+
+Expected on-disk dataset coverage:
+
+| Dataset path | Required files/directories |
+|--------------|----------------------------|
+| `/data/medforge/datasets/titanic-kaggle/` | `train.csv`, `test.csv`, `sample_submission.csv` |
+| `/data/medforge/datasets/rsna-pneumonia-detection/` | `train_labels.csv`, `detailed_class_info.csv`, `test_ids.csv`, `sample_submission.csv`, `train_images/` (21,347 `.dcm`), `test_images/` (5,337 `.dcm`) |
+| `/data/medforge/datasets/cifar-100/` | `train_labels.csv`, `test_ids.csv`, `sample_submission.csv`, `train/` (50,000 `.png`), `test/` (10,000 `.png`) |
 
 ---
 
@@ -143,6 +158,78 @@ image_id,label
 
 ---
 
+### Re-download / Rehydrate
+
+Use these when files are missing or corrupted.
+Prerequisites for Kaggle downloads: installed `kaggle` CLI and `~/.kaggle/kaggle.json`.
+
+#### Titanic (Kaggle)
+
+```bash
+mkdir -p /data/medforge/datasets/titanic-kaggle
+kaggle competitions download -c titanic -p /data/medforge/datasets/titanic-kaggle --force
+find /data/medforge/datasets/titanic-kaggle -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d /data/medforge/datasets/titanic-kaggle
+```
+
+#### RSNA Pneumonia (Kaggle)
+
+```bash
+mkdir -p /data/medforge/datasets/rsna-pneumonia-detection
+kaggle competitions download -c rsna-pneumonia-detection-challenge -p /data/medforge/datasets/rsna-pneumonia-detection --force
+find /data/medforge/datasets/rsna-pneumonia-detection -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d /data/medforge/datasets/rsna-pneumonia-detection
+```
+
+#### CIFAR-100 (torchvision)
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import csv
+from torchvision.datasets import CIFAR100
+
+root = Path("/data/medforge/datasets/cifar-100")
+cache = root / ".torchvision-cache"
+train_dir = root / "train"
+test_dir = root / "test"
+root.mkdir(parents=True, exist_ok=True)
+cache.mkdir(parents=True, exist_ok=True)
+train_dir.mkdir(parents=True, exist_ok=True)
+test_dir.mkdir(parents=True, exist_ok=True)
+
+train = CIFAR100(root=str(cache), train=True, download=True)
+test = CIFAR100(root=str(cache), train=False, download=True)
+
+for i, (img, label) in enumerate(train):
+  img.save(train_dir / f"{i}.png")
+with (root / "train_labels.csv").open("w", newline="", encoding="utf-8") as f:
+  w = csv.writer(f)
+  w.writerow(["image_id", "label"])
+  w.writerows((i, int(train[i][1])) for i in range(len(train)))
+
+for i, (img, _) in enumerate(test):
+  img.save(test_dir / f"{i}.png")
+with (root / "test_ids.csv").open("w", newline="", encoding="utf-8") as f:
+  w = csv.writer(f)
+  w.writerow(["image_id"])
+  w.writerows((i,) for i in range(len(test)))
+with (root / "sample_submission.csv").open("w", newline="", encoding="utf-8") as f:
+  w = csv.writer(f)
+  w.writerow(["image_id", "label"])
+  w.writerows((i, 0) for i in range(len(test)))
+PY
+```
+
+Quick checks:
+
+```bash
+find /data/medforge/datasets/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l   # 21347
+find /data/medforge/datasets/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l    # 5337
+find /data/medforge/datasets/cifar-100/train -type f -name '*.png' | wc -l                          # 50000
+find /data/medforge/datasets/cifar-100/test -type f -name '*.png' | wc -l                           # 10000
+```
+
+---
+
 ### Scoring
 
 Holdout labels live in `{COMPETITIONS_DATA_DIR}/{competition_slug}/holdout_labels.csv` (default `data/competitions` relative to API root). Each directory also contains a strict `manifest.json` with:
@@ -163,4 +250,3 @@ Holdout labels live in `{COMPETITIONS_DATA_DIR}/{competition_slug}/holdout_label
 | `cifar-100-classification` | `image_id,label` (int 0–99) |
 
 Titanic `titanic-survival` uses labelled Kaggle test IDs (`892..1309`, 418 rows) from `wesleyhowe/titanic-labelled-test-set/test_augmented.csv`, stored server-side only.
-Regeneration helper: `scripts/prepare_titanic_real_holdout.py`.

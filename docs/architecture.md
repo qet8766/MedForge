@@ -63,7 +63,7 @@ apps/
   api/                  # FastAPI + SQLModel
     app/                # API routes, models, scoring, worker
     tests/              # pytest coverage for competition API/scoring
-    migrations/         # SQL migration scripts
+    alembic/            # Alembic environment + versioned migrations
     data/competitions/  # holdout label sets + manifest versions
 infra/
   caddy/                # Caddyfile, Caddy Dockerfile (DNS plugin)

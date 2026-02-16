@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
@@ -9,7 +10,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.config import Settings
-from app.models import Competition, ScoreStatus, Submission
+from app.models import Competition, ScoreStatus, Submission, SubmissionScore
 from app.scoring import SCORER_VERSION, score_submission_file
 
 
@@ -90,10 +91,31 @@ def process_submission_by_id(session: Session, *, submission_id: UUID, settings:
             labels_path=labels_path,
             manifest_path=manifest_path,
         )
+        previous_official_scores = session.exec(
+            select(SubmissionScore).where(SubmissionScore.submission_id == submission.id).where(
+                SubmissionScore.is_official.is_(True)
+            )
+        ).all()
+        for previous in previous_official_scores:
+            previous.is_official = False
+            session.add(previous)
+
+        score_run = SubmissionScore(
+            submission_id=submission.id,
+            competition_id=competition.id,
+            user_id=submission.user_id,
+            is_official=True,
+            primary_score=result.primary_score,
+            score_components_json=json.dumps(result.score_components, sort_keys=True, separators=(",", ":")),
+            scorer_version=SCORER_VERSION,
+            metric_version=result.metric_version,
+            evaluation_split_version=result.evaluation_split_version,
+            manifest_sha256=result.manifest_sha256,
+            created_at=datetime.now(UTC),
+        )
+        session.add(score_run)
+
         submission.score_status = ScoreStatus.SCORED
-        submission.leaderboard_score = result.leaderboard_score
-        submission.scorer_version = SCORER_VERSION
-        submission.evaluation_split_version = result.evaluation_split_version
         submission.scored_at = datetime.now(UTC)
         submission.score_error = None
     except Exception as exc:

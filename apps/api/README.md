@@ -24,7 +24,16 @@ Current alpha scope:
 uv venv .venv
 . .venv/bin/activate
 uv pip install -e '.[dev]'
+alembic upgrade head
 uvicorn app.main:app --reload
+```
+
+## Migrations (Alembic)
+
+```bash
+alembic upgrade head
+alembic downgrade -1
+alembic revision --autogenerate -m "describe_change"
 ```
 
 Host runtime note: if running `SESSION_RUNTIME_MODE=docker` outside root, set `SESSION_RUNTIME_USE_SUDO=true` so ZFS/chown commands execute via `sudo -n`.

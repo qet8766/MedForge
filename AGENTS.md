@@ -10,6 +10,7 @@
 Application stack: Next.js + TypeScript (web) and FastAPI + SQLModel + Pydantic (API/data models).
 
 Primary app code lives in `apps/web` and `apps/api`; infra and spec docs remain in `infra/` and `docs/`.
+Utility/data prep scripts live in `scripts/`.
 
 ## Build, Test, and Development Commands
 - `cp infra/compose/.env.example infra/compose/.env`: create local environment file.
@@ -18,7 +19,7 @@ Primary app code lives in `apps/web` and `apps/api`; infra and spec docs remain 
 - `bash infra/host/validate-gate56.sh --with-browser`: run host Gate 5/6 validation (core + browser/websocket lane) and write evidence markdown.
 - `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml up -d --build`: build and start control-plane services.
 - `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml logs -f medforge-api medforge-caddy`: stream key service logs.
-- `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev]'`: install API dependencies.
+- `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`: install API dependencies used by tests + `quick-check`.
 - `cd apps/api && pytest -q`: run API tests.
 - `cd apps/web && npm install && npm run build`: verify web app type-check/build.
 - `POOL_DISKS='/dev/sdX' bash infra/zfs/setup.sh`: one-time ZFS pool/dataset setup (replace disk path).
@@ -36,7 +37,7 @@ Use 2-space indentation in YAML/Markdown, and Bash with `set -euo pipefail`. Kee
 Run `cd apps/api && pytest -q` for backend checks and `cd apps/web && npm run build` for frontend validation. Still validate infra/session behavior against `docs/build-gates.md` with evidence (logs, curl output, screenshots). For infra/scripts, run `find infra -name '*.sh' -print0 | xargs -0 -n1 bash -n` and `find infra -name '*.sh' -print0 | xargs -0 -n1 shellcheck` when available.
 
 ## Commit & Pull Request Guidelines
-Git history is minimal (`Initial commit`), so use clear imperative commits and include issue IDs from `docs/issue-plan.md` when applicable (example: `MF-006 enforce race-safe GPU allocation`). PRs should include:
+Use clear imperative commits and include issue IDs from `docs/issue-plan.md` when applicable (example: `MF-006 enforce race-safe GPU allocation`). PRs should include:
 - scope summary and linked issue (`MF-###`)
 - affected gate(s) and acceptance checks executed
 - config/security impact (`.env`, networking, auth headers)
@@ -58,7 +59,7 @@ Git history is minimal (`Initial commit`), so use clear imperative commits and i
 - All hosts, ports, and URLs must come from environment variables or config. No `localhost:8080` buried in source.
 - Keep `PACK_IMAGE` digest-pinned.
 - Preserve Caddy's `request_header -X-Upstream` behavior to prevent upstream spoofing.
-- No `latest` Docker tags, no unpinned pip/npm versions. Use exact versions or digests.
+- No `latest` Docker tags. For new dependencies, prefer exact pins (or bounded ranges with lockfiles) and digest-pinned images.
 - Always use `uv` over `pip` for Python package management.
 
 ## Logging

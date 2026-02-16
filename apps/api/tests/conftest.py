@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, create_engine, select
 
 import app.config as config_module
 from app.config import Settings, get_settings
-from app.database import get_session
+from app.database import get_session, run_migrations
 from app.models import Competition
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router
@@ -97,11 +97,12 @@ def db_engine(test_settings: Settings):
     # Keep seed_defaults aligned with per-test settings instead of process env defaults.
     config_module._SETTINGS = test_settings
 
+    run_migrations(test_settings.database_url)
+
     engine = create_engine(
         test_settings.database_url,
         connect_args={"check_same_thread": False},
     )
-    SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
         seed_defaults(session)

@@ -25,7 +25,7 @@ Assumptions for estimates:
 | `MF-013` | Structured JSON event logging (`user.login`, `session.start`, `session.stop`) | Gate 3, 4 | `MF-004`, `MF-006`, `MF-009`, `MF-010` | `0.5d` |
 | `MF-014` | End-to-end UI flow wiring and smoke validation for login -> start -> IDE -> stop | Gate 6 | `MF-005`, `MF-009`, `MF-011`, `MF-012` | `2.0d` |
 | `MF-015` | Competition schema + API (`competitions`, `datasets`, `submissions`) with `competition_tier` and permanent competitions | Gate 7 | `MF-003`, `MF-004` | `1.5d` |
-| `MF-016` | Submission scoring pipeline + worker (`leaderboard_score`, `score_status`, holdout split versioning) | Gate 7 | `MF-015` | `1.5d` |
+| `MF-016` | Submission scoring pipeline + worker (append-only `submission_scores`, `score_status`, metric/split versioning) | Gate 7 | `MF-015` | `1.5d` |
 | `MF-017` | Kaggle-style web pages for competitions, dataset catalog, leaderboard, and submission UI | Gate 7 | `MF-015`, `MF-016` | `2.0d` |
 | `MF-018` | Seed permanent PUBLIC competitions (`titanic-survival`, `rsna-pneumonia-detection`) + mirrored data manifests | Gate 7 | `MF-015` | `1.0d` |
 | `MF-019` | Competition validation suite (schema checks, daily caps, deterministic ranking) | Gate 7 | `MF-016`, `MF-017` | `0.5d` |

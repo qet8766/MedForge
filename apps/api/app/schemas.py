@@ -14,9 +14,11 @@ class CompetitionSummary(BaseModel):
     title: str
     competition_tier: CompetitionTier
     metric: str
+    metric_version: str
     scoring_mode: str
     leaderboard_rule: str
     evaluation_policy: str
+    competition_spec_version: str
     is_permanent: bool
     submission_cap_per_day: int
 
@@ -47,10 +49,21 @@ class SubmissionRead(BaseModel):
     user_id: UUID
     filename: str
     score_status: ScoreStatus
-    leaderboard_score: float | None
     score_error: str | None
     created_at: datetime
     scored_at: datetime | None
+    official_score: SubmissionScoreRead | None
+
+
+class SubmissionScoreRead(BaseModel):
+    id: UUID
+    primary_score: float
+    score_components: dict[str, float]
+    scorer_version: str
+    metric_version: str
+    evaluation_split_version: str
+    manifest_sha256: str
+    created_at: datetime
 
 
 class SubmissionCreateResponse(BaseModel):
@@ -63,7 +76,10 @@ class LeaderboardEntry(BaseModel):
     rank: int
     user_id: UUID
     best_submission_id: UUID
-    leaderboard_score: float
+    best_score_id: UUID
+    primary_score: float
+    metric_version: str
+    evaluation_split_version: str
     scored_at: datetime | None
 
 

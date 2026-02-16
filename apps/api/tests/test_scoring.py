@@ -5,7 +5,14 @@ from pathlib import Path
 import pytest
 
 from app.models import Competition, CompetitionStatus, CompetitionTier
-from app.scoring import _MAP_IOU_THRESHOLDS, Box, _iou, _score_single_image, score_submission_file
+from app.scoring import (
+    _MAP_IOU_THRESHOLDS,
+    Box,
+    _iou,
+    _score_single_image,
+    score_submission_file,
+    validate_submission_schema,
+)
 
 
 def _write_manifest(
@@ -92,7 +99,8 @@ def test_titanic_scoring_deterministic(tmp_path: Path) -> None:
         manifest_path=manifest,
     )
 
-    assert first.leaderboard_score == second.leaderboard_score
+    assert first.primary_score == second.primary_score
+    assert first.metric_version == "accuracy-v1"
     assert first.evaluation_split_version == "vdet"
 
 
@@ -174,7 +182,8 @@ def test_rsna_scoring_perfect_match(tmp_path: Path) -> None:
         labels_path=labels,
         manifest_path=manifest,
     )
-    assert result.leaderboard_score == 1.0
+    assert result.primary_score == 1.0
+    assert result.metric_version == "map_iou-v1"
 
 
 def test_rsna_scoring_no_predictions(tmp_path: Path) -> None:
@@ -214,7 +223,7 @@ def test_rsna_scoring_no_predictions(tmp_path: Path) -> None:
     )
     # p2 (negative) scores 1.0, p1 and p3 (positive, no preds) score 0.0
     # Mean = 1/3
-    assert abs(result.leaderboard_score - 1.0 / 3.0) < 1e-9
+    assert abs(result.primary_score - 1.0 / 3.0) < 1e-9
 
 
 def test_rsna_scoring_deterministic(tmp_path: Path) -> None:
@@ -256,7 +265,8 @@ def test_rsna_scoring_deterministic(tmp_path: Path) -> None:
         manifest_path=manifest,
     )
 
-    assert first.leaderboard_score == second.leaderboard_score
+    assert first.primary_score == second.primary_score
+    assert first.metric_version == "map_iou-v1"
     assert first.evaluation_split_version == "v2"
 
 
@@ -310,8 +320,9 @@ def test_cifar100_scoring_deterministic(tmp_path: Path) -> None:
         manifest_path=manifest,
     )
 
-    assert first.leaderboard_score == second.leaderboard_score
-    assert abs(first.leaderboard_score - 2.0 / 3.0) < 1e-9
+    assert first.primary_score == second.primary_score
+    assert abs(first.primary_score - 2.0 / 3.0) < 1e-9
+    assert first.metric_version == "accuracy-v1"
     assert first.evaluation_split_version == "cifar100-test"
 
 
@@ -459,3 +470,23 @@ def test_manifest_missing_required_fields_rejected(tmp_path: Path) -> None:
             labels_path=labels,
             manifest_path=manifest,
         )
+
+
+def test_validate_submission_schema_unsupported_slug_rejected(tmp_path: Path) -> None:
+    submission = tmp_path / "submission.csv"
+    submission.write_text("id,value\n1,1\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Unsupported competition slug"):
+        validate_submission_schema("unknown-competition", submission)
+
+
+def test_validate_submission_schema_detection_partial_bbox_rejected(tmp_path: Path) -> None:
+    submission = tmp_path / "submission.csv"
+    submission.write_text(
+        "patientId,confidence,x,y,width,height\n"
+        "p1,0.95,10.0,20.0,,40.0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="bbox fields must be all-empty"):
+        validate_submission_schema("rsna-pneumonia-detection", submission)

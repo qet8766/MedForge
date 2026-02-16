@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import json
+from collections.abc import Sequence
 from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, func
 from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.deps import get_current_user_id, require_admin_access, require_allowed_origin
-from app.models import Competition, CompetitionStatus, Dataset, ScoreStatus, Submission
+from app.models import Competition, CompetitionStatus, Dataset, ScoreStatus, Submission, SubmissionScore
 from app.schemas import (
     CompetitionDetail,
     CompetitionSummary,
@@ -20,6 +22,7 @@ from app.schemas import (
     LeaderboardResponse,
     SubmissionCreateResponse,
     SubmissionRead,
+    SubmissionScoreRead,
 )
 from app.scoring import validate_submission_schema
 from app.services import enforce_submission_cap, process_submission_by_id
@@ -46,17 +49,48 @@ def _dataset_or_404(session: Session, dataset_id: UUID) -> Dataset:
     return dataset
 
 
-def _to_submission_read(submission: Submission, competition_slug: str) -> SubmissionRead:
+def _score_components(score: SubmissionScore) -> dict[str, float]:
+    payload = json.loads(score.score_components_json)
+    if not isinstance(payload, dict):
+        raise ValueError("score_components_json must decode to an object.")
+    mapped: dict[str, float] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            raise ValueError("score component key must be a string.")
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ValueError("score component value must be numeric.")
+        mapped[key] = float(value)
+    return mapped
+
+
+def _score_to_read(score: SubmissionScore) -> SubmissionScoreRead:
+    return SubmissionScoreRead(
+        id=score.id,
+        primary_score=score.primary_score,
+        score_components=_score_components(score),
+        scorer_version=score.scorer_version,
+        metric_version=score.metric_version,
+        evaluation_split_version=score.evaluation_split_version,
+        manifest_sha256=score.manifest_sha256,
+        created_at=score.created_at,
+    )
+
+
+def _to_submission_read(
+    submission: Submission,
+    competition_slug: str,
+    official_score: SubmissionScore | None,
+) -> SubmissionRead:
     return SubmissionRead(
         id=submission.id,
         competition_slug=competition_slug,
         user_id=submission.user_id,
         filename=submission.filename,
         score_status=submission.score_status,
-        leaderboard_score=submission.leaderboard_score,
         score_error=submission.score_error,
         created_at=submission.created_at,
         scored_at=submission.scored_at,
+        official_score=_score_to_read(official_score) if official_score is not None else None,
     )
 
 
@@ -66,6 +100,27 @@ def _mark_submission_failed(session: Session, submission: Submission, error: str
     session.add(submission)
     session.commit()
     session.refresh(submission)
+
+
+def _load_official_scores_for_submissions(
+    session: Session,
+    submission_ids: Sequence[UUID],
+) -> dict[UUID, SubmissionScore]:
+    if not submission_ids:
+        return {}
+
+    rows = session.exec(
+        select(SubmissionScore)
+        .where(SubmissionScore.submission_id.in_(submission_ids))
+        .where(SubmissionScore.is_official.is_(True))
+        .order_by(desc(cast(Any, SubmissionScore.created_at)))
+    ).all()
+
+    by_submission: dict[UUID, SubmissionScore] = {}
+    for row in rows:
+        if row.submission_id not in by_submission:
+            by_submission[row.submission_id] = row
+    return by_submission
 
 
 @router.get("/competitions", response_model=list[CompetitionSummary])
@@ -80,9 +135,11 @@ def list_competitions(session: Session = Depends(get_session)) -> list[Competiti
             title=competition.title,
             competition_tier=competition.competition_tier,
             metric=competition.metric,
+            metric_version=competition.metric_version,
             scoring_mode=competition.scoring_mode,
             leaderboard_rule=competition.leaderboard_rule,
             evaluation_policy=competition.evaluation_policy,
+            competition_spec_version=competition.competition_spec_version,
             is_permanent=competition.is_permanent,
             submission_cap_per_day=competition.submission_cap_per_day,
         )
@@ -99,9 +156,11 @@ def get_competition(slug: str, session: Session = Depends(get_session)) -> Compe
         title=competition.title,
         competition_tier=competition.competition_tier,
         metric=competition.metric,
+        metric_version=competition.metric_version,
         scoring_mode=competition.scoring_mode,
         leaderboard_rule=competition.leaderboard_rule,
         evaluation_policy=competition.evaluation_policy,
+        competition_spec_version=competition.competition_spec_version,
         is_permanent=competition.is_permanent,
         submission_cap_per_day=competition.submission_cap_per_day,
         description=competition.description,
@@ -125,36 +184,70 @@ def get_leaderboard(
 
     competition = _competition_or_404(session, slug)
 
-    score_col = cast(Any, Submission.leaderboard_score)
-    created_col = cast(Any, Submission.created_at)
+    score_col = cast(Any, SubmissionScore.primary_score)
+    created_col = cast(Any, SubmissionScore.created_at)
+    submission_id_col = cast(Any, Submission.id)
     score_order = desc(score_col) if competition.higher_is_better else asc(score_col)
 
-    submissions = session.exec(
-        select(Submission)
+    ranked_per_user = (
+        select(
+            Submission.user_id.label("user_id"),
+            Submission.id.label("submission_id"),
+            SubmissionScore.id.label("score_id"),
+            SubmissionScore.primary_score.label("primary_score"),
+            SubmissionScore.metric_version.label("metric_version"),
+            SubmissionScore.evaluation_split_version.label("evaluation_split_version"),
+            SubmissionScore.created_at.label("scored_at"),
+            func.row_number()
+            .over(
+                partition_by=Submission.user_id,
+                order_by=(score_order, asc(created_col), asc(submission_id_col)),
+            )
+            .label("user_rank"),
+        )
+        .join(Submission, Submission.id == SubmissionScore.submission_id)
         .where(Submission.competition_id == competition.id)
         .where(Submission.score_status == ScoreStatus.SCORED)
-        .where(score_col.is_not(None))
-        .order_by(score_order, asc(created_col))
+        .where(SubmissionScore.is_official.is_(True))
+    ).subquery()
+
+    leaderboard_order_score = (
+        desc(cast(Any, ranked_per_user.c.primary_score))
+        if competition.higher_is_better
+        else asc(cast(Any, ranked_per_user.c.primary_score))
+    )
+    rows = session.exec(
+        select(
+            ranked_per_user.c.user_id,
+            ranked_per_user.c.submission_id,
+            ranked_per_user.c.score_id,
+            ranked_per_user.c.primary_score,
+            ranked_per_user.c.metric_version,
+            ranked_per_user.c.evaluation_split_version,
+            ranked_per_user.c.scored_at,
+        )
+        .where(ranked_per_user.c.user_rank == 1)
+        .order_by(
+            leaderboard_order_score,
+            asc(cast(Any, ranked_per_user.c.scored_at)),
+            asc(cast(Any, ranked_per_user.c.submission_id)),
+        )
+        .offset(offset)
+        .limit(limit)
     ).all()
 
-    best_by_user: dict[UUID, Submission] = {}
-    for submission in submissions:
-        if submission.user_id in best_by_user:
-            continue
-        best_by_user[submission.user_id] = submission
-
     entries: list[LeaderboardEntry] = []
-    ranked = list(best_by_user.values())
-    paged = ranked[offset : offset + limit]
-
-    for rank_index, submission in enumerate(paged, start=offset + 1):
+    for rank_index, row in enumerate(rows, start=offset + 1):
         entries.append(
             LeaderboardEntry(
                 rank=rank_index,
-                user_id=submission.user_id,
-                best_submission_id=submission.id,
-                leaderboard_score=float(submission.leaderboard_score or 0.0),
-                scored_at=submission.scored_at,
+                user_id=row.user_id,
+                best_submission_id=row.submission_id,
+                best_score_id=row.score_id,
+                primary_score=float(row.primary_score),
+                metric_version=row.metric_version,
+                evaluation_split_version=row.evaluation_split_version,
+                scored_at=row.scored_at,
             )
         )
 
@@ -226,9 +319,10 @@ async def create_submission(
         submission = process_submission_by_id(session, submission_id=submission.id, settings=settings) or submission
 
     remaining_after = max(0, remaining_before - 1)
+    official_score = _load_official_scores_for_submissions(session, [submission.id]).get(submission.id)
 
     return SubmissionCreateResponse(
-        submission=_to_submission_read(submission, competition.slug),
+        submission=_to_submission_read(submission, competition.slug, official_score),
         daily_cap=competition.submission_cap_per_day,
         remaining_today=remaining_after,
     )
@@ -247,8 +341,12 @@ def list_my_submissions(
         .where(Submission.user_id == user_id)
         .order_by(desc(cast(Any, Submission.created_at)))
     ).all()
+    scores = _load_official_scores_for_submissions(session, [submission.id for submission in submissions])
 
-    return [_to_submission_read(submission, competition.slug) for submission in submissions]
+    return [
+        _to_submission_read(submission, competition.slug, scores.get(submission.id))
+        for submission in submissions
+    ]
 
 
 @router.get("/datasets", response_model=list[DatasetSummary])
@@ -290,4 +388,5 @@ def score_submission_once(
     if competition is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Competition missing.")
 
-    return _to_submission_read(submission, competition.slug)
+    official_score = _load_official_scores_for_submissions(session, [submission.id]).get(submission.id)
+    return _to_submission_read(submission, competition.slug, official_score)
