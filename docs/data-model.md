@@ -1,0 +1,153 @@
+## 6. Data Model
+
+### Enums
+
+| Enum          | Values                                                     |
+| ------------- | ---------------------------------------------------------- |
+| Tier          | `PUBLIC`, `PRIVATE`                                        |
+| Role          | `user`, `admin`                                            |
+| SessionStatus | `starting`, `running`, `stopping`, `stopped`, `error`      |
+| PackTier      | `PUBLIC`, `PRIVATE`, `BOTH`                                |
+
+### Tables
+
+#### users
+
+| Column                  | Type     | Notes     |
+| ----------------------- | -------- | --------- |
+| id                      | UUID     | PK        |
+| email                   | string   | unique    |
+| password_hash           | string   |           |
+| role                    | Role     |           |
+| max_concurrent_sessions | int      | default 1 |
+| created_at              | datetime |           |
+
+#### auth_sessions
+
+| Column       | Type     | Notes       |
+| ------------ | -------- | ----------- |
+| id           | UUID     | PK          |
+| user_id      | UUID     | FK -> users |
+| token_hash   | string   |             |
+| created_at   | datetime |             |
+| expires_at   | datetime |             |
+| revoked_at   | datetime | nullable    |
+| last_seen_at | datetime | nullable    |
+| ip           | string   | optional    |
+| user_agent   | string   | optional    |
+
+#### packs (single seeded row)
+
+| Column        | Type     | Notes    |
+| ------------- | -------- | -------- |
+| id            | UUID     | PK       |
+| name          | string   |          |
+| tier          | PackTier |          |
+| image_ref     | string   |          |
+| image_digest  | string   |          |
+| created_at    | datetime |          |
+| deprecated_at | datetime | nullable |
+
+#### gpu_devices (seed rows 0-6, all enabled)
+
+| Column  | Type | Notes     |
+| ------- | ---- | --------- |
+| id      | int  | PK (0..6) |
+| enabled | bool |           |
+
+#### sessions
+
+| Column        | Type          | Notes                           |
+| ------------- | ------------- | ------------------------------- |
+| id            | UUID          | PK                              |
+| user_id       | UUID          | FK -> users                     |
+| tier          | Tier          |                                 |
+| pack_id       | UUID          | FK -> packs                     |
+| status        | SessionStatus |                                 |
+| container_id  | string        | nullable                        |
+| gpu_id        | int           | FK -> gpu_devices, NOT NULL     |
+| slug          | string        | unique, 8-char lowercase base32 |
+| workspace_zfs | string        | session dataset path (`tank/medforge/workspaces/<user_id>/<session_id>`), unique |
+| created_at    | datetime      |                                 |
+| started_at    | datetime      | nullable                        |
+| stopped_at    | datetime      | nullable                        |
+| error_message | string        | nullable                        |
+
+**GPU exclusivity via generated column + unique index:**
+
+```sql
+gpu_active = CASE WHEN status IN ('starting', 'running', 'stopping') THEN 1 ELSE NULL END
+
+UNIQUE(gpu_id, gpu_active)
+```
+
+Enforces at most one active session per GPU at the DB level.
+
+**Slug generation:** 8-char lowercase base32, no padding. Generate and retry up to 3 times for uniqueness.
+
+## 6.1 Competition Platform (Alpha)
+
+Important terminology:
+
+- `competition_tier` (`PUBLIC` | `PRIVATE`) is platform policy (internet/data controls), not label visibility.
+- `leaderboard_score` is computed on hidden holdout labels.
+- Alpha competitions are permanent (`is_permanent=true`) and have no due dates/final phase.
+
+### Enums
+
+| Enum              | Values                                |
+| ----------------- | ------------------------------------- |
+| CompetitionTier   | `PUBLIC`, `PRIVATE`                   |
+| CompetitionStatus | `active`, `inactive`                  |
+| ScoreStatus       | `queued`, `scoring`, `scored`, `failed` |
+
+### datasets
+
+| Column       | Type     | Notes |
+| ------------ | -------- | ----- |
+| id           | UUID     | PK |
+| slug         | string   | unique |
+| title        | string   | |
+| source       | string   | e.g. `kaggle` |
+| license      | string   | |
+| storage_path | string   | mirrored path |
+| bytes        | int      | |
+| checksum     | string   | |
+| created_at   | datetime | |
+
+### competitions
+
+| Column                 | Type              | Notes |
+| ---------------------- | ----------------- | ----- |
+| id                     | UUID              | PK |
+| slug                   | string            | unique |
+| title                  | string            | |
+| description            | string            | |
+| competition_tier       | CompetitionTier   | policy tier |
+| status                 | CompetitionStatus | |
+| is_permanent           | bool              | true for alpha |
+| metric                 | string            | e.g. `accuracy`, `roc_auc` |
+| higher_is_better       | bool              | default true |
+| submission_cap_per_day | int               | per-user cap |
+| dataset_id             | UUID              | FK -> datasets |
+| created_at             | datetime          | |
+| updated_at             | datetime          | |
+
+### submissions
+
+| Column                   | Type       | Notes |
+| ------------------------ | ---------- | ----- |
+| id                       | UUID       | PK |
+| competition_id           | UUID       | FK -> competitions |
+| user_id                  | UUID       | participant |
+| filename                 | string     | original upload name |
+| artifact_path            | string     | stored CSV path |
+| artifact_sha256          | string     | integrity hash |
+| row_count                | int        | |
+| score_status             | ScoreStatus | |
+| leaderboard_score        | float      | nullable until scored |
+| score_error              | string     | nullable |
+| scorer_version           | string     | evaluator version |
+| evaluation_split_version | string     | holdout version |
+| created_at               | datetime   | |
+| scored_at                | datetime   | nullable |

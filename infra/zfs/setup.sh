@@ -43,6 +43,6 @@ done
 # MariaDB needs its mount owned by the mysql user (UID 999 in the mariadb:11 image).
 chown 999:999 "/$POOL_NAME/medforge/system/db"
 
-echo "ZFS setup complete.  Workspace datasets are created per-user at runtime."
-echo "  Workspaces: $POOL_NAME/medforge/workspaces/<user_id>"
+echo "ZFS setup complete.  Workspace datasets are created per-session at runtime."
+echo "  Workspaces: $POOL_NAME/medforge/workspaces/<user_id>/<session_id>"
 echo "  DB:         /$POOL_NAME/medforge/system/db"

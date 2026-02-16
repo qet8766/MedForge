@@ -1,0 +1,19 @@
+INFO:     Started server process [154232]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:46222 - "GET /healthz HTTP/1.1" 200 OK
+2026-02-16 12:18:53 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 session_id=bbfbdf6b-84a2-4810-97c5-80a1ff79f26d slug=h27i3ufd tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000a1
+INFO:     127.0.0.1:46224 - "POST /api/sessions HTTP/1.1" 201 Created
+2026-02-16 12:18:54 [info     ] session.start                  gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 session_id=9ea62c95-b555-434c-aedd-2dfbdfce1abf slug=btcneecs tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000b2
+INFO:     127.0.0.1:46230 - "POST /api/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:46234 - "GET /api/auth/session-proxy HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:46244 - "GET /api/auth/session-proxy HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:46250 - "GET /api/auth/session-proxy HTTP/1.1" 200 OK
+2026-02-16 12:18:57 [info     ] session.stop                   gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=user session_id=bbfbdf6b-84a2-4810-97c5-80a1ff79f26d slug=h27i3ufd tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000a1
+INFO:     127.0.0.1:46252 - "POST /api/sessions/bbfbdf6b-84a2-4810-97c5-80a1ff79f26d/stop HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46258 - "GET /api/auth/session-proxy HTTP/1.1" 404 Not Found
+2026-02-16 12:18:57 [info     ] session.stop                   gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=user session_id=9ea62c95-b555-434c-aedd-2dfbdfce1abf slug=btcneecs tier=PUBLIC user_id=00000000-0000-0000-0000-0000000000b2
+INFO:     127.0.0.1:46260 - "POST /api/sessions/9ea62c95-b555-434c-aedd-2dfbdfce1abf/stop HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46272 - "POST /api/sessions/bbfbdf6b-84a2-4810-97c5-80a1ff79f26d/stop HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46278 - "POST /api/sessions/9ea62c95-b555-434c-aedd-2dfbdfce1abf/stop HTTP/1.1" 200 OK

@@ -11,9 +11,9 @@ RUN apt-get update \
     && curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=${CODE_SERVER_VERSION} \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -g ${USER_GID} coder \
-    && useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash coder \
-    && mkdir -p /workspace && chown coder:coder /workspace
+RUN groupadd -o -g ${USER_GID} coder || true \
+    && useradd -o -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash coder || true \
+    && mkdir -p /workspace && chown ${USER_UID}:${USER_GID} /workspace
 
 USER coder
 WORKDIR /workspace

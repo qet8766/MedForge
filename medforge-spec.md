@@ -3,412 +3,224 @@
 > PUBLIC-first. PRIVATE is fully represented in the data model and policy surface, but `tier=PRIVATE` session creation returns **501 Not Available**.
 > Single Ubuntu host with **7x RTX 5090**. Browser IDE = **code-server**.
 
+This file is the big-picture source of truth. Detailed docs are split below, but core strategy and delivery intent are intentionally repeated here.
+
 ---
 
-## 1. Overview
+## Status Snapshot (2026-02-16)
 
-MedForge provisions per-user, GPU-backed development sessions (code-server in the browser) on a single multi-GPU Ubuntu host. Sessions run in a single default immutable Pack (Docker image digest pinned) to avoid dependency drift. User work persists on ZFS with snapshots-on-stop for rollback.
+- Implemented in this repo now:
+  - Competition catalog/submission/leaderboard APIs and web pages.
+  - Scoring worker + optional auto-score-on-submit path.
+  - Gate 2 auth foundations: `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, and `GET /api/me`.
+  - Session proxy authorization contract (`GET /api/auth/session-proxy`) for owner/admin on running session rows.
+  - Gate 3 alpha lifecycle for PUBLIC: `POST /api/sessions` and `POST /api/sessions/{id}/stop`.
+  - Gate 4 recovery paths: startup reconciliation + periodic poller for active session/container drift.
+  - Manual host evidence pass for Gate 5/6 core checks (auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop).
+- Not implemented yet in this repo:
+  - Caddy wildcard websocket path validation (Gate 5).
+  - UI-driven end-to-end browser smoke validation (Gate 6).
+
+---
+
+## 0. Current Machine Specs (Captured 2026-02-15 15:20:42 UTC)
+
+| Area | Current Host |
+| --- | --- |
+| Hostname | `user-System-Product-Name` |
+| OS | Ubuntu `24.04.4 LTS` |
+| Kernel | `6.8.0-100-generic` |
+| CPU | AMD Ryzen Threadripper PRO 9985WX, `64` cores / `128` threads, max `5.475 GHz` |
+| Memory | `503 GiB` RAM, `2.0 GiB` swap |
+| GPU | `7 x NVIDIA GeForce RTX 5090` |
+| GPU VRAM | `32607 MiB` per GPU |
+| NVIDIA driver | `590.48.01` |
+| CUDA version | `13.1` |
+| Project filesystem | `/home/shk/projects/MedForge` on `ext4` (`/dev/nvme2n1p2`), `7.3T` total (`50G` used) |
+
+Implementation note:
+
+- The platform spec targets ZFS for workspace datasets and snapshots.
+- The MedForge repo currently lives on `ext4`; ZFS pool/datasets should be verified/provisioned during Gate 0 for runtime workspace storage.
+- `/data` exists on this host but is not part of the current MedForge pathing/spec.
+
+---
+
+## 1. Executive Summary
+
+MedForge is a single-host GPU development platform that gives each user browser-based VS Code sessions (`code-server`) with terminal + CUDA access.
+
+Target product posture:
+
+- PUBLIC tier is available now.
+- PRIVATE tier is represented in models/policies but blocked at runtime with `501`.
+- One default immutable Pack (image digest pinned) is used to avoid drift.
+- Every session gets exactly one GPU and its own ZFS workspace dataset.
+- Session routing is wildcard-subdomain based: `s-<slug>.medforge.<domain>`.
+
+---
+
+## 2. Product Direction
 
 ### Goals
 
-- Launch PUBLIC sessions: browser VS Code (code-server) + terminal + GPU access.
-- Enforce 1 GPU per session and max 7 concurrent sessions (one per physical GPU).
-- Enforce per-user concurrent session limits.
-- Wildcard subdomains per session: `s-<slug>.medforge.<domain>`.
-- Persist per-user workspaces on ZFS; take a snapshot on session stop.
-- Structured JSON event logs to stdout (login + session lifecycle).
+- Launch stable PUBLIC GPU sessions end-to-end.
+- Launch permanent Kaggle-style mock competitions and leaderboards for PUBLIC data tracks.
+- Enforce strict GPU exclusivity (1 active session per physical GPU).
+- Enforce per-user concurrent session limits under concurrency.
+- Persist workspace data on ZFS with snapshot-on-stop rollback points.
+- Keep auth/routing centralized through Caddy + API authorization checks.
+- Keep operations simple enough for a single Ubuntu host.
 
-### Constraints
+### Non-Goals (current scope)
 
-- Single host (Ubuntu 24.04 LTS).
-- Stack: **Next.js + TypeScript**, **FastAPI + SQLModel**, **MariaDB**.
-- code-server is the in-browser IDE.
-- PRIVATE tier defined but returns 501; no egress restrictions, audited access, or UI transfer controls enforced.
-
-### Non-Goals
-
-- Competitions, forums, marketplace.
-- Dataset registry / managed read-only mounts.
-- Exfiltration prevention against screenshots/copying.
+- Multi-node scheduling and cluster orchestration.
+- PRIVATE controls implementation (egress blocking, strict auditing, transfer controls).
 - Enterprise auth (SSO/SCIM).
-- Multi-node scheduling.
-- Lease TTL/heartbeat renewal (explicit stop + container state polling + boot-time reconciliation only).
-- Scheduled snapshot policies / retention automation.
-- Snapshot restore tooling (manual admin ZFS ops only).
-- Observability stack beyond structured API logs + host tools.
+- Public dataset redistribution beyond internal/private mirrored competition data.
+- Restore API/UI and automated snapshot retention.
+- Advanced observability stack beyond structured app logs + host tools.
+
+Detailed doc:
+
+- `@docs/overview.md`
 
 ---
 
-## 2. Architecture
+## 3. Architecture Snapshot
 
 ### Control Plane
 
-| Component        | Role                                     |
-| ---------------- | ---------------------------------------- |
-| **medforge-web** | Next.js frontend                         |
-| **medforge-api** | FastAPI + session manager module         |
-| **MariaDB**      | Persistent state                         |
-| **Caddy**        | Reverse proxy + wildcard TLS + auth gate |
+| Component | Role |
+| --- | --- |
+| `medforge-web` | Next.js frontend |
+| `medforge-api` | FastAPI + session manager |
+| `MariaDB` | System of record |
+| `Caddy` | TLS termination, wildcard routing, auth gateway |
 
 ### Data Plane
 
-- Per-session Docker containers running code-server.
-- Persistent user workspaces mounted from ZFS.
+- One Docker container per session (`mf-session-<slug>`).
+- `code-server` runs with `--auth none`; Caddy/API is the access gate.
+- Session workspace mount is per-session ZFS dataset, not shared across sessions.
 
-Full control-plane composition: `@infra/compose/docker-compose.yml`
+### Network and Access Model
 
-### Docker Networking
+- `medforge-control`: web/api/db traffic.
+- `medforge-public-sessions`: PUBLIC session containers.
+- `medforge-private-sessions`: placeholder network.
+- Caddy joins control + public sessions networks.
+- Firewall rules allow only Caddy fixed IP (`172.30.0.2`) to reach session `:8080`.
 
-| Network                      | Purpose                          |
-| ---------------------------- | -------------------------------- |
-| `medforge-control`           | web <-> api <-> db               |
-| `medforge-public-sessions`   | PUBLIC session containers        |
-| `medforge-private-sessions`  | Placeholder, unused              |
+### Storage Model
 
-Caddy connects to both `medforge-control` (to reach medforge-api) and `medforge-public-sessions` (to reach session containers by hostname). Caddy is assigned a fixed IP (`172.30.0.2`) on the sessions network for firewall rules.
-
-### Tiers
-
-| Aspect             | PUBLIC                               | PRIVATE               |
-| ------------------ | ------------------------------------ | --------------------- |
-| Internet egress    | Allowed                              | Blocked               |
-| UI upload/download | Allowed                              | Blocked               |
-| Data ingestion     | Users fetch data themselves (`wget`) | Controlled            |
-| Audit              | Structured JSON logs to stdout       | Strict auditing       |
-| Status             | **Available**                        | **501 Not Available** |
-
-### Domains & TLS
-
-| Subdomain                    | Target            |
-| ---------------------------- | ----------------- |
-| `medforge.<domain>`          | Next.js           |
-| `api.medforge.<domain>`      | FastAPI           |
-| `s-<slug>.medforge.<domain>` | Session container |
-
-Wildcard cert `*.medforge.<domain>` via Caddy DNS challenge. Single wildcard cert, no per-session issuance. Routing config: `@infra/caddy/Caddyfile`
-
-### Repo Layout
-
-```
-apps/
-  web/                  # Next.js
-  api/                  # FastAPI + SQLModel + session manager
-    migrations/         # Alembic
-infra/
-  caddy/                # Caddyfile, Caddy Dockerfile (DNS plugin)
-  compose/              # docker-compose, .env.example
-  packs/
-    default/            # Session container Dockerfile
-  zfs/                  # ZFS pool/dataset setup
-  firewall/             # East-west isolation iptables rules
-scripts/                # Host bootstrap and common ops
-```
-
----
-
-## 3. Authentication & Routing
-
-### Cookie Sessions
-
-HTTP-only cookie session auth.
-
-- Cookie attributes: `HttpOnly; Secure; SameSite=Lax; Domain=.medforge.<domain>; Path=/`
-- CSRF/Origin guard: for all state-changing endpoints, reject if `Origin` is not an allowed MedForge origin.
-- Cookie stores a random token (base64url). DB stores only a hash of the token (never raw).
-
-### Wildcard Session Routing (Caddy + forward_auth)
-
-Full Caddy config: `@infra/caddy/Caddyfile`
-
-**forward_auth endpoint:** `GET /api/auth/session-proxy`
-
-Inputs:
-
-- `Host: s-<slug>.medforge.<domain>`
-- Cookie session
-
-FastAPI returns:
-
-| Code | Condition                                                  | Header                               |
-| ---- | ---------------------------------------------------------- | ------------------------------------ |
-| 200  | Authenticated, owns session (or admin), session is running | `X-Upstream: mf-session-<slug>:8080` |
-| 401  | Not authenticated                                          |                                      |
-| 403  | Authenticated but not owner/admin                          |                                      |
-| 404  | Slug not found or session not running                      |                                      |
-
-Caddy behaviour:
-
-- Strips inbound `X-Upstream` from client request (prevents spoofing).
-- Fails closed with 502 if `X-Upstream` is missing after auth.
-- Proxies websockets natively (code-server terminal).
-
-### East-West Isolation
-
-Session containers must not reach other session containers' port 8080 over the Docker network. code-server runs with `--auth none`; Caddy/forward_auth is the only gate.
-
-Firewall script: `@infra/firewall/setup.sh`
-
-Rules applied to the `DOCKER-USER` chain:
-
-- ALLOW TCP dport 8080 from Caddy's fixed IP (`172.30.0.2`) to the sessions bridge.
-- DROP all other sources to TCP dport 8080 on the sessions bridge.
-
-**Acceptance test:** from inside session A, `curl http://mf-session-<slugB>:8080` must fail.
-
----
-
-## 4. Sessions
-
-### Packs
-
-One default Pack, pinned by image digest. code-server version pinned globally. The `packs` table and `sessions.pack_id` exist; the single Pack row is seeded during migration/init. UI does not expose pack selection.
-
-### Container Spec
-
-Image definition: `@infra/packs/default/Dockerfile`
-
-Runtime constraints (applied by the session manager when creating the container):
-
-- `--auth none` on code-server (Caddy is the gate).
-- Non-root user (UID/GID 1000).
-- `cap-drop=ALL`, not privileged, no Docker socket.
-- Container name: `mf-session-<slug>`
-- Network: `medforge-public-sessions`
-
-Mounts:
-
-| Container path | Host source                               |
-| -------------- | ----------------------------------------- |
-| `/workspace`   | ZFS dataset for the user (`tank/medforge/workspaces/<user_id>`) |
-
-Environment variables injected at runtime:
-
-```
-MEDFORGE_SESSION_ID=<uuid>
-MEDFORGE_USER_ID=<uuid>
-MEDFORGE_TIER=PUBLIC|PRIVATE
-CUDA_VISIBLE_DEVICES=<gpu_idx>
-```
-
-### Session Lifecycle
-
-#### Create -- `POST /api/sessions`
-
-Inputs: `tier` (PUBLIC | PRIVATE), optional `pack_id` (defaults to seeded pack).
-
-- `tier=PRIVATE` returns **501**.
-- Every session allocates exactly one GPU.
-
-**Race-safe allocation (single transaction):**
-
-1. `BEGIN`
-2. Lock user row: `SELECT * FROM users WHERE id=:user_id FOR UPDATE`
-3. Count user active sessions (`starting | running | stopping`). If >= `max_concurrent_sessions`, reject.
-4. Select a free enabled GPU and lock it (`FOR UPDATE`). Pick an enabled `gpu_devices.id` not assigned to an active session.
-5. Insert session row: `status='starting'`, chosen `gpu_id`, `slug`, `pack_id`.
-6. If insert fails due to `UNIQUE(gpu_id, gpu_active)` conflict, retry a fixed number of times.
-7. `COMMIT`
-
-**After commit, spawn container:**
-
-- Name: `mf-session-<slug>`
-- Network: `medforge-public-sessions`
-- Mount: `/workspace` from user's ZFS dataset
-- GPU: `CUDA_VISIBLE_DEVICES` restricted to allocated GPU index
-
-Update session: set `container_id`, `status='running'`, `started_at`. On failure: set `status='error'`, `error_message`. Leaving active status frees the GPU automatically (generated column becomes NULL, unique constraint releases).
-
-#### Stop -- `POST /api/sessions/{id}/stop`
-
-1. Set `status='stopping'`.
-2. SIGTERM container, wait up to 30s.
-3. Force-kill if still running.
-4. Snapshot workspace: `workspace@stop-<unixms>-<slug>`.
-5. Set `status='stopped'`, `stopped_at`.
-
-#### Container State Poller (every 30s)
-
-- Query sessions with `status='running'`.
-- `docker inspect` container state.
-- If not running: set `status='error'`, `stopped_at`, `error_message="container exited unexpectedly"`; emit `session.stop` event with `reason: container_death`.
-
-#### Boot-Time Reconciliation
-
-On medforge-api startup, for sessions in `starting | running | stopping`: if container missing or not running, mark `error` and set `stopped_at`. Prevents stranded GPU locks after restarts.
-
-### Event Logging
-
-One JSON object per line to stdout.
-
-| Event           | Payload                                              |
-| --------------- | ---------------------------------------------------- |
-| `user.login`    |                                                      |
-| `session.start` | `{session_id, user_id, tier, gpu_id, pack_id, slug}` |
-| `session.stop`  | `{reason: user \| admin \| container_death}`          |
-
----
-
-## 5. Storage
-
-ZFS setup script: `@infra/zfs/setup.sh`
-
-### Workspaces
-
-Dataset layout:
-
+- ZFS datasets:
 ```
 tank/medforge/workspaces/<user_id>
+tank/medforge/workspaces/<user_id>/<session_id>
 tank/medforge/system/db
 ```
+- Snapshot format on stop: `<workspace_zfs>@stop-<unixms>`.
 
-All packs run as a fixed non-root UID/GID (1000:1000). On first workspace creation, set dataset mount ownership to that UID/GID. Optional hard quota applied at dataset creation time. No warning system.
+Detailed doc:
 
-### Snapshots
-
-Taken on session stop only: `workspace@stop-<unixms>-<slug>`.
-
-No scheduled snapshots, retention automation, or restore API/UI. Restore is manual admin ZFS ops.
+- `@docs/architecture.md`
 
 ---
 
-## 6. Data Model
+## 4. Session Lifecycle Snapshot
 
-### Enums
+### Create (`POST /api/sessions`)
 
-| Enum          | Values                                                     |
-| ------------- | ---------------------------------------------------------- |
-| Tier          | `PUBLIC`, `PRIVATE`                                        |
-| Role          | `user`, `admin`                                            |
-| SessionStatus | `starting`, `running`, `stopping`, `stopped`, `error`      |
-| PackTier      | `PUBLIC`, `PRIVATE`, `BOTH`                                |
+- Validate auth and input (`tier`, optional `pack_id`).
+- Reject `tier=PRIVATE` with `501`.
+- In one transaction:
+1. lock user row (`FOR UPDATE`)
+2. enforce per-user active-session limit
+3. select and lock a free enabled GPU
+4. insert session in `starting` with `gpu_id`, `slug`, and `workspace_zfs`
+- After commit:
+1. ensure session dataset exists and is owned by `1000:1000`
+2. start container on `medforge-public-sessions`
+3. bind exactly one physical GPU at Docker runtime
+4. set runtime env (`MEDFORGE_SESSION_ID`, `MEDFORGE_USER_ID`, `MEDFORGE_TIER`, `MEDFORGE_GPU_ID`, `NVIDIA_VISIBLE_DEVICES`, `CUDA_VISIBLE_DEVICES=0`)
+5. finalize as `running` or terminal `error`.
 
-### Tables
+### Stop (`POST /api/sessions/{id}/stop`)
 
-#### users
+- Transition to `stopping`.
+- Graceful terminate, then force-kill if required.
+- Snapshot session dataset.
+- Finalize `stopped` on success or `error` on snapshot failure.
+- Endpoint is idempotent for repeated calls.
 
-| Column                  | Type     | Notes     |
-| ----------------------- | -------- | --------- |
-| id                      | UUID     | PK        |
-| email                   | string   | unique    |
-| password_hash           | string   |           |
-| role                    | Role     |           |
-| max_concurrent_sessions | int      | default 1 |
-| created_at              | datetime |           |
+### Recovery
 
-#### auth_sessions
+- Poller every 30s reconciles `starting` and `running` sessions against actual container state.
+- Boot-time reconciliation processes `starting | running | stopping` sessions and forces terminal consistency.
+- No session should remain stranded in `starting` or `stopping` after reconciliation.
 
-| Column       | Type     | Notes       |
-| ------------ | -------- | ----------- |
-| id           | UUID     | PK          |
-| user_id      | UUID     | FK -> users |
-| token_hash   | string   |             |
-| created_at   | datetime |             |
-| expires_at   | datetime |             |
-| revoked_at   | datetime | nullable    |
-| last_seen_at | datetime | nullable    |
-| ip           | string   | optional    |
-| user_agent   | string   | optional    |
+### State Invariants
 
-#### packs (single seeded row)
+- Active states: `starting`, `running`, `stopping`.
+- Terminal states: `stopped`, `error`.
+- GPU exclusivity enforced in DB via generated `gpu_active` and `UNIQUE(gpu_id, gpu_active)`.
 
-| Column        | Type     | Notes    |
-| ------------- | -------- | -------- |
-| id            | UUID     | PK       |
-| name          | string   |          |
-| tier          | PackTier |          |
-| image_ref     | string   |          |
-| image_digest  | string   |          |
-| created_at    | datetime |          |
-| deprecated_at | datetime | nullable |
+Detailed docs:
 
-#### gpu_devices (seed rows 0-6, all enabled)
-
-| Column  | Type | Notes     |
-| ------- | ---- | --------- |
-| id      | int  | PK (0..6) |
-| enabled | bool |           |
-
-#### sessions
-
-| Column        | Type          | Notes                           |
-| ------------- | ------------- | ------------------------------- |
-| id            | UUID          | PK                              |
-| user_id       | UUID          | FK -> users                     |
-| tier          | Tier          |                                 |
-| pack_id       | UUID          | FK -> packs                     |
-| status        | SessionStatus |                                 |
-| container_id  | string        | nullable                        |
-| gpu_id        | int           | FK -> gpu_devices, NOT NULL     |
-| slug          | string        | unique, 8-char lowercase base32 |
-| workspace_zfs | string        |                                 |
-| created_at    | datetime      |                                 |
-| started_at    | datetime      | nullable                        |
-| stopped_at    | datetime      | nullable                        |
-| error_message | string        | nullable                        |
-
-**GPU exclusivity via generated column + unique index:**
-
-```sql
-gpu_active = CASE WHEN status IN ('starting', 'running', 'stopping') THEN 1 ELSE NULL END
-
-UNIQUE(gpu_id, gpu_active)
-```
-
-Enforces at most one active session per GPU at the DB level.
-
-**Slug generation:** 8-char lowercase base32, no padding. Generate and retry up to 3 times for uniqueness.
+- `@docs/sessions.md`
+- `@docs/data-model.md`
 
 ---
 
-## 7. Build Gates & Definition of Done
+## 5. Security and Routing Snapshot
 
-### Gate 0 -- Host Foundation
+- Auth is HTTP-only cookie session with DB-stored token hash.
+- Cookie scope: subdomain-wide for `*.medforge.<domain>`.
+- State-changing endpoints enforce Origin checks.
+- Wildcard session routing uses `GET /api/auth/session-proxy`.
+- API returns upstream only for authenticated owner/admin when session is running.
+- Client-provided upstream hints are never trusted.
+- Session-to-session direct access to `:8080` is blocked by firewall policy.
 
-Docker + NVIDIA Container Toolkit. ZFS pool ready (`@infra/zfs/setup.sh`). DNS wildcard + wildcard TLS via Caddy DNS challenge.
+Detailed doc:
 
-**Acceptance:** GPU container runs CUDA successfully. ZFS read/write works. `*.medforge.<domain>` has valid TLS.
+- `@docs/auth-routing.md`
 
-### Gate 1 -- Control Plane Bootstrap
+---
 
-Compose stack up (`@infra/compose/docker-compose.yml`). Networks created (control + public + private placeholder). DB migrations create tables with seed rows.
+## 6. Delivery Plan
 
-**Acceptance:** UI + API reachable. Seeded pack exists. `gpu_devices` rows 0-6 exist, all enabled.
+### Build Gates
 
-### Gate 2 -- Auth
+| Gate | Outcome |
+| --- | --- |
+| Gate 0 | Host foundation: Docker/NVIDIA/ZFS/DNS/TLS ready |
+| Gate 1 | Compose and DB bootstrap complete |
+| Gate 2 | Auth and forward-auth contract complete |
+| Gate 3 | Session lifecycle (`create`, `stop`, snapshots) complete |
+| Gate 4 | Fault recovery (`poller`, `boot reconcile`) complete |
+| Gate 5 | Wildcard routing + east-west isolation complete |
+| Gate 6 | End-to-end user flow complete |
+| Gate 7 | Permanent competition portal + scoring complete |
 
-Signup/login, cookie sessions, `/api/me`. forward_auth endpoint for session proxy.
+### Phased Execution
 
-**Acceptance:** Cookie works across subdomains. Protected route returns 401 without cookie.
+- Phase 1 (MVP through Gate 7): issues `MF-001` to `MF-019`, estimated `24.0d`.
+- Phase 2 (hardening): issues `MF-101` to `MF-105`, estimated `7.0d`.
 
-### Gate 3 -- Session Lifecycle
+### Critical Exit Criteria
 
-`POST /api/sessions` creates GPU-only PUBLIC session (PRIVATE returns 501). Transaction-safe GPU allocation. Stop endpoint + ZFS snapshot-on-stop.
+- Users can log in and reach their own running session at `s-<slug>.medforge.<domain>`.
+- 7/7 GPU allocation works with strict exclusivity, no over-allocation.
+- Per-user concurrency limits hold under concurrent requests.
+- Each session has unique `workspace_zfs`; snapshots are created on stop.
+- Recovery paths prevent stranded active rows and stranded GPU locks.
+- Permanent PUBLIC competitions are available with hidden-holdout `leaderboard_score` and enforced daily submission caps.
 
-**Acceptance:** 7 concurrent sessions succeed; 8th fails "no GPUs available". Per-user limit enforced under concurrent requests. Session stop produces a ZFS snapshot.
+Detailed docs:
 
-### Gate 4 -- Fault Recovery
-
-Container state poller detects dead containers. Boot-time reconciliation frees stranded sessions.
-
-**Acceptance:** Abrupt container kill (`docker kill`) is detected and marked `error` within 30s. API restart reconciles all orphaned sessions back to `error`/`stopped`.
-
-### Gate 5 -- Routing & Isolation
-
-Caddy wildcard route proxies to running sessions (`@infra/caddy/Caddyfile`). East-west isolation enforced (`@infra/firewall/setup.sh`).
-
-**Acceptance:** Owner can access their session; other user gets 403; unauthenticated gets 401. From inside a session, cannot reach another session's :8080. code-server terminal websockets work.
-
-### Gate 6 -- End-to-End
-
-Full user flow through the UI: log in, create a PUBLIC session, land in code-server, run a CUDA program in the terminal, stop the session, verify ZFS snapshot exists.
-
-**Acceptance:** The entire flow completes without manual intervention. GPU is visible inside the session (`nvidia-smi`). Workspace files persist across session restarts. Snapshot is present after stop.
-
-### Definition of Done
-
-- A user can log in, start a PUBLIC GPU session, and access code-server at `s-<slug>.medforge.<domain>`.
-- GPU exclusivity is enforced by DB constraint and race-safe allocation.
-- Per-user concurrent session limits are enforced.
-- Work persists on ZFS and snapshots occur on stop.
-- Poller + boot-time reconciliation prevents stranded sessions/GPU locks after failures/restarts.
-- PRIVATE exists in enums/policies/networks but session creation returns 501.
+- `@docs/build-gates.md`
+- `@docs/implementation-checklist.md`
+- `@docs/issue-plan.md`
+- `@docs/competitions.md`

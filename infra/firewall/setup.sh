@@ -13,6 +13,11 @@ set -euo pipefail
 CADDY_IP="${CADDY_IP:-172.30.0.2}"
 SESSIONS_BRIDGE="${SESSIONS_BRIDGE:-br-$(docker network inspect medforge-public-sessions -f '{{.Id}}' | head -c 12)}"
 
+# Ensure bridged container traffic is evaluated by iptables.
+modprobe br_netfilter
+sysctl -w net.bridge.bridge-nf-call-iptables=1 >/dev/null
+sysctl -w net.bridge.bridge-nf-call-ip6tables=1 >/dev/null
+
 # Flush any previous MedForge rules.
 iptables -D DOCKER-USER -i "$SESSIONS_BRIDGE" -p tcp --dport 8080 -s "$CADDY_IP" -j ACCEPT 2>/dev/null || true
 iptables -D DOCKER-USER -i "$SESSIONS_BRIDGE" -p tcp --dport 8080 -j DROP 2>/dev/null || true

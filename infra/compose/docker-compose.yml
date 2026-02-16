@@ -40,8 +40,27 @@ services:
       DATABASE_URL: mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@medforge-db:3306/medforge
       DOMAIN: ${DOMAIN}
       SESSION_SECRET: ${SESSION_SECRET}
-      PUBLIC_SESSIONS_NETWORK: medforge-public-sessions
+      PUBLIC_SESSIONS_NETWORK: ${PUBLIC_SESSIONS_NETWORK}
+      WORKSPACE_ZFS_ROOT: ${WORKSPACE_ZFS_ROOT}
+      SESSION_ALLOCATION_MAX_RETRIES: ${SESSION_ALLOCATION_MAX_RETRIES}
+      SESSION_CONTAINER_START_TIMEOUT_SECONDS: ${SESSION_CONTAINER_START_TIMEOUT_SECONDS}
+      SESSION_CONTAINER_STOP_TIMEOUT_SECONDS: ${SESSION_CONTAINER_STOP_TIMEOUT_SECONDS}
+      SESSION_WORKSPACE_QUOTA_GB: ${SESSION_WORKSPACE_QUOTA_GB}
+      SESSION_RUNTIME_MODE: ${SESSION_RUNTIME_MODE}
+      SESSION_RUNTIME_USE_SUDO: ${SESSION_RUNTIME_USE_SUDO}
+      SESSION_RECOVERY_ENABLED: ${SESSION_RECOVERY_ENABLED}
+      SESSION_POLL_INTERVAL_SECONDS: ${SESSION_POLL_INTERVAL_SECONDS}
       PACK_IMAGE: ${PACK_IMAGE}                   # e.g. medforge-pack-default@sha256:...
+      AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
+      REQUIRE_USER_HEADER: ${REQUIRE_USER_HEADER}
+      ALLOW_LEGACY_HEADER_AUTH: ${ALLOW_LEGACY_HEADER_AUTH}
+      AUTH_IDLE_TTL_SECONDS: ${AUTH_IDLE_TTL_SECONDS}
+      AUTH_MAX_TTL_SECONDS: ${AUTH_MAX_TTL_SECONDS}
+      COOKIE_NAME: ${COOKIE_NAME}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      COOKIE_SECURE: ${COOKIE_SECURE}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Manage session containers.
     # ZFS snapshot commands require host-level access.
@@ -53,6 +72,22 @@ services:
     networks:
       - medforge-control
       - medforge-public-sessions
+
+  # ── Scoring worker ───────────────────────────────────────
+  medforge-api-worker:
+    build: ../../apps/api
+    container_name: medforge-api-worker
+    restart: unless-stopped
+    depends_on:
+      - medforge-db
+    command: ["python", "-m", "app.worker", "--interval", "5", "--batch-size", "10"]
+    environment:
+      DATABASE_URL: mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@medforge-db:3306/medforge
+      AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
+      REQUIRE_USER_HEADER: ${REQUIRE_USER_HEADER}
+    networks:
+      - medforge-control
 
   # ── Frontend ──────────────────────────────────────────────
   medforge-web:
