@@ -20,7 +20,7 @@ One default Pack, pinned by image digest. code-server version pinned globally. T
 
 ### Container Spec
 
-Image definition: `@infra/packs/default/Dockerfile`
+Image definition: `@deploy/packs/default/Dockerfile`
 
 Runtime constraints (applied by the session manager when creating the container):
 

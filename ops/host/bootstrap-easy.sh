@@ -4,7 +4,7 @@
 # Defaults target production (physical POOL_DISKS required).
 #
 # Usage:
-#   sudo bash infra/host/bootstrap-easy.sh
+#   sudo bash ops/host/bootstrap-easy.sh
 #
 # Optional env:
 #   POOL_NAME=tank
@@ -203,13 +203,13 @@ ensure_networks_and_firewall() {
     run_docker network create --subnet=172.30.0.0/24 medforge-public-sessions >/dev/null
     echo "Created Docker network medforge-public-sessions."
   fi
-  run_sudo bash "${ROOT_DIR}/infra/firewall/setup.sh"
+  run_sudo bash "${ROOT_DIR}/ops/network/firewall-setup.sh"
 }
 
 ensure_compose_env() {
-  if [ ! -f "${ROOT_DIR}/infra/compose/.env" ]; then
-    cp "${ROOT_DIR}/infra/compose/.env.example" "${ROOT_DIR}/infra/compose/.env"
-    echo "Created infra/compose/.env from .env.example"
+  if [ ! -f "${ROOT_DIR}/deploy/compose/.env" ]; then
+    cp "${ROOT_DIR}/deploy/compose/.env.example" "${ROOT_DIR}/deploy/compose/.env"
+    echo "Created deploy/compose/.env from .env.example"
   fi
 }
 
@@ -218,7 +218,7 @@ build_pack_image() {
     echo "Skipping pack image build (BUILD_PACK_IMAGE=${BUILD_PACK_IMAGE})."
     return
   fi
-  run_docker build -t medforge-pack-default:local -f "${ROOT_DIR}/infra/packs/default/Dockerfile" "${ROOT_DIR}/infra/packs/default"
+  run_docker build -t medforge-pack-default:local -f "${ROOT_DIR}/deploy/packs/default/Dockerfile" "${ROOT_DIR}/deploy/packs/default"
 }
 
 main() {
@@ -247,9 +247,9 @@ main() {
   echo ""
   echo "Bootstrap complete."
   echo "Next:"
-  echo "  1) Edit infra/compose/.env secrets and domain settings."
-  echo "  2) Start stack: docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml up -d --build"
-  echo "  3) Validate host flow: bash infra/host/validate-gate56.sh"
+  echo "  1) Edit deploy/compose/.env secrets and domain settings."
+  echo "  2) Start stack: docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build"
+  echo "  3) Validate host flow: bash ops/host/validate-gate56.sh"
 }
 
 main "$@"

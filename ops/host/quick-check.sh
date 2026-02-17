@@ -3,7 +3,7 @@
 # Fast local quality check without host runtime dependencies.
 #
 # Usage:
-#   bash infra/host/quick-check.sh
+#   bash ops/host/quick-check.sh
 
 set -euo pipefail
 

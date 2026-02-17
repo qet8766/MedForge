@@ -58,7 +58,7 @@ This is the single source of truth for gate verification strategy, execution ord
   - Inspect outputs immediately.
   - Record pass/fail per check before moving forward.
 - `Script mode` (allowed where stable scripts exist):
-  - Use scripted runners (for example `infra/host/validate-gate56.sh --with-browser`).
+  - Use scripted runners (for example `ops/host/validate-gate56.sh --with-browser`).
   - Still require explicit check-by-check verdict extraction and evidence capture.
 
 ## Standard Run Record Template
@@ -121,7 +121,7 @@ Pass criteria:
 Required checks:
 
 1. Compose stack:
-- `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml up -d --build`
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`
 - Verify all core services are healthy/running.
 
 2. API + UI reachability:
@@ -200,7 +200,7 @@ Required checks:
 
 Recommended runner:
 
-- `bash infra/host/validate-gate56.sh --with-browser`
+- `bash ops/host/validate-gate56.sh --with-browser`
 
 Pass criteria:
 
@@ -223,7 +223,7 @@ Required checks:
 
 Recommended runner:
 
-- `bash infra/host/validate-gate56.sh --with-browser`
+- `bash ops/host/validate-gate56.sh --with-browser`
 
 Pass criteria:
 
@@ -258,16 +258,16 @@ Pass criteria:
 ## Operational Recovery Commands
 
 - Restart all services:
-  - `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml restart`
+  - `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart`
 - Restart API only (triggers reconciliation):
-  - `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml restart medforge-api`
+  - `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart medforge-api`
 - Trigger reconciliation helper:
-  - `bash infra/host/ops-reconcile.sh`
+  - `bash ops/host/ops-reconcile.sh`
 - Inspect snapshots:
-  - `bash infra/host/ops-snapshots.sh`
+  - `bash ops/host/ops-snapshots.sh`
 - Orphan cleanup (dry run / force):
-  - `bash infra/host/ops-cleanup.sh`
-  - `bash infra/host/ops-cleanup.sh --force`
+  - `bash ops/host/ops-cleanup.sh`
+  - `bash ops/host/ops-cleanup.sh --force`
 
 ## Change Control
 

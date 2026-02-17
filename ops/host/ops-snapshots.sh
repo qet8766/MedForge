@@ -3,9 +3,9 @@
 # MF-102: List/inspect ZFS snapshots for a session slug or user.
 #
 # Usage:
-#   bash infra/host/ops-snapshots.sh                 # list all session snapshots
-#   bash infra/host/ops-snapshots.sh <session-slug>  # filter by slug
-#   bash infra/host/ops-snapshots.sh --user <uuid>   # filter by user ID
+#   bash ops/host/ops-snapshots.sh                 # list all session snapshots
+#   bash ops/host/ops-snapshots.sh <session-slug>  # filter by slug
+#   bash ops/host/ops-snapshots.sh --user <uuid>   # filter by user ID
 #
 # Optional env:
 #   ZFS_ROOT=tank/medforge/workspaces
@@ -16,7 +16,7 @@ ZFS_ROOT="${ZFS_ROOT:-tank/medforge/workspaces}"
 
 usage() {
   cat <<'USAGE'
-Usage: bash infra/host/ops-snapshots.sh [options]
+Usage: bash ops/host/ops-snapshots.sh [options]
 
 Options:
   <slug>           Filter snapshots by session slug (8-char)
@@ -25,8 +25,8 @@ Options:
   -h, --help       Show this help message
 
 Examples:
-  bash infra/host/ops-snapshots.sh abc12345
-  bash infra/host/ops-snapshots.sh --user 00000000-0000-0000
+  bash ops/host/ops-snapshots.sh abc12345
+  bash ops/host/ops-snapshots.sh --user 00000000-0000-0000
 USAGE
 }
 

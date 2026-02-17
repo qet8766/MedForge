@@ -1,10 +1,21 @@
 ## 5. Dataset Formats
 
-Storage root: `/data/medforge/datasets/`
+Storage root: `${MEDFORGE_DATASETS_ROOT}/`
+
+Recommended values:
+
+- Local repo development: `MEDFORGE_DATASETS_ROOT=../../datasets` (from `apps/api`)
+- Host deployment mirror: `MEDFORGE_DATASETS_ROOT=/data/medforge/datasets`
+
+Before running shell examples below:
+
+```bash
+export MEDFORGE_DATASETS_ROOT="${MEDFORGE_DATASETS_ROOT:-/data/medforge/datasets}"
+```
 
 **Two distinct paths exist — don't confuse them:**
 
-- `/data/medforge/datasets/` — full dataset mirrors stored at the host level (training data, images, CSVs). Managed outside the API.
+- `${MEDFORGE_DATASETS_ROOT}/` — full dataset mirrors (training data, images, CSVs), either repo-local for development or host-level for deployed environments.
 - `{COMPETITIONS_DATA_DIR}` (default `data/competitions` relative to API root) — holdout labels + scoring manifests only. Used by the scoring engine at runtime.
 
 Retention policy:
@@ -23,16 +34,16 @@ Expected on-disk dataset coverage:
 
 | Dataset path | Required files/directories |
 |--------------|----------------------------|
-| `/data/medforge/datasets/titanic-kaggle/` | `train.csv`, `test.csv`, `sample_submission.csv` |
-| `/data/medforge/datasets/rsna-pneumonia-detection/` | `train_labels.csv`, `detailed_class_info.csv`, `test_ids.csv`, `sample_submission.csv`, `train_images/` (21,347 `.dcm`), `test_images/` (5,337 `.dcm`) |
-| `/data/medforge/datasets/cifar-100/` | `train_labels.csv`, `test_ids.csv`, `sample_submission.csv`, `train/` (50,000 `.png`), `test/` (10,000 `.png`) |
+| `${MEDFORGE_DATASETS_ROOT}/titanic-kaggle/` | `train.csv`, `test.csv`, `sample_submission.csv` |
+| `${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/` | `train_labels.csv`, `detailed_class_info.csv`, `test_ids.csv`, `sample_submission.csv`, `train_images/` (21,347 `.dcm`), `test_images/` (5,337 `.dcm`) |
+| `${MEDFORGE_DATASETS_ROOT}/cifar-100/` | `train_labels.csv`, `test_ids.csv`, `sample_submission.csv`, `train/` (50,000 `.png`), `test/` (10,000 `.png`) |
 
 ---
 
 ### 1. Titanic — Machine Learning from Disaster
 
 **Dataset slug:** `titanic-kaggle` | **Competition slug:** `titanic-survival`
-**Path:** `/data/medforge/datasets/titanic-kaggle/`
+**Path:** `${MEDFORGE_DATASETS_ROOT}/titanic-kaggle/`
 **Metric:** accuracy | **Source:** [Kaggle](https://www.kaggle.com/competitions/titanic)
 
 Predict which passengers survived the 1912 Titanic shipwreck.
@@ -77,7 +88,7 @@ PassengerId,Survived
 ### 2. RSNA Pneumonia Detection
 
 **Dataset slug:** `rsna-pneumonia-detection-challenge` | **Competition slug:** `rsna-pneumonia-detection`
-**Path:** `/data/medforge/datasets/rsna-pneumonia-detection/`
+**Path:** `${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/`
 **Metric:** mAP @ IoU [0.4–0.75] | **Source:** [Kaggle](https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge)
 
 Object detection — localize pneumonia opacities with bounding boxes on frontal-view chest X-rays. Scored with mean average precision across IoU thresholds 0.4–0.75. Dataset provided by RSNA, NIH, and MD.ai. Original Kaggle filenames were prefixed `stage_2_`; renamed here.
@@ -128,7 +139,7 @@ One row per predicted detection; multiple rows per patient OK. No-detection: one
 ### 3. CIFAR-100 Classification
 
 **Dataset slug:** `cifar-100` | **Competition slug:** `cifar-100-classification`
-**Path:** `/data/medforge/datasets/cifar-100/`
+**Path:** `${MEDFORGE_DATASETS_ROOT}/cifar-100/`
 **Metric:** accuracy | **Source:** [University of Toronto](https://www.cs.toronto.edu/~kriz/cifar.html)
 
 Classify 32x32 colour images into 100 fine-grained categories. Uses the **original CIFAR-100 test set** as holdout (not an 80/20 split).
@@ -171,28 +182,29 @@ Prerequisites for Kaggle downloads: installed `kaggle` CLI and `~/.kaggle/kaggle
 #### Titanic (Kaggle)
 
 ```bash
-mkdir -p /data/medforge/datasets/titanic-kaggle
-kaggle competitions download -c titanic -p /data/medforge/datasets/titanic-kaggle --force
-find /data/medforge/datasets/titanic-kaggle -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d /data/medforge/datasets/titanic-kaggle
+mkdir -p ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle
+kaggle competitions download -c titanic -p ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle --force
+find ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle
 ```
 
 #### RSNA Pneumonia (Kaggle)
 
 ```bash
-mkdir -p /data/medforge/datasets/rsna-pneumonia-detection
-kaggle competitions download -c rsna-pneumonia-detection-challenge -p /data/medforge/datasets/rsna-pneumonia-detection --force
-find /data/medforge/datasets/rsna-pneumonia-detection -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d /data/medforge/datasets/rsna-pneumonia-detection
+mkdir -p ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection
+kaggle competitions download -c rsna-pneumonia-detection-challenge -p ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection --force
+find ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection
 ```
 
 #### CIFAR-100 (torchvision)
 
 ```bash
 python3 - <<'PY'
+import os
 from pathlib import Path
 import csv
 from torchvision.datasets import CIFAR100
 
-root = Path("/data/medforge/datasets/cifar-100")
+root = Path(os.environ["MEDFORGE_DATASETS_ROOT"]) / "cifar-100"
 cache = root / ".torchvision-cache"
 train_dir = root / "train"
 test_dir = root / "test"
@@ -227,10 +239,10 @@ PY
 Quick checks:
 
 ```bash
-find /data/medforge/datasets/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l   # 21347
-find /data/medforge/datasets/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l    # 5337
-find /data/medforge/datasets/cifar-100/train -type f -name '*.png' | wc -l                          # 50000
-find /data/medforge/datasets/cifar-100/test -type f -name '*.png' | wc -l                           # 10000
+find ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l   # 21347
+find ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l    # 5337
+find ${MEDFORGE_DATASETS_ROOT}/cifar-100/train -type f -name '*.png' | wc -l                          # 50000
+find ${MEDFORGE_DATASETS_ROOT}/cifar-100/test -type f -name '*.png' | wc -l                           # 10000
 ```
 
 ---

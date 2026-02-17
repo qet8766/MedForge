@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 from typing import TypedDict
 
 from sqlmodel import Session, select
@@ -15,6 +16,16 @@ from app.models import Competition, CompetitionStatus, CompetitionTier, Dataset,
 
 
 class DatasetSeed(TypedDict):
+    slug: str
+    title: str
+    source: str
+    license: str
+    dataset_dir: str
+    bytes: int
+    checksum: str
+
+
+class DatasetSeedResolved(TypedDict):
     slug: str
     title: str
     source: str
@@ -46,7 +57,7 @@ SEED_DATASETS: list[DatasetSeed] = [
         "title": "Titanic - Machine Learning from Disaster",
         "source": "kaggle",
         "license": "Kaggle Competition Terms (internal/private mirror)",
-        "storage_path": "/data/medforge/datasets/titanic-kaggle",
+        "dataset_dir": "titanic-kaggle",
         "bytes": 0,
         "checksum": "pending",
     },
@@ -55,7 +66,7 @@ SEED_DATASETS: list[DatasetSeed] = [
         "title": "RSNA Pneumonia Detection Challenge",
         "source": "kaggle",
         "license": "Kaggle Competition Terms (internal/private mirror)",
-        "storage_path": "/data/medforge/datasets/rsna-pneumonia-detection",
+        "dataset_dir": "rsna-pneumonia-detection",
         "bytes": 0,
         "checksum": "pending",
     },
@@ -64,7 +75,7 @@ SEED_DATASETS: list[DatasetSeed] = [
         "title": "CIFAR-100",
         "source": "toronto-cs",
         "license": "MIT-like (Alex Krizhevsky, internal mirror)",
-        "storage_path": "/data/medforge/datasets/cifar-100",
+        "dataset_dir": "cifar-100",
         "bytes": 0,
         "checksum": "pending",
     },
@@ -122,6 +133,19 @@ def _split_pack_image(image: str) -> tuple[str, str]:
     return image_ref, image_ref.split("@sha256:", 1)[1]
 
 
+def _dataset_payload_with_storage_path(dataset_payload: DatasetSeed, datasets_root: Path) -> DatasetSeedResolved:
+    payload: DatasetSeedResolved = {
+        "slug": dataset_payload["slug"],
+        "title": dataset_payload["title"],
+        "source": dataset_payload["source"],
+        "license": dataset_payload["license"],
+        "storage_path": str(datasets_root / dataset_payload["dataset_dir"]),
+        "bytes": dataset_payload["bytes"],
+        "checksum": dataset_payload["checksum"],
+    }
+    return payload
+
+
 def seed_defaults(session: Session) -> None:
     settings = get_settings()
     image_ref, image_digest = _split_pack_image(settings.pack_image)
@@ -149,15 +173,20 @@ def seed_defaults(session: Session) -> None:
     session.flush()
 
     dataset_by_slug: dict[str, Dataset] = {}
+    datasets_root = settings.datasets_root
 
     for dataset_payload in SEED_DATASETS:
+        resolved_dataset_payload = _dataset_payload_with_storage_path(dataset_payload, datasets_root)
         existing_dataset = session.exec(
             select(Dataset).where(Dataset.slug == dataset_payload["slug"])
         ).first()
         if existing_dataset is None:
-            existing_dataset = Dataset(**dataset_payload)
+            existing_dataset = Dataset(**resolved_dataset_payload)
             session.add(existing_dataset)
             session.flush()
+        else:
+            existing_dataset.storage_path = str(resolved_dataset_payload["storage_path"])
+            session.add(existing_dataset)
         dataset_by_slug[existing_dataset.slug] = existing_dataset
 
     for competition_payload in SEED_COMPETITIONS:

@@ -238,9 +238,9 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 #### MF-102: Operational Scripts/Runbook — Done
 
-- `infra/host/ops-reconcile.sh` — Trigger manual reconciliation via API service restart.
-- `infra/host/ops-snapshots.sh` — List/inspect ZFS snapshots by slug or user.
-- `infra/host/ops-cleanup.sh` — Find orphaned `mf-session-*` containers, optionally remove.
+- `ops/host/ops-reconcile.sh` — Trigger manual reconciliation via API service restart.
+- `ops/host/ops-snapshots.sh` — List/inspect ZFS snapshots by slug or user.
+- `ops/host/ops-cleanup.sh` — Find orphaned `mf-session-*` containers, optionally remove.
 - `docs/runbook.md` — Operational procedures: restart, reconcile, inspect, cleanup, escalation.
 
 #### MF-103: Logging Hardening — Done

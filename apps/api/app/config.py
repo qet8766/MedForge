@@ -97,6 +97,11 @@ class Settings:
     domain: str = _env("DOMAIN", "example.com", lower=True)
     pack_image: str = _env("PACK_IMAGE", "")
     session_secret: str = _env("SESSION_SECRET", "dev-session-secret")
+    datasets_root: Path = field(
+        default_factory=lambda: Path(
+            os.getenv("MEDFORGE_DATASETS_ROOT", "/data/medforge/datasets").strip() or "/data/medforge/datasets"
+        )
+    )
     competitions_data_dir: Path = field(default_factory=lambda: Path(os.getenv("COMPETITIONS_DATA_DIR", "data/competitions")))
     submissions_dir: Path = field(default_factory=lambda: Path(os.getenv("SUBMISSIONS_DIR", "data/submissions")))
     auto_score_on_submit: bool = _env_bool("AUTO_SCORE_ON_SUBMIT", "true")

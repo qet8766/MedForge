@@ -7,19 +7,19 @@
 # the API service (which runs reconcile_on_startup automatically).
 #
 # Usage:
-#   bash infra/host/ops-reconcile.sh
+#   bash ops/host/ops-reconcile.sh
 #
 # Optional env:
 #   API_URL=http://127.0.0.1:8000  — API base URL for health check
-#   COMPOSE_ENV=infra/compose/.env — Path to compose env file
-#   COMPOSE_FILE=infra/compose/docker-compose.yml
+#   COMPOSE_ENV=deploy/compose/.env — Path to compose env file
+#   COMPOSE_FILE=deploy/compose/docker-compose.yml
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 API_URL="${API_URL:-http://127.0.0.1:8000}"
-COMPOSE_ENV="${COMPOSE_ENV:-${ROOT_DIR}/infra/compose/.env}"
-COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/infra/compose/docker-compose.yml}"
+COMPOSE_ENV="${COMPOSE_ENV:-${ROOT_DIR}/deploy/compose/.env}"
+COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/deploy/compose/docker-compose.yml}"
 
 require_cmd() {
   local cmd="$1"

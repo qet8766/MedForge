@@ -6,18 +6,18 @@ Implementation status note (2026-02-16):
 - Gate 2 auth endpoints are implemented (`/api/v1/auth/signup`, `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/me`) with cookie sessions only (no legacy header identity fallback).
 - Gate 3 alpha lifecycle is implemented for PUBLIC (`/api/v1/sessions`, `/api/v1/sessions/{id}/stop`) with transaction-safe allocation, runtime launch, async stop requests, and recovery-driven snapshot terminalization.
 - Gate 4 recovery logic (poller + startup reconciliation) is implemented in API and covered by tests.
-- Gate 5/6 host evidence run completed via `bash infra/host/validate-gate56.sh --with-browser` for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket frame activity (`@docs/host-validation-2026-02-16.md`).
+- Gate 5/6 host evidence run completed via `bash ops/host/validate-gate56.sh --with-browser` for API auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, Caddy wildcard browser routing, and websocket frame activity (`@docs/host-validation-2026-02-16.md`).
 - Legacy `/api/*` aliases remain available with deprecation headers during `/api/v1/*` migration.
 
 ### Gate 0 -- Host Foundation
 
-Docker + NVIDIA Container Toolkit. ZFS pool ready (`@infra/zfs/setup.sh`). DNS wildcard + wildcard TLS via Caddy DNS challenge.
+Docker + NVIDIA Container Toolkit. ZFS pool ready (`@ops/storage/zfs-setup.sh`). DNS wildcard + wildcard TLS via Caddy DNS challenge.
 
 **Acceptance:** GPU container runs CUDA successfully. ZFS read/write works. `*.medforge.<domain>` has valid TLS.
 
 ### Gate 1 -- Control Plane Bootstrap
 
-Compose stack up (`@infra/compose/docker-compose.yml`). Networks created (control + public + private placeholder). DB migrations create tables with seed rows.
+Compose stack up (`@deploy/compose/docker-compose.yml`). Networks created (control + public + private placeholder). DB migrations create tables with seed rows.
 
 **Acceptance:** UI + API reachable. Seeded pack exists. `gpu_devices` rows 0-6 exist, all enabled.
 
@@ -41,13 +41,13 @@ Container state poller detects dead containers. Boot-time reconciliation frees s
 
 ### Gate 5 -- Routing & Isolation
 
-Caddy wildcard route proxies to running sessions (`@infra/caddy/Caddyfile`). East-west isolation enforced (`@infra/firewall/setup.sh`).
+Caddy wildcard route proxies to running sessions (`@deploy/caddy/Caddyfile`). East-west isolation enforced (`@ops/network/firewall-setup.sh`).
 
 **Acceptance:** Owner can access their session; other user gets 403; unauthenticated gets 401. Client-supplied `X-Upstream` headers cannot influence routing (header is stripped, auth still enforced). From inside a session, cannot reach another session's :8080. code-server terminal websockets work.
 
 **Host validation commands (example):**
 
-- `bash infra/host/validate-gate56.sh --with-browser`
+- `bash ops/host/validate-gate56.sh --with-browser`
 - `curl -i -H "Host: s-<slug>.medforge.<domain>" https://api.medforge.<domain>/api/v1/auth/session-proxy`
 - `docker exec -it mf-session-<slugA> curl -sS --max-time 3 http://mf-session-<slugB>:8080`
 
@@ -61,7 +61,7 @@ Full user flow through the UI: log in, create a PUBLIC session, land in code-ser
 
 **Host validation commands (example):**
 
-- `bash infra/host/validate-gate56.sh --with-browser`
+- `bash ops/host/validate-gate56.sh --with-browser`
 - `docker exec -it mf-session-<slug> nvidia-smi`
 - `docker exec -it mf-session-<slug> sh -lc 'echo alpha > /workspace/alpha.txt && cat /workspace/alpha.txt'`
 - `zfs list -t snapshot | grep "tank/medforge/workspaces/.*/<session_id>@stop-"`

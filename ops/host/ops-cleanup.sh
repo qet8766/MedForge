@@ -6,8 +6,8 @@
 # corresponding active session in the API database.
 #
 # Usage:
-#   bash infra/host/ops-cleanup.sh              # dry-run: list orphans
-#   bash infra/host/ops-cleanup.sh --force       # remove orphaned containers
+#   bash ops/host/ops-cleanup.sh              # dry-run: list orphans
+#   bash ops/host/ops-cleanup.sh --force       # remove orphaned containers
 #
 # Optional env:
 #   API_URL=http://127.0.0.1:8000
@@ -19,7 +19,7 @@ FORCE=false
 
 usage() {
   cat <<'USAGE'
-Usage: bash infra/host/ops-cleanup.sh [--force]
+Usage: bash ops/host/ops-cleanup.sh [--force]
 
 Options:
   --force    Actually remove orphaned containers (default: dry-run)

@@ -65,5 +65,5 @@ Phase 2 hardening complete as of 2026-02-16:
 
 - [x] All Phase 2 issues (`MF-101` through `MF-105`) completed.
 - [x] 112 total tests (108 fast CI + 2 docker + 2 load).
-- [x] Operational scripts and runbook in `infra/host/ops-*.sh` and `docs/runbook.md`.
+- [x] Operational scripts and runbook in `ops/host/ops-*.sh` and `docs/runbook.md`.
 - [x] Structured logging with correlation IDs and error code registry.

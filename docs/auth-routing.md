@@ -23,7 +23,7 @@ HTTP-only cookie session auth.
 
 ### Wildcard Session Routing (Caddy + forward_auth)
 
-Full Caddy config: `@infra/caddy/Caddyfile`
+Full Caddy config: `@deploy/caddy/Caddyfile`
 
 **forward_auth endpoint:** `GET /api/v1/auth/session-proxy`
 
@@ -58,7 +58,7 @@ Caddy behaviour:
 
 Session containers must not reach other session containers' port 8080 over the Docker network. code-server runs with `--auth none`; Caddy/forward_auth is the only gate.
 
-Firewall script: `@infra/firewall/setup.sh`
+Firewall script: `@ops/network/firewall-setup.sh`
 
 Rules applied to the `DOCKER-USER` chain:
 

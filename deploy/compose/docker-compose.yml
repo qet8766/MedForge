@@ -58,6 +58,7 @@ services:
       SESSION_PIDS_LIMIT: ${SESSION_PIDS_LIMIT}
       PACK_IMAGE: ${PACK_IMAGE}                   # e.g. medforge-pack-default@sha256:...
       AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
+      MEDFORGE_DATASETS_ROOT: ${MEDFORGE_DATASETS_ROOT:-/data/medforge/datasets}
       AUTH_IDLE_TTL_SECONDS: ${AUTH_IDLE_TTL_SECONDS}
       AUTH_MAX_TTL_SECONDS: ${AUTH_MAX_TTL_SECONDS}
       COOKIE_NAME: ${COOKIE_NAME}

@@ -1,28 +1,33 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`medforge-spec.md` is the top-level source of truth. Use `docs/` for detailed design and delivery docs (`architecture.md`, `build-gates.md`, `implementation-checklist.md`, etc.). Infrastructure lives in `infra/`:
-- `infra/compose/`: control-plane Compose stack and `.env.example`
-- `infra/caddy/`: wildcard TLS/routing config
-- `infra/packs/default/`: default code-server pack image
-- `infra/zfs/` and `infra/firewall/`: host setup scripts
+`medforge-spec.md` is the top-level source of truth. Use `docs/` for detailed design and delivery docs (`architecture.md`, `build-gates.md`, `implementation-checklist.md`, etc.).
+Deployment assets live in `deploy/`:
+- `deploy/compose/`: control-plane Compose stack and `.env.example`
+- `deploy/caddy/`: wildcard TLS/routing config
+- `deploy/packs/default/`: default code-server pack image
+Host operations scripts live in `ops/`:
+- `ops/host/`: bootstrap, validation, and operational workflows
+- `ops/storage/` and `ops/network/`: host ZFS and firewall setup scripts
+Auxiliary tooling lives in `tools/`:
+- `tools/data-prep/`: dataset prep and rehydration helpers
 
 Application stack: Next.js + TypeScript (web) and FastAPI + SQLModel + Pydantic (API/data models).
 
-Primary app code lives in `apps/web` and `apps/api`; infra and spec docs remain in `infra/` and `docs/`.
+Primary app code lives in `apps/web` and `apps/api`; supporting specs/docs live in `medforge-spec.md` and `docs/`.
 
 ## Build, Test, and Development Commands
-- `cp infra/compose/.env.example infra/compose/.env`: create local environment file.
-- `sudo bash infra/host/bootstrap-easy.sh`: one-command host bootstrap (NVIDIA runtime, ZFS datasets, bridge firewall settings, local pack build).
-- `bash infra/host/quick-check.sh`: fast local lint/type/test/build pass.
-- `bash infra/host/validate-gate56.sh --with-browser`: run host Gate 5/6 validation (core + browser/websocket lane) and write evidence markdown.
-- `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml up -d --build`: build and start control-plane services.
-- `docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml logs -f medforge-api medforge-caddy`: stream key service logs.
+- `cp deploy/compose/.env.example deploy/compose/.env`: create local environment file.
+- `sudo bash ops/host/bootstrap-easy.sh`: one-command host bootstrap (NVIDIA runtime, ZFS datasets, bridge firewall settings, local pack build).
+- `bash ops/host/quick-check.sh`: fast local lint/type/test/build pass.
+- `bash ops/host/validate-gate56.sh --with-browser`: run host Gate 5/6 validation (core + browser/websocket lane) and write evidence markdown.
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`: build and start control-plane services.
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`: stream key service logs.
 - `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`: install API dependencies used by tests + `quick-check`.
 - `cd apps/api && pytest -q`: run API tests.
 - `cd apps/web && npm install && npm run build`: verify web app type-check/build.
-- `POOL_DISKS='/dev/sdX' bash infra/zfs/setup.sh`: one-time ZFS pool/dataset setup (replace disk path).
-- `bash infra/firewall/setup.sh`: apply east-west isolation rules for session containers.
+- `POOL_DISKS='/dev/sdX' bash ops/storage/zfs-setup.sh`: one-time ZFS pool/dataset setup (replace disk path).
+- `bash ops/network/firewall-setup.sh`: apply east-west isolation rules for session containers.
 
 ## Coding Style & Naming Conventions
 Use 2-space indentation in YAML/Markdown, and Bash with `set -euo pipefail`. Keep environment variable names uppercase (`PACK_IMAGE`, `SESSION_SECRET`). Follow existing naming patterns:
@@ -33,7 +38,7 @@ Use 2-space indentation in YAML/Markdown, and Bash with `set -euo pipefail`. Kee
 - Shell scripts: prefer named functions over long one-liner pipes. Break complex logic into readable steps.
 
 ## Testing Guidelines
-Run `cd apps/api && pytest -q` for backend checks and `cd apps/web && npm run build` for frontend validation. Still validate infra/session behavior against `docs/build-gates.md` with evidence (logs, curl output, screenshots). For infra/scripts, run `find infra -name '*.sh' -print0 | xargs -0 -n1 bash -n` and `find infra -name '*.sh' -print0 | xargs -0 -n1 shellcheck` when available.
+Run `cd apps/api && pytest -q` for backend checks and `cd apps/web && npm run build` for frontend validation. Still validate platform/session behavior against `docs/build-gates.md` with evidence (logs, curl output, screenshots). For ops scripts, run `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n` and `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` when available.
 
 ## Commit & Pull Request Guidelines
 Use clear imperative commits and include issue IDs from `docs/issue-plan.md` when applicable (example: `MF-006 enforce race-safe GPU allocation`). PRs should include:
@@ -54,7 +59,7 @@ Use clear imperative commits and include issue IDs from `docs/issue-plan.md` whe
 - **API responses**: always return structured error responses with a consistent shape, not raw strings.
 
 ## Security & Configuration
-- Do not commit secrets; keep real values in `infra/compose/.env`.
+- Do not commit secrets; keep real values in `deploy/compose/.env`.
 - All hosts, ports, and URLs must come from environment variables or config. No `localhost:8080` buried in source.
 - Keep `PACK_IMAGE` digest-pinned.
 - Preserve Caddy's `request_header -X-Upstream` behavior to prevent upstream spoofing.

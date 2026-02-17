@@ -10,7 +10,7 @@ User → Caddy (wildcard TLS) → FastAPI (medforge-api) → Docker (mf-session-
                                SQLite/MySQL + ZFS snapshots
 ```
 
-Key services in `infra/compose/docker-compose.yml`:
+Key services in `deploy/compose/docker-compose.yml`:
 - `medforge-api` — FastAPI control plane
 - `medforge-caddy` — TLS termination + wildcard session routing
 - `medforge-web` — Next.js frontend
@@ -21,13 +21,13 @@ Key services in `infra/compose/docker-compose.yml`:
 
 ```bash
 # Restart all services
-docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml restart
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart
 
 # Restart just the API (triggers boot reconciliation)
-docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml restart medforge-api
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart medforge-api
 
 # Full rebuild and restart
-docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml up -d --build
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build
 ```
 
 ### Trigger Reconciliation
@@ -35,7 +35,7 @@ docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml
 The API runs `reconcile_on_startup` automatically on boot. To trigger manually:
 
 ```bash
-bash infra/host/ops-reconcile.sh
+bash ops/host/ops-reconcile.sh
 ```
 
 This restarts the API service, which:
@@ -47,30 +47,30 @@ This restarts the API service, which:
 
 ```bash
 # List all session snapshots
-bash infra/host/ops-snapshots.sh
+bash ops/host/ops-snapshots.sh
 
 # Filter by session slug
-bash infra/host/ops-snapshots.sh abc12345
+bash ops/host/ops-snapshots.sh abc12345
 
 # Filter by user UUID
-bash infra/host/ops-snapshots.sh --user 00000000-0000-0000
+bash ops/host/ops-snapshots.sh --user 00000000-0000-0000
 ```
 
 ### Clean Up Orphaned Containers
 
 ```bash
 # Dry run — list orphans without removing
-bash infra/host/ops-cleanup.sh
+bash ops/host/ops-cleanup.sh
 
 # Force removal
-bash infra/host/ops-cleanup.sh --force
+bash ops/host/ops-cleanup.sh --force
 ```
 
 ### View Logs
 
 ```bash
 # Stream API and Caddy logs
-docker compose --env-file infra/compose/.env -f infra/compose/docker-compose.yml logs -f medforge-api medforge-caddy
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy
 
 # Session container logs
 docker logs mf-session-<slug>
@@ -104,7 +104,7 @@ docker compose ... logs medforge-api 2>&1 | grep "<slug>"
 ```
 
 **Resolution:**
-1. Run reconciliation: `bash infra/host/ops-reconcile.sh`
+1. Run reconciliation: `bash ops/host/ops-reconcile.sh`
 2. The reconcile pass will mark STARTING sessions with missing containers as ERROR
 
 ### Session Stuck in STOPPING
@@ -121,7 +121,7 @@ docker compose ... logs medforge-api 2>&1 | grep "session.recovery.failure"
 ```
 
 **Resolution:**
-1. Run reconciliation: `bash infra/host/ops-reconcile.sh`
+1. Run reconciliation: `bash ops/host/ops-reconcile.sh`
 2. If stop keeps failing, manually remove: `docker rm -f mf-session-<slug>`
 3. Run reconciliation again to finalize the database state
 
@@ -135,19 +135,19 @@ docker compose ... logs medforge-api 2>&1 | grep "session.recovery.failure"
 docker ps --filter "name=mf-session-"
 
 # Check for orphaned containers holding GPU locks
-bash infra/host/ops-cleanup.sh
+bash ops/host/ops-cleanup.sh
 ```
 
 **Resolution:**
-1. Clean up orphaned containers: `bash infra/host/ops-cleanup.sh --force`
-2. Run reconciliation to free GPU locks: `bash infra/host/ops-reconcile.sh`
+1. Clean up orphaned containers: `bash ops/host/ops-cleanup.sh --force`
+2. Run reconciliation to free GPU locks: `bash ops/host/ops-reconcile.sh`
 
 ### Recovery Thread Dead (503 on /healthz)
 
 **Symptoms:** `/healthz` returns 503 with `{"status":"degraded"}`.
 
 **Resolution:**
-1. Restart the API service: `bash infra/host/ops-reconcile.sh`
+1. Restart the API service: `bash ops/host/ops-reconcile.sh`
 2. Check logs for the cause of the thread crash
 
 ## Escalation Path

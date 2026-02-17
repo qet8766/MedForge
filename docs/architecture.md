@@ -21,8 +21,8 @@ Implementation status note (2026-02-16):
 - Persistent per-session workspaces mounted from ZFS.
 - Competition submission scoring worker processes queued CSV submissions against hidden holdout labels.
 
-Full control-plane composition: `@infra/compose/docker-compose.yml`
-Compose env template: `@infra/compose/.env.example`
+Full control-plane composition: `@deploy/compose/docker-compose.yml`
+Compose env template: `@deploy/compose/.env.example`
 `medforge-web` server-side data fetches can use `API_URL` (for example `http://medforge-api:8000` inside Compose).
 
 ### Docker Networking
@@ -53,7 +53,7 @@ Caddy connects to both `medforge-control` (to reach medforge-api) and `medforge-
 | `api.medforge.<domain>`      | FastAPI           |
 | `s-<slug>.medforge.<domain>` | Session container |
 
-Wildcard cert `*.medforge.<domain>` via Caddy DNS challenge. Single wildcard cert, no per-session issuance. Routing config: `@infra/caddy/Caddyfile`. Caddy image build: `@infra/caddy/Dockerfile`
+Wildcard cert `*.medforge.<domain>` via Caddy DNS challenge. Single wildcard cert, no per-session issuance. Routing config: `@deploy/caddy/Caddyfile`. Caddy image build: `@deploy/caddy/Dockerfile`
 
 ### Repo Layout
 
@@ -66,19 +66,24 @@ apps/
     tests/              # pytest coverage for competition API/scoring
     alembic/            # Alembic environment + versioned migrations
     data/competitions/  # holdout label sets + manifest versions
-infra/
+deploy/
   caddy/                # Caddyfile, Caddy Dockerfile (DNS plugin)
   compose/              # docker-compose, .env.example
   packs/
     default/            # Session Dockerfile + pinned basic/extras dependency manifests
-  zfs/                  # ZFS pool/dataset setup
-  firewall/             # East-west isolation iptables rules
+ops/
+  host/                 # bootstrap, validation, and operational scripts
+  storage/              # ZFS pool/dataset setup
+  network/              # East-west isolation iptables rules
+datasets/               # full mirrored competition datasets (large payloads)
+tools/
+  data-prep/            # dataset preparation/re-hydration helpers
 ```
 
 ### Storage
 
-ZFS setup script: `@infra/zfs/setup.sh`
-Bootstrap provisioning: `@infra/host/bootstrap-easy.sh`
+ZFS setup script: `@ops/storage/zfs-setup.sh`
+Bootstrap provisioning: `@ops/host/bootstrap-easy.sh`
 
 #### Pool Configuration
 
