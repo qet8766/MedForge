@@ -4,7 +4,6 @@
 > - Shared auth: `/api/v2/auth/*`, `/api/v2/me`
 > - Guarded state-changing endpoints are under `/api/v2/external/*` and `/api/v2/internal/*`
 > - Session wildcard hosts are exposure-qualified (`*.external.medforge.<domain>`, `*.internal.medforge.<domain>`).
-> Any remaining non-split route examples below are legacy and superseded by the v2 exposure contract.
 
 Implementation status note (2026-02-17):
 
@@ -31,10 +30,6 @@ Authentication and wildcard routing contract for external MedForge hosts.
 
 ### Canonical Sources
 
-- `@docs/phase-checking-strategy.md`
-- `@docs/validation-logs.md`
-- `@docs/evidence/2026-02-17/phase2-auth-api-20260217T064639Z.md`
-- `@docs/evidence/2026-02-17/phase4-routing-e2e-20260217T064739Z.md`
 - `@deploy/caddy/Caddyfile`
 - `@apps/api/app/deps.py`
 - `@apps/api/app/routers/auth.py`

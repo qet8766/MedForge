@@ -4,7 +4,6 @@
 > - API read/write surfaces: `/api/v2/external/*` and `/api/v2/internal/*`
 > - Shared auth/identity: `/api/v2/auth/*`, `/api/v2/me`
 > - Session wildcard hosts: `s-<slug>.external.medforge.<domain>` and `s-<slug>.internal.medforge.<domain>`
-> Any residual unsplit `/api/v2/sessions` wording below is legacy and superseded by this v2 contract.
 
 Implementation status note (2026-02-17):
 - Canonical validation lane is `remote-external` only.
@@ -29,9 +28,6 @@ Implementation status note (2026-02-17):
 
 ### Canonical Sources
 
-- `docs/phase-checking-strategy.md`
-- `docs/validation-logs.md`
-- `AGENTS.md` (`## Docs Scope Ownership (Canonical)`)
 - `deploy/compose/docker-compose.yml`
 - `deploy/caddy/Caddyfile`
 - `apps/api/app/routers/control_plane.py`
@@ -46,9 +42,6 @@ Canonical runtime claim precedence:
 3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
 
 Status vocabulary: `VERIFIED` (evidenced), `UNVERIFIED` (described but not evidenced), `NOT_IMPLEMENTED` (modeled but runtime-blocked).
-
-Runtime claims become stale until revalidated when these change:
-`apps/api/app/routers/*`, `apps/api/app/session_*`, `apps/api/app/deps.py`, `apps/api/app/config.py`, `deploy/caddy/Caddyfile`, `deploy/compose/docker-compose.yml`, `deploy/compose/.env` policy values, `ops/host/validate-phase*.sh`, `ops/host/lib/remote-external.sh`.
 
 ## Platform Scope
 
@@ -169,8 +162,6 @@ Storage/runtime guarantees:
 - Stop snapshots use `<workspace_zfs>@stop-<unixms>`.
 - `PACK_IMAGE` is digest-pinned (`image@sha256:...`).
 
-Out of scope: scheduled snapshot retention automation; snapshot restore API/UI (manual admin ZFS operations only).
-
 Operational detail references: `docs/runbook.md`, `ops/storage/zfs-setup.sh`, `ops/network/firewall-setup.sh`, `ops/host/bootstrap-easy.sh`.
 
 ## Competition Architecture
@@ -200,13 +191,6 @@ Competition invariants:
 
 ## Reference Map
 
-- `docs/phase-checking-strategy.md`
-- `docs/validation-logs.md`
-- `AGENTS.md`
-- `docs/sessions.md`
-- `docs/auth-routing.md`
-- `docs/competitions.md`
-- `docs/runbook.md`
 - `apps/api/app/models.py`
 - `apps/api/alembic/versions/`
 - `deploy/compose/docker-compose.yml`

@@ -4,9 +4,6 @@
 > - EXTERNAL: `/api/v2/external/competitions*`, `/api/v2/external/datasets*`
 > - INTERNAL: `/api/v2/internal/competitions*`, `/api/v2/internal/datasets*` (requires `can_use_internal`)
 > Field name is now `competition_exposure` (`external|internal`).
-> Any remaining unsplit `/api/v2/competitions` text below is legacy and superseded by this split.
-
-MedForge alpha includes permanent mock competitions with Kaggle-style submissions and leaderboards.
 
 ### Scope
 
@@ -28,9 +25,6 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 
 ### Canonical Sources
 
-- `docs/architecture.md`
-- `docs/phase-checking-strategy.md`
-- `docs/validation-logs.md`
 - `apps/api/app/routers/competitions/`
 - `apps/api/app/services.py`
 - `apps/api/app/scoring/`
@@ -65,7 +59,7 @@ Seed set includes EXTERNAL competitions and one INTERNAL competition (`oxford-pe
 6. Scoring appends an official row in `submission_scores` with `primary_score`, `score_components_json`, `scorer_version`, `metric_version`, `evaluation_split_version`, and `manifest_sha256`.
 7. Leaderboard ranks by best per-user official `primary_score`; deterministic tie-break uses earliest score timestamp then submission ID.
 
-### Alpha API Surface
+### API Surface
 
 Canonical versioned routes:
 - EXTERNAL surface:
@@ -98,28 +92,23 @@ The competition API is implemented as a modular router package at `apps/api/app/
 - `POST /api/v2/external/admin/submissions/{submission_id}/score`
 - `POST /api/v2/internal/admin/submissions/{submission_id}/score`
 
-### Response Contract (Breaking)
+### Response Contract
 
 - Success responses use a universal envelope:
   - `{ "data": ..., "meta": { request_id, api_version, timestamp, ... } }`
-- `meta.api_version` is the schema version (`v2.0` in current implementation).
+- `meta.api_version` is the schema version
 - Errors use RFC 7807-style payloads (`application/problem+json`) with:
   - `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`
   - optional `errors` array for validation-style failures
-- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api/v2`.
 
-### Migration Notes
+### Notes
 
-- Legacy error payloads used a loose shape like `{"detail":"..."}` or list-style validation details.
-- Current competition endpoints return envelope success payloads and RFC 7807 problem payloads.
 - Client parsing strategy for competition endpoints should be:
   - use `detail` when present
   - fall back to `title`
   - finally fall back to a generic status message
-- This is a hard break for competition, dataset, leaderboard, submission, and admin score endpoints; no compatibility shim is provided.
 
 ### Security and Data Policy
 
 - Hidden holdout labels are stored server-side only and are never mounted in user sessions.
 - Competition dataset mirrors are intended for controlled internal deployment.
-- Open internet redistribution of mirrored Kaggle competition assets is out of scope.

@@ -9,7 +9,7 @@ Canonical dataset mirror layout and submission/holdout format requirements.
 - required on-disk mirror shape under `MEDFORGE_DATASETS_ROOT`
 - per-competition dataset and submission column/row format contracts
 - holdout/manifest placement and scoring input format expectations
-- dataset rehydrate/download procedures
+
 
 ### Out of Scope
 
