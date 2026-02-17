@@ -11,7 +11,7 @@ Status reset date: `2026-02-17`.
 | 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T045048Z.md` | `2026-02-17T04:50:48Z` | PASS |
 | 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T045422Z.md` | `2026-02-17T04:54:22Z` | PASS |
 | 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T045521Z.md` | `2026-02-17T04:55:21Z` | PASS |
-| 3 | Session Lifecycle + Recovery | `none` | `n/a` | INCONCLUSIVE |
+| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T045621Z.md` | `2026-02-17T04:56:21Z` | PASS |
 | 4 | Routing, Isolation, End-to-End | `none` | `n/a` | INCONCLUSIVE |
 | 5 | Competition Platform (Alpha) | `none` | `n/a` | INCONCLUSIVE |
 
