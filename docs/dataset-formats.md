@@ -1,5 +1,29 @@
 ## Dataset Formats
 
+### Scope
+
+Canonical dataset mirror layout and submission/holdout format requirements.
+
+### In Scope
+
+- required on-disk mirror shape under `MEDFORGE_DATASETS_ROOT`
+- per-competition dataset and submission column/row format contracts
+- holdout/manifest placement and scoring input format expectations
+- dataset rehydrate/download procedures
+
+### Out of Scope
+
+- competition API behavior and leaderboard semantics (`docs/competitions.md`)
+- runtime auth/routing and session lifecycle contracts (`docs/auth-routing.md`, `docs/sessions.md`)
+- host/service operational runbook procedures (`docs/runbook.md`)
+
+### Canonical Sources
+
+- `apps/api/data/competitions/`
+- `apps/api/app/scoring/`
+- `apps/api/app/storage.py`
+- `tools/data-prep/`
+
 Storage root: `${MEDFORGE_DATASETS_ROOT}/`
 
 Recommended values:

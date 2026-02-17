@@ -1,5 +1,28 @@
 ## Data Model
 
+### Scope
+
+Canonical schema-level entities, enums, and invariants.
+
+### In Scope
+
+- persistent enum/value definitions used by runtime models
+- table/column contracts for sessions and competitions domains
+- key relational and uniqueness invariants used for correctness
+
+### Out of Scope
+
+- endpoint behavior and request/response contracts (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- operational procedures and validation run commands (`docs/runbook.md`, `docs/phase-checking-strategy.md`)
+- dataset file layout and mirror operations (`docs/dataset-formats.md`)
+
+### Canonical Sources
+
+- `apps/api/app/models.py`
+- `apps/api/app/schemas.py`
+- `apps/api/app/migrations/`
+- `docs/architecture.md`
+
 ### Enums
 
 | Enum          | Values                                                     |

@@ -2,6 +2,29 @@
 
 This is the single source of truth for validation phase order, acceptance criteria, executable commands, and evidence policy.
 
+### Scope
+
+### In Scope
+
+- canonical phase order and non-negotiable advancement rules
+- per-phase acceptance criteria and runner commands
+- evidence artifact policy and definition of done
+- current canonical status pointers for each phase
+
+### Out of Scope
+
+- runtime architecture contract details (`docs/architecture.md`)
+- endpoint-level domain contracts (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- day-2 operational remediation playbooks (`docs/runbook.md`)
+
+### Canonical Sources
+
+- `ops/host/validate-policy-remote-public.sh`
+- `ops/host/validate-phases-all.sh`
+- `ops/host/validate-phase*.sh`
+- `docs/validation-logs.md`
+- `docs/evidence/`
+
 ## Scope and Non-Negotiables
 
 - Phase order is strict: `Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 5`.

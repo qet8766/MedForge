@@ -2,6 +2,25 @@
 
 This file is the concise canonical index for phase validation evidence.
 
+### Scope
+
+### In Scope
+
+- current canonical accepted artifact pointer per phase
+- concise timestamp/status index for latest accepted progression
+- update rule coupling with `docs/phase-checking-strategy.md`
+
+### Out of Scope
+
+- long-form command transcripts and raw payload dumps (`docs/evidence/<date>/`)
+- phase acceptance criteria and execution semantics (`docs/phase-checking-strategy.md`)
+- runtime behavior contracts (`docs/architecture.md` and domain contract docs)
+
+### Canonical Sources
+
+- `docs/phase-checking-strategy.md`
+- `docs/evidence/`
+
 ## Current Canonical Artifacts
 
 Latest canonical full progression pass: `2026-02-17` (remote-public-only policy).

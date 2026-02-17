@@ -2,6 +2,33 @@
 
 MedForge alpha includes permanent mock competitions with Kaggle-style submissions and leaderboards.
 
+### Scope
+
+Competition API, scoring, and leaderboard runtime contract for alpha.
+
+### In Scope
+
+- competition domain terminology and seeded alpha competition set
+- submission intake, scoring flow, and leaderboard ranking contract
+- competition API surface and admin scoring endpoint behavior
+- competition-specific response/error contract details
+
+### Out of Scope
+
+- dataset mirror filesystem and rehydration procedures (`docs/dataset-formats.md`)
+- global auth/routing and wildcard policy (`docs/auth-routing.md`)
+- schema/table-level definitions (`docs/data-model.md`)
+- operational run commands (`docs/runbook.md`)
+
+### Canonical Sources
+
+- `docs/architecture.md`
+- `docs/phase-checking-strategy.md`
+- `docs/validation-logs.md`
+- `apps/api/app/routers/competitions/`
+- `apps/api/app/services.py`
+- `apps/api/app/scoring/`
+
 ### Terminology
 
 - `competition_tier` means platform policy (`public` or `private`) and is not related to label visibility.

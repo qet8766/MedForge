@@ -13,6 +13,32 @@ Implementation status note (2026-02-17):
 - Runtime internals are split into `app/session_runtime/` ports/adapters with DTO-based method contracts (no ORM models in runtime API).
 - Historical pre-phase host evidence was retired from the repo; canonical progression uses `@docs/phase-checking-strategy.md`.
 
+### Scope
+
+Session runtime lifecycle and recovery contract.
+
+### In Scope
+
+- session create/stop/current endpoint behavior and invariants
+- runtime container contract (naming, network, mounts, env injection)
+- asynchronous stop finalization and recovery/poller behavior
+- session health and reconciliation behavior
+
+### Out of Scope
+
+- auth cookie and wildcard forward-auth contract (`@docs/auth-routing.md`)
+- competition submission/scoring contracts (`@docs/competitions.md`)
+- schema/table definitions (`@docs/data-model.md`)
+- operational runbook commands (`@docs/runbook.md`)
+
+### Canonical Sources
+
+- `@apps/api/app/routers/control_plane.py`
+- `@apps/api/app/session_lifecycle.py`
+- `@apps/api/app/session_recovery.py`
+- `@apps/api/app/session_runtime/`
+- `@docs/phase-checking-strategy.md`
+
 ### Packs
 
 One default Pack, pinned by image digest. code-server version pinned globally. The target model includes `packs` and `sessions.pack_id`; UI does not expose pack selection.

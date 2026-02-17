@@ -5,6 +5,32 @@ Implementation status note (2026-02-17):
 - Latest full progression is `PASS` through Phase 5 (`docs/phase-checking-strategy.md`, `docs/validation-logs.md`).
 - This file is architecture/runtime contract only; operations runbooks stay in `docs/runbook.md`.
 
+### Scope
+
+### In Scope
+
+- system-level runtime architecture and trust boundaries
+- validation truth precedence and claim status vocabulary
+- high-level contracts across sessions, routing, and competitions
+- platform non-goals and runtime status register
+
+### Out of Scope
+
+- day-2 operational procedures and remediation commands (`docs/runbook.md`)
+- phase execution steps and acceptance commands (`docs/phase-checking-strategy.md`)
+- endpoint-level deep contracts owned by domain docs (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`, `docs/data-model.md`)
+
+### Canonical Sources
+
+- `docs/phase-checking-strategy.md`
+- `docs/validation-logs.md`
+- `AGENTS.md` (`## Docs Scope Ownership (Canonical)`)
+- `deploy/compose/docker-compose.yml`
+- `deploy/caddy/Caddyfile`
+- `apps/api/app/routers/control_plane.py`
+- `apps/api/app/session_lifecycle.py`
+- `apps/api/app/session_recovery.py`
+
 ## Validation Scope and Truth Sources
 
 Canonical runtime claim precedence:
@@ -164,6 +190,7 @@ Competition invariants:
 
 - `docs/phase-checking-strategy.md`
 - `docs/validation-logs.md`
+- `AGENTS.md`
 - `docs/sessions.md`
 - `docs/auth-routing.md`
 - `docs/competitions.md`

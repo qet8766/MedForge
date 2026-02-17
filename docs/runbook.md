@@ -2,6 +2,28 @@
 
 Day-2 operational procedures for the MedForge platform.
 
+### Scope
+
+### In Scope
+
+- operator commands for restart, reconciliation, cleanup, logs, and health checks
+- troubleshooting playbooks for common runtime failures
+- canonical validation command entry points for operations execution
+
+### Out of Scope
+
+- normative runtime/API contracts (`docs/architecture.md`, `docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- schema/entity definitions (`docs/data-model.md`)
+- phase acceptance criteria ownership (`docs/phase-checking-strategy.md`)
+
+### Canonical Sources
+
+- `ops/host/`
+- `ops/network/firewall-setup.sh`
+- `ops/storage/`
+- `deploy/compose/docker-compose.yml`
+- `deploy/caddy/Caddyfile`
+
 ## Service Architecture
 
 ```
@@ -19,10 +41,9 @@ Host mount prerequisite:
 - `medforge-api` must mount `/tank:/tank` so runtime workspace ownership/quota commands affect host ZFS mountpoints.
 - On `medforge-public-sessions`, reserve fixed IPs to avoid startup races: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
 
-Wildcard routing contract:
-- `GET /api/v1/auth/session-proxy` is an internal Caddy -> API auth path.
-- Direct external calls to `https://s-<slug>.medforge.<domain>/api/v1/auth/session-proxy` are blocked with `403`.
-- Operator/user validation of session reachability should use wildcard root (`https://s-<slug>.medforge.<domain>/`).
+Routing operation note:
+- Validate session reachability against wildcard root (`https://s-<slug>.medforge.<domain>/`).
+- For normative wildcard auth behavior, use `docs/auth-routing.md`.
 
 ## Common Operations
 

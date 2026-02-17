@@ -1,66 +1,100 @@
 ## Authentication & Routing
 
-Implementation status note (2026-02-16):
+Implementation status note (2026-02-17):
 
-- Phase 2 auth foundations are implemented in API:
-  - cookie-backed signup/login/logout and `/api/v1/me`
-  - `/api/v1/auth/session-proxy` owner/admin authorization with running-session checks
-- Phase 4 routing/isolation controls are implemented; canonical validation uses `@docs/phase-checking-strategy.md`.
-- Competition submission uploads are bounded by `SUBMISSION_UPLOAD_MAX_BYTES` (default `10485760`).
+- Canonical remote-public validation is `PASS` through Phase 5 (`@docs/phase-checking-strategy.md`, `@docs/validation-logs.md`).
+- Auth contract evidence: `@docs/evidence/2026-02-17/phase2-auth-api-20260217T064639Z.md`.
+- Routing boundary evidence: `@docs/evidence/2026-02-17/phase4-routing-e2e-20260217T064739Z.md`.
 
-### Cookie Sessions
+### Scope
 
-HTTP-only cookie session auth.
+Authentication and wildcard routing contract for public MedForge hosts.
 
-- Cookie attributes: `HttpOnly; Secure; SameSite=Lax; Domain=.medforge.<domain>; Path=/`
-- CSRF/Origin guard: for all state-changing endpoints, reject if `Origin` is not an allowed MedForge origin.
-- Cookie stores a random token (base64url). DB stores only a hash of the token (never raw).
-- Competition write endpoints covered by origin guard: `POST /api/v1/competitions/{slug}/submissions` and `POST /api/v1/admin/submissions/{submission_id}/score`.
-- Admin scoring endpoint authorization is cookie principal role-based (`role=admin`); no `X-Admin-Token` bypass.
+### In Scope
 
-### Wildcard Session Routing (Caddy + forward_auth)
+- cookie session authentication for API principals
+- origin allowlist checks on state-changing API routes
+- wildcard routing trust chain (`Caddy forward_auth -> API session-proxy -> upstream`)
+- upstream spoof-resistance and internal-path blocking on wildcard hosts
 
-Full Caddy config: `@deploy/caddy/Caddyfile`
+### Out of Scope
 
-**forward_auth endpoint:** `GET /api/v1/auth/session-proxy`
+- session lifecycle/recovery internals (`@docs/sessions.md`)
+- competition upload/scoring policy and limits (`@docs/competitions.md`)
+- host firewall implementation and operations runbook (`@docs/runbook.md`)
 
-Inputs:
+### Canonical Sources
 
-- `Host: s-<slug>.medforge.<domain>`
-- Cookie session
+- `@docs/phase-checking-strategy.md`
+- `@docs/validation-logs.md`
+- `@docs/evidence/2026-02-17/phase2-auth-api-20260217T064639Z.md`
+- `@docs/evidence/2026-02-17/phase4-routing-e2e-20260217T064739Z.md`
+- `@deploy/caddy/Caddyfile`
+- `@apps/api/app/deps.py`
+- `@apps/api/app/routers/auth.py`
+- `@apps/api/app/routers/control_plane.py`
 
-FastAPI returns:
+### Cookie Session Contract
+
+- Signup/login set a cookie token (`COOKIE_NAME`, default `medforge_session`) with:
+  - `HttpOnly`
+  - `Secure` from `COOKIE_SECURE` (default `true`)
+  - `SameSite` from `COOKIE_SAMESITE` (default `lax`)
+  - `Domain` from `COOKIE_DOMAIN` (default `.medforge.<domain>` when `DOMAIN` is set)
+  - `Path=/`
+- Cookie stores a random session token; database stores only its hash.
+- `GET /api/v1/me` authenticates using the cookie principal.
+- `POST /api/v1/auth/logout` revokes the active token hash and clears the cookie.
+- Session validity enforces both idle and max TTL (`AUTH_IDLE_TTL_SECONDS`, `AUTH_MAX_TTL_SECONDS`).
+
+### Origin Allowlist Contract
+
+- Guard behavior: if an `Origin` header is present and not allowed, API returns `403`.
+- Allowed origins match MedForge hosts under configured `DOMAIN`:
+  - `medforge.<domain>`
+  - `api.medforge.<domain>`
+  - `*.medforge.<domain>`
+- No `Origin` header is accepted by this guard.
+- Guarded state-changing endpoints:
+  - `POST /api/v1/auth/signup`
+  - `POST /api/v1/auth/login`
+  - `POST /api/v1/auth/logout`
+  - `POST /api/v1/sessions`
+  - `POST /api/v1/sessions/{id}/stop`
+  - `POST /api/v1/competitions/{slug}/submissions`
+  - `POST /api/v1/admin/submissions/{submission_id}/score`
+
+### Wildcard Routing Contract (Caddy + forward_auth)
+
+Full config: `@deploy/caddy/Caddyfile`
+
+Internal authorization endpoint:
+
+- `GET /api/v1/auth/session-proxy` (API host path used by Caddy `forward_auth`)
+
+Wildcard host protections:
+
+- External callers to `https://s-<slug>.medforge.<domain>/api/v1/auth/session-proxy` are blocked with `403` by Caddy.
+- Client-supplied `X-Upstream` is stripped before auth.
+
+`session-proxy` authorization matrix:
 
 | Code | Condition                                                  | Header                               |
 | ---- | ---------------------------------------------------------- | ------------------------------------ |
-| 200  | Authenticated, owns session (or admin), session is running | `X-Upstream: mf-session-<slug>:8080` |
+| 200  | Authenticated, owner/admin, and session is `running`      | `X-Upstream: mf-session-<slug>:8080` |
 | 401  | Not authenticated                                          |                                      |
 | 403  | Authenticated but not owner/admin                          |                                      |
-| 404  | Slug not found or session not running                      |                                      |
+| 404  | Invalid session host, unknown slug, or session not running |                                      |
 
-Success and error payloads follow the global API contract:
+Caddy trust chain:
 
-- success: `{ "data": ..., "meta": { request_id, ... } }`
-- error: `application/problem+json` with `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`, and optional `errors`.
+- forwards `Host` and cookie context to `session-proxy`
+- copies API-generated `X-Upstream` to internal header `X-Medforge-Upstream`
+- fails closed with `502` if upstream header is missing
+- reverse proxies to `X-Medforge-Upstream`; websocket transport is supported
+- upstream choice is authoritative only from API-generated header, never client input
 
-Caddy behaviour:
+### Response Contract
 
-- Strips inbound `X-Upstream` from client request (prevents spoofing).
-- Forwards cookie headers to the auth endpoint so wildcard subdomain requests are authorized with cookie sessions.
-- Fails closed with 502 if `X-Upstream` is missing after auth.
-- Proxies websockets natively (code-server terminal).
-- Auth decisions are based on server-generated `X-Upstream` from `forward_auth`, never on client-provided upstream hints.
-
-### East-West Isolation
-
-Session containers must not reach other session containers' port 8080 over the Docker network. code-server runs with `--auth none`; Caddy/forward_auth is the only enforcement boundary.
-
-Firewall script: `@ops/network/firewall-setup.sh`
-
-Rules applied to the `DOCKER-USER` chain:
-
-- ALLOW TCP dport 8080 from Caddy's fixed IP (`172.30.0.2`) to the sessions bridge.
-- DROP all other sources to TCP dport 8080 on the sessions bridge.
-- `br_netfilter` is loaded and `net.bridge.bridge-nf-call-iptables=1` is set so bridge traffic is actually filtered.
-
-**Acceptance test:** from inside session A, `curl http://mf-session-<slugB>:8080` must fail.
+- Success responses: envelope `{ "data": ..., "meta": { request_id, ... } }`
+- Error responses: `application/problem+json` with `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`, and optional `errors`
