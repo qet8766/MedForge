@@ -11,7 +11,7 @@ Implementation status note (2026-02-17):
   - `POST /api/v2/external/sessions` and `POST /api/v2/internal/sessions` perform allocation + launch.
   - `POST /api/v2/external/sessions/{id}/stop` and `POST /api/v2/internal/sessions/{id}/stop` are idempotent async stop requests (`202`).
   - `GET /api/v2/external/sessions/current` and `GET /api/v2/internal/sessions/current` return the caller's most recent active session.
-  - `apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
+  - `@apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
 - Phase 3 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
   - active-session poller for `starting|running|stopping` transitions

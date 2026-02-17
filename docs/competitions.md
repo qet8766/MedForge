@@ -18,16 +18,16 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 
 ### Out of Scope
 
-- dataset mirror filesystem and rehydration procedures (`docs/dataset-formats.md`)
-- global auth/routing and wildcard policy (`docs/auth-routing.md`)
-- schema/table-level definitions (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
-- operational run commands (`docs/runbook.md`)
+- dataset mirror filesystem and rehydration procedures (`@docs/dataset-formats.md`)
+- global auth/routing and wildcard policy (`@docs/auth-routing.md`)
+- schema/table-level definitions (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
+- operational run commands (`@docs/runbook.md`)
 
 ### Canonical Sources
 
-- `apps/api/app/routers/competitions/`
-- `apps/api/app/services.py`
-- `apps/api/app/scoring/`
+- `@apps/api/app/routers/competitions/`
+- `@apps/api/app/services.py`
+- `@apps/api/app/scoring/`
 
 ### Terminology
 
@@ -71,11 +71,11 @@ Canonical versioned routes:
   - `GET /api/v2/external/datasets` (`limit`, `cursor`)
   - `GET /api/v2/external/datasets/{slug}`
 - INTERNAL surface (requires `can_use_internal`):
-  - same route set under `/api/v2/internal/*`
+- same route set under `/api/v2/internal/*`
 
 ### Router Module Structure
 
-The competition API is implemented as a modular router package at `apps/api/app/routers/competitions/`:
+The competition API is implemented as a modular router package at `@apps/api/app/routers/competitions/`:
 
 - `catalog.py` — competition and dataset read endpoints
 - `submissions.py` — submission upload and history

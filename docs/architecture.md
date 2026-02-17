@@ -7,8 +7,8 @@
 
 Implementation status note (2026-02-17):
 - Canonical validation lane is `remote-external` only.
-- Latest full progression is `PASS` through Phase 5 (`docs/phase-checking-strategy.md`, `docs/validation-logs.md`).
-- This file is architecture/runtime contract only; operations runbooks stay in `docs/runbook.md`.
+- Latest full progression is `PASS` through Phase 5 (`@docs/phase-checking-strategy.md`, `@docs/validation-logs.md`).
+- This file is architecture/runtime contract only; operations runbooks stay in `@docs/runbook.md`.
 
 ### Scope
 
@@ -21,23 +21,23 @@ Implementation status note (2026-02-17):
 
 ### Out of Scope
 
-- endpoint-level deep contracts owned by domain docs (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
-- schema-level entities/enums/invariants owned by runtime code (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
+- endpoint-level deep contracts owned by domain docs (`@docs/sessions.md`, `@docs/auth-routing.md`, `@docs/competitions.md`)
+- schema-level entities/enums/invariants owned by runtime code (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
 
 ### Canonical Sources
 
-- `deploy/compose/docker-compose.yml`
-- `deploy/caddy/Caddyfile`
-- `apps/api/app/routers/control_plane.py`
-- `apps/api/app/session_lifecycle.py`
-- `apps/api/app/session_recovery.py`
+- `@deploy/compose/docker-compose.yml`
+- `@deploy/caddy/Caddyfile`
+- `@apps/api/app/routers/control_plane.py`
+- `@apps/api/app/session_lifecycle.py`
+- `@apps/api/app/session_recovery.py`
 
 ## Validation Scope and Truth Sources
 
 Canonical runtime claim precedence:
-1. Latest accepted phase evidence in `docs/evidence/<date>/`
-2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-external.sh`
-3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
+1. Latest accepted phase evidence in `@docs/evidence/<date>/`
+2. Validators in `@ops/host/validate-phase*.sh` and `@ops/host/validate-policy-remote-external.sh`
+3. Source contracts in `@apps/api`, `@apps/web`, `@deploy/caddy`, and `@deploy/compose`
 
 ## Platform Scope
 
@@ -51,7 +51,7 @@ Primary goals:
 
 Constraints:
 - Single-host deployment target.
-- Stack: Next.js (`apps/web`), FastAPI + SQLModel (`apps/api`), MariaDB, Caddy, Docker, ZFS.
+- Stack: Next.js (`@apps/web`), FastAPI + SQLModel (`@apps/api`), MariaDB, Caddy, Docker, ZFS.
 - INTERNAL exposure is runtime-enabled behind explicit user entitlement (`can_use_internal`).
 
 Non-goals:
@@ -76,7 +76,7 @@ Non-goals:
 - Allocation model: one physical GPU per active session.
 - Workspace model: one per-session ZFS dataset mounted into each runtime.
 
-Source manifests: `deploy/compose/docker-compose.yml`, `deploy/caddy/Caddyfile`, `deploy/packs/default/Dockerfile`, `deploy/compose/.env.example`.
+Source manifests: `@deploy/compose/docker-compose.yml`, `@deploy/caddy/Caddyfile`, `@deploy/packs/default/Dockerfile`, `@deploy/compose/.env.example`.
 
 ## Network and Routing Architecture
 
@@ -160,7 +160,7 @@ Storage/runtime guarantees:
 - Competition data uses three disjoint roots: `TRAINING_DATA_ROOT` (training), `PUBLIC_EVAL_DATA_ROOT` (public eval + manifest), and `TEST_HOLDOUTS_DIR` (hidden labels only).
 - Session containers never mount `TEST_HOLDOUTS_DIR`; hidden holdouts remain API/worker-only.
 
-Operational detail references: `docs/runbook.md`, `ops/storage/zfs-setup.sh`, `ops/network/firewall-setup.sh`, `ops/host/bootstrap-easy.sh`.
+Operational detail references: `@docs/runbook.md`, `@ops/storage/zfs-setup.sh`, `@ops/network/firewall-setup.sh`, `@ops/host/bootstrap-easy.sh`.
 
 ## Competition Architecture
 
@@ -189,10 +189,10 @@ Competition invariants:
 
 ## Reference Map
 
-- `apps/api/app/models.py`
-- `apps/api/alembic/versions/`
-- `deploy/compose/docker-compose.yml`
-- `deploy/caddy/Caddyfile`
-- `apps/api/app/routers/control_plane.py`
-- `apps/api/app/session_lifecycle.py`
-- `apps/api/app/session_recovery.py`
+- `@apps/api/app/models.py`
+- `@apps/api/alembic/versions/`
+- `@deploy/compose/docker-compose.yml`
+- `@deploy/caddy/Caddyfile`
+- `@apps/api/app/routers/control_plane.py`
+- `@apps/api/app/session_lifecycle.py`
+- `@apps/api/app/session_recovery.py`

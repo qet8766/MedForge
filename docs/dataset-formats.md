@@ -13,17 +13,17 @@ Canonical dataset layout and submission/holdout format requirements.
 
 ### Out of Scope
 
-- competition API behavior and leaderboard semantics (`docs/competitions.md`)
-- runtime auth/routing and session lifecycle contracts (`docs/auth-routing.md`, `docs/sessions.md`)
-- host/service operational runbook procedures (`docs/runbook.md`)
+- competition API behavior and leaderboard semantics (`@docs/competitions.md`)
+- runtime auth/routing and session lifecycle contracts (`@docs/auth-routing.md`, `@docs/sessions.md`)
+- host/service operational runbook procedures (`@docs/runbook.md`)
 
 ### Canonical Sources
 
-- `apps/api/data/public-eval/`
-- `apps/api/data/scoring-holdouts/`
-- `apps/api/app/scoring/`
-- `apps/api/app/storage.py`
-- `tools/data-prep/`
+- `@apps/api/data/public-eval/`
+- `@apps/api/data/scoring-holdouts/`
+- `@apps/api/app/scoring/`
+- `@apps/api/app/storage.py`
+- `@tools/data-prep/`
 
 Canonical roots:
 
@@ -33,7 +33,7 @@ Canonical roots:
 
 Recommended values:
 
-- Local repo development (from `apps/api`):
+- Local repo development (from `@apps/api`):
   - `TRAINING_DATA_ROOT=../../datasets/train`
   - `PUBLIC_EVAL_DATA_ROOT=data/public-eval`
   - `TEST_HOLDOUTS_DIR=data/scoring-holdouts`
@@ -64,8 +64,8 @@ Runtime guardrails:
 Retention policy:
 
 - Keep full source training and public evaluation inputs in their dedicated roots.
-- `apps/api/data/public-eval/*` contains only public eval artifacts (`manifest.json`, test IDs/images, sample submission files).
-- `apps/api/data/scoring-holdouts/*` contains hidden holdout labels only.
+- `@apps/api/data/public-eval/*` contains only public eval artifacts (`manifest.json`, test IDs/images, sample submission files).
+- `@apps/api/data/scoring-holdouts/*` contains hidden holdout labels only.
 
 Competition evaluation uses a canonical-test-first policy:
 
