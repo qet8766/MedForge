@@ -27,6 +27,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -64,6 +65,7 @@
   --accent: oklch(0.95 0.007 260);
   --accent-foreground: oklch(0.20 0.03 260);
   --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.55 0.16 145);
   --border: oklch(0.90 0.01 260);
   --input: oklch(0.90 0.01 260);
   --ring: oklch(0.55 0.17 195);
@@ -98,6 +100,7 @@
   --accent: oklch(0.20 0.025 260);
   --accent-foreground: oklch(0.93 0.01 260);
   --destructive: oklch(0.65 0.22 25);
+  --success: oklch(0.65 0.18 145);
   --border: oklch(0.26 0.02 260);
   --input: oklch(0.22 0.025 260);
   --ring: oklch(0.72 0.19 195);
@@ -116,11 +119,83 @@
   --sidebar-ring: oklch(0.72 0.19 195);
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
+
+  .gradient-text {
+    background: linear-gradient(
+      135deg,
+      oklch(0.72 0.19 195),
+      oklch(0.65 0.15 160)
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-bg-subtle {
+    background: linear-gradient(
+      135deg,
+      oklch(0.16 0.02 260),
+      oklch(0.14 0.03 220)
+    );
+  }
+
+  .gradient-border {
+    border-image: linear-gradient(
+      135deg,
+      oklch(0.72 0.19 195),
+      oklch(0.55 0.12 230)
+    ) 1;
   }
 }

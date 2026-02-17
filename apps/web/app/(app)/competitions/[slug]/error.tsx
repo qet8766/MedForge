@@ -2,12 +2,12 @@
 
 import { ErrorPage } from "@/components/feedback/error-page";
 
-export default function RootError({
+export default function CompetitionError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }): React.JSX.Element {
-  return <ErrorPage title="Something went wrong" error={error} reset={reset} />;
+  return <ErrorPage title="Competition error" error={error} reset={reset} />;
 }

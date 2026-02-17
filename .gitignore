@@ -12,6 +12,7 @@ node_modules/
 *.tsbuildinfo
 playwright-report/
 test-results/
+e2e/.auth/
 
 # Local runtime artifacts
 *.sqlite3

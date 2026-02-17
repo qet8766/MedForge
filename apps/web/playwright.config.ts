@@ -9,6 +9,11 @@ if (!baseURL) {
   throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-external e2e.");
 }
 
+const chromiumOptions = {
+  ...devices["Desktop Chrome"],
+  launchOptions: hostRules ? { args: [`--host-rules=${hostRules}`] } : undefined,
+};
+
 export default defineConfig({
   testDir: "./e2e",
   timeout: 120_000,
@@ -27,11 +32,23 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
+      name: "setup",
+      testMatch: "auth.setup.ts",
+      use: { ...chromiumOptions },
+    },
+    {
+      name: "public",
+      testMatch: "smoke-public.spec.ts",
+      use: { ...chromiumOptions },
+    },
+    {
+      name: "authenticated",
+      testMatch: ["smoke-app.spec.ts", "testid-contract.spec.ts", "navigation.spec.ts", "session-smoke.spec.ts"],
+      dependencies: ["setup"],
       use: {
-        ...devices["Desktop Chrome"],
-        launchOptions: hostRules ? { args: [`--host-rules=${hostRules}`] } : undefined
-      }
-    }
-  ]
+        ...chromiumOptions,
+        storageState: "e2e/.auth/user.json",
+      },
+    },
+  ],
 });

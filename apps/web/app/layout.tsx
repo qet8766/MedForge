@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Navbar } from "@/components/layout/navbar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import "./globals.css";
-import { Nav } from "@/components/Nav";
-import { ThemeProvider } from "@/components/theme-provider";
 
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -19,7 +21,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "MedForge",
-  description: "Kaggle-like GPU competition portal",
+  description: "GPU competition portal for research teams",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
@@ -29,9 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }):
         <meta name="darkreader-lock" />
       </head>
       <body className={`${plexSans.variable} ${plexMono.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
-          <Nav />
-          <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <TooltipProvider>
+            <Navbar />
+            <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
