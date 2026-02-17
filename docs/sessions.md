@@ -4,7 +4,7 @@
 > - `POST /api/v2/external/sessions`, `GET /api/v2/external/sessions/current`, `POST /api/v2/external/sessions/{id}/stop`
 > - `POST /api/v2/internal/sessions`, `GET /api/v2/internal/sessions/current`, `POST /api/v2/internal/sessions/{id}/stop` (requires `can_use_internal`)
 > Runtime env now uses `MEDFORGE_EXPOSURE=EXTERNAL|INTERNAL`.
-> Any remaining `/api/v2/sessions` or `tier` wording below is legacy text and should be read as superseded by this v2 split.
+> Any remaining unsplit `/api/v2/sessions` or pre-split field wording below is legacy text and should be read as superseded by this v2 split.
 
 Implementation status note (2026-02-17):
 
@@ -90,7 +90,7 @@ Optional runtime toggle:
 
 Inputs: optional `pack_id` (defaults to seeded pack).
 - Every session allocates exactly one GPU.
-- If an `Origin` header is present, it must match an allowed MedForge remote-public origin or the API returns **403**.
+- If an `Origin` header is present, it must match an allowed MedForge remote-external origin or the API returns **403**.
 
 **Race-safe allocation (single transaction):**
 
@@ -114,7 +114,7 @@ Update session: set `container_id`, `status='running'`, `started_at`. On failure
 
 #### Stop -- `POST /api/v2/external/sessions/{id}/stop` or `POST /api/v2/internal/sessions/{id}/stop`
 
-If an `Origin` header is present, it must match an allowed MedForge remote-public origin or the API returns **403**.
+If an `Origin` header is present, it must match an allowed MedForge remote-external origin or the API returns **403**.
 
 1. If row is `starting` or `running`, set `status='stopping'` and return **202** with `{message:"Session stop requested."}`.
 2. If row is already `stopping`, return **202** with the same message (idempotent intent).
@@ -172,5 +172,5 @@ One JSON object per line to stdout.
 
 | Event           | Payload                                              |
 | --------------- | ---------------------------------------------------- |
-| `session.start` | `{session_id, user_id, tier, gpu_id, pack_id, slug}` |
+| `session.start` | `{session_id, user_id, exposure, gpu_id, pack_id, slug}` |
 | `session.stop`  | `{reason: requested \| container_death \| snapshot_failed}` |

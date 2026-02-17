@@ -29,28 +29,28 @@ services_running
 ```
 - status: PASS
 
-### Public DNS Resolution
+### External DNS Resolution
 
 ```bash
 remote_dns_check_bundle 'medforge.xyz' 'phase1check'
 ```
 - status: PASS
 
-### Public TLS Validation
+### External TLS Validation
 
 ```bash
 remote_tls_verify_host "external.medforge.medforge.xyz" && remote_tls_verify_host "api.medforge.medforge.xyz"
 ```
 - status: PASS
 
-### Public API Reachability
+### External API Reachability
 
 ```bash
 wait_for_health api 60 1 api_health_remote
 ```
 - status: PASS
 
-### Public Web Reachability
+### External Web Reachability
 
 ```bash
 wait_for_health web 60 1 web_health_remote

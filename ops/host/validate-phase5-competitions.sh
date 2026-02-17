@@ -7,7 +7,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
-source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
+source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
 PHASE_ID="phase5-competitions"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -122,8 +122,8 @@ run_remote_competitions_smoke() {
   local email cookie_jar signup_code login_code list_code detail_code leaderboard_code
   local list_json slug
 
-  api_base="https://$(remote_public_api_host "${DOMAIN}")"
-  web_base="https://$(remote_public_web_host "${DOMAIN}")"
+  api_base="https://$(remote_external_api_host "${DOMAIN}")"
+  web_base="https://$(remote_external_web_host "${DOMAIN}")"
   email="phase5-remote-${RUN_ID}@medforge.test"
   cookie_jar="$(mktemp /tmp/phase5-remote-cookie.XXXXXX)"
   list_json="$(mktemp /tmp/phase5-remote-list.XXXXXX)"
@@ -219,11 +219,11 @@ main() {
     echo ""
     echo "Runtime:"
     echo "- run id: \`${RUN_ID}\`"
-    echo "- public domain: \`${DOMAIN}\`"
+    echo "- external domain: \`${DOMAIN}\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  run_check "Remote-Public Competition Smoke" "run_remote_competitions_smoke"
+  run_check "Remote-External Competition Smoke" "run_remote_competitions_smoke"
   run_check "Competition API Contract Lanes" "run_competition_api_tests"
   run_check "Competition Scoring Determinism Lanes" "run_scoring_tests"
 

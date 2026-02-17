@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
+source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
 PHASE_ID="phase1-bootstrap"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -114,11 +114,11 @@ services_running() {
 }
 
 api_health_remote() {
-  curl -fsS "https://$(remote_public_api_host "${DOMAIN}")/healthz" >/dev/null
+  curl -fsS "https://$(remote_external_api_host "${DOMAIN}")/healthz" >/dev/null
 }
 
 web_health_remote() {
-  curl -fsS "https://$(remote_public_web_host "${DOMAIN}")" >/dev/null
+  curl -fsS "https://$(remote_external_web_host "${DOMAIN}")" >/dev/null
 }
 
 db_seed_invariants() {
@@ -186,10 +186,10 @@ main() {
   run_check "Compose Up" "compose_up"
   run_check "Compose Service Table" "compose_ps"
   run_check "Core Services Running" "services_running"
-  run_check "Public DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase1check'"
-  run_check "Public TLS Validation" "remote_tls_verify_host \"$(remote_public_web_host "${DOMAIN}")\" && remote_tls_verify_host \"$(remote_public_api_host "${DOMAIN}")\""
-  run_check "Public API Reachability" "wait_for_health api 60 1 api_health_remote"
-  run_check "Public Web Reachability" "wait_for_health web 60 1 web_health_remote"
+  run_check "External DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase1check'"
+  run_check "External TLS Validation" "remote_tls_verify_host \"$(remote_external_web_host "${DOMAIN}")\" && remote_tls_verify_host \"$(remote_external_api_host "${DOMAIN}")\""
+  run_check "External API Reachability" "wait_for_health api 60 1 api_health_remote"
+  run_check "External Web Reachability" "wait_for_health web 60 1 web_health_remote"
   run_check "Database Seed Invariants" "db_seed_invariants"
 
   PHASE_STATUS="PASS"

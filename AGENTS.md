@@ -8,12 +8,12 @@
 ## Runtime Truth and Validation
 
 ### Core Policy
-- Canonical validation lane is `remote-public` only.
-- API models include `PUBLIC` and `PRIVATE` tiers; runtime create for `tier=private` returns `501` (`NOT_IMPLEMENTED`).
+- Canonical validation lane is `remote-external` only.
+- API models include `EXTERNAL` and `INTERNAL` exposures; internal session create is allowed only for users with `can_use_internal=true`.
 
 ### Runtime Claim Precedence
 1. Latest accepted phase evidence in `docs/evidence/<date>/`
-2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-public.sh`
+2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-external.sh`
 3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
 
 ### Revalidation Triggers
@@ -26,7 +26,7 @@ Runtime claims are stale until revalidated when platform-affecting files change:
 - `deploy/compose/docker-compose.yml`
 - `deploy/compose/.env` policy values
 - `ops/host/validate-phase*.sh`
-- `ops/host/lib/remote-public.sh`
+- `ops/host/lib/remote-external.sh`
 
 ## Documentation Governance
 
@@ -48,7 +48,7 @@ This section defines explicit scope ownership for Markdown under `docs/`.
   - `### Canonical Sources`
 - Runtime contract precedence remains:
   1. Latest accepted evidence under `docs/evidence/<date>/`
-  2. Validation runners under `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-public.sh`
+  2. Validation runners under `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-external.sh`
 
 #### Top-Level Scope Ownership
 | File | Owner Scope | Keep/Discard |
@@ -115,8 +115,8 @@ Discard a docs artifact when any of the following is true:
 - `POOL_DISKS='/dev/sdX' bash ops/storage/zfs-setup.sh`
 - `bash ops/network/firewall-setup.sh`
 
-Canonical remote-public validation:
-- `bash ops/host/validate-policy-remote-public.sh`
+Canonical remote-external validation:
+- `bash ops/host/validate-policy-remote-external.sh`
 - `bash ops/host/validate-phases-all.sh`
 
 Phase-specific reruns:
@@ -181,5 +181,5 @@ Schema-level runtime contracts are code-owned:
 - `apps/api/alembic/versions/`
 
 Runtime summary:
-- MedForge is a single-host control/data-plane platform for PUBLIC GPU code-server sessions and permanent PUBLIC competitions.
-- API models include `PUBLIC` and `PRIVATE`, but runtime create for `tier=private` returns `501` (`NOT_IMPLEMENTED`).
+- MedForge is a single-host control/data-plane platform for EXTERNAL GPU code-server sessions and permanent EXTERNAL competitions.
+- API models include `EXTERNAL` and `INTERNAL`; internal session create is runtime-enabled behind `can_use_internal`.

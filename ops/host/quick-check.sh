@@ -10,7 +10,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 cd "${ROOT_DIR}"
-bash ops/host/validate-policy-remote-public.sh
+bash ops/host/validate-policy-remote-external.sh
 
 cd "${ROOT_DIR}/apps/api"
 if [ ! -d ".venv" ]; then

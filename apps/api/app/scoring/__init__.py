@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Scoring public facade.
+# Scoring facade exports.
 # @filename apps/api/app/scoring/pipeline.py
 # @filename apps/api/app/scoring/metrics.py
 # @filename apps/api/app/scoring/types.py

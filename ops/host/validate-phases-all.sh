@@ -2,7 +2,7 @@
 #
 # Sequential phase validator.
 # Runs Phase 0 through Phase 5 and stops on first failure.
-# Remote-public validation is mandatory; no local/browser mode flags.
+# Remote-external validation is mandatory; no local/browser mode flags.
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ parse_args() {
   fi
   if [ "$#" -ne 0 ]; then
     echo "ERROR: validate-phases-all no longer accepts mode flags."
-    echo "Remote-public validation is always enforced."
+    echo "Remote-external validation is always enforced."
     usage
     exit 1
   fi

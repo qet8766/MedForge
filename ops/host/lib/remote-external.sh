@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Shared helpers for remote-public validation checks.
-# Canonical public hosts are derived from deploy/compose/.env DOMAIN:
+# Shared helpers for remote-external validation checks.
+# Canonical external hosts are derived from deploy/compose/.env DOMAIN:
 #   web: external.medforge.<DOMAIN>
 #   api: api.medforge.<DOMAIN>
 #   wildcard probe: s-<slug>.external.medforge.<DOMAIN>
@@ -17,17 +17,17 @@ remote_read_env_value() {
   awk -F= -v k="${key}" '$1 == k {print substr($0, index($0, "=") + 1); exit}' "${env_file}"
 }
 
-remote_public_web_host() {
+remote_external_web_host() {
   local domain="$1"
   printf "external.medforge.%s\n" "${domain}"
 }
 
-remote_public_api_host() {
+remote_external_api_host() {
   local domain="$1"
   printf "api.medforge.%s\n" "${domain}"
 }
 
-remote_public_session_host() {
+remote_external_session_host() {
   local slug="$1"
   local domain="$2"
   printf "s-%s.external.medforge.%s\n" "${slug}" "${domain}"
@@ -36,7 +36,7 @@ remote_public_session_host() {
 remote_require_domain() {
   local domain="$1"
   if [ -z "${domain}" ]; then
-    echo "ERROR: DOMAIN is required for remote-public validation."
+    echo "ERROR: DOMAIN is required for remote-external validation."
     return 1
   fi
 }
@@ -61,9 +61,9 @@ remote_dns_check_bundle() {
   local wildcard_slug="${2:-phasecheck}"
   local web_host api_host wildcard_host
 
-  web_host="$(remote_public_web_host "${domain}")"
-  api_host="$(remote_public_api_host "${domain}")"
-  wildcard_host="$(remote_public_session_host "${wildcard_slug}" "${domain}")"
+  web_host="$(remote_external_web_host "${domain}")"
+  api_host="$(remote_external_api_host "${domain}")"
+  wildcard_host="$(remote_external_session_host "${wildcard_slug}" "${domain}")"
 
   dig +short "${web_host}" @1.1.1.1
   dig +short "${api_host}" @1.1.1.1
@@ -77,7 +77,7 @@ remote_dns_check_bundle() {
 remote_tls_verify_host() {
   local host="$1"
   local out_file
-  out_file="$(mktemp /tmp/remote-public-openssl.XXXXXX)"
+  out_file="$(mktemp /tmp/remote-external-openssl.XXXXXX)"
   openssl s_client \
     -verify_return_error \
     -verify_hostname "${host}" \
@@ -90,8 +90,8 @@ remote_tls_verify_host() {
 remote_health_check() {
   local domain="$1"
   local web_host api_host
-  web_host="$(remote_public_web_host "${domain}")"
-  api_host="$(remote_public_api_host "${domain}")"
+  web_host="$(remote_external_web_host "${domain}")"
+  api_host="$(remote_external_api_host "${domain}")"
   curl -fsS "https://${web_host}" >/dev/null
   curl -fsS "https://${api_host}/healthz" >/dev/null
 }

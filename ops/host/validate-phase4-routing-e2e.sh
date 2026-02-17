@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Phase 4 remote-public routing/isolation/e2e validation.
-# Canonical checks always run against public DNS + TLS endpoints.
+# Phase 4 remote-external routing/isolation/e2e validation.
+# Canonical checks always run against external DNS + TLS endpoints.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
-source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
+source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
 
 PHASE_ID="phase4-routing-e2e"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -27,10 +27,10 @@ E2E_USER_PASSWORD="${E2E_USER_PASSWORD:-Password123!}"
 E2E_RESULT_FILE="${E2E_RESULT_FILE:-/tmp/medforge-e2e-result.json}"
 
 PHASE_STATUS="INCONCLUSIVE"
-PUBLIC_WEB_HOST=""
-PUBLIC_API_HOST=""
-PUBLIC_WEB_BASE_URL=""
-PUBLIC_API_BASE_URL=""
+EXTERNAL_WEB_HOST=""
+EXTERNAL_API_HOST=""
+EXTERNAL_WEB_BASE_URL=""
+EXTERNAL_API_BASE_URL=""
 
 SESSION_ID_A=""
 SESSION_ID_B=""
@@ -45,7 +45,7 @@ usage() {
   cat <<'USAGE'
 Usage: bash ops/host/validate-phase4-routing-e2e.sh
 
-Phase 4 canonical validation is remote-public only; no mode flags are accepted.
+Phase 4 canonical validation is remote-external only; no mode flags are accepted.
 USAGE
 }
 
@@ -153,9 +153,9 @@ ensure_cookie_session() {
   local login_code
 
   signup_code="$(curl -sS -o /tmp/${PHASE_ID}-signup-"${label}".out -w '%{http_code}' \
-    -X POST "${PUBLIC_API_BASE_URL}/api/v2/auth/signup" \
+    -X POST "${EXTERNAL_API_BASE_URL}/api/v2/auth/signup" \
     -H 'content-type: application/json' \
-    -H "Origin: ${PUBLIC_WEB_BASE_URL}" \
+    -H "Origin: ${EXTERNAL_WEB_BASE_URL}" \
     -c "${jar}" -b "${jar}" \
     -d "{\"email\":\"${email}\",\"password\":\"${password}\"}")"
 
@@ -170,9 +170,9 @@ ensure_cookie_session() {
   fi
 
   login_code="$(curl -sS -o /tmp/${PHASE_ID}-login-"${label}".out -w '%{http_code}' \
-    -X POST "${PUBLIC_API_BASE_URL}/api/v2/auth/login" \
+    -X POST "${EXTERNAL_API_BASE_URL}/api/v2/auth/login" \
     -H 'content-type: application/json' \
-    -H "Origin: ${PUBLIC_WEB_BASE_URL}" \
+    -H "Origin: ${EXTERNAL_WEB_BASE_URL}" \
     -c "${jar}" -b "${jar}" \
     -d "{\"email\":\"${email}\",\"password\":\"${password}\"}")"
 
@@ -193,7 +193,7 @@ run_browser_smoke() {
   rm -f "${E2E_RESULT_FILE}"
   npm run test:e2e:install >/dev/null
 
-  E2E_BASE_URL="${PUBLIC_WEB_BASE_URL}" \
+  E2E_BASE_URL="${EXTERNAL_WEB_BASE_URL}" \
   E2E_DOMAIN="${DOMAIN}" \
   E2E_USER_EMAIL="${E2E_USER_EMAIL}" \
   E2E_USER_PASSWORD="${E2E_USER_PASSWORD}" \
@@ -221,7 +221,7 @@ run_browser_smoke() {
     exit 1
   fi
 
-  record "- browser base URL: \`${PUBLIC_WEB_BASE_URL}\`"
+  record "- browser base URL: \`${EXTERNAL_WEB_BASE_URL}\`"
   record "- e2e user: \`${E2E_USER_EMAIL}\`"
   record "- wildcard session URL: \`${session_url}\`"
   record "- wildcard slug: \`${slug}\`"
@@ -233,10 +233,10 @@ cleanup() {
   local exit_code=$?
 
   if [ -n "${SESSION_ID_A}" ] && [ -n "${COOKIE_JAR_A}" ] && [ -f "${COOKIE_JAR_A}" ]; then
-    curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}" >/dev/null 2>&1 || true
+    curl -sS -X POST "${EXTERNAL_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}" >/dev/null 2>&1 || true
   fi
   if [ -n "${SESSION_ID_B}" ] && [ -n "${COOKIE_JAR_B}" ] && [ -f "${COOKIE_JAR_B}" ]; then
-    curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}" >/dev/null 2>&1 || true
+    curl -sS -X POST "${EXTERNAL_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}" >/dev/null 2>&1 || true
   fi
 
   if [ -n "${SLUG_A}" ]; then
@@ -270,7 +270,7 @@ main() {
     exit 0
   fi
   if [ "$#" -ne 0 ]; then
-    echo "ERROR: mode flags were removed. Phase 4 is remote-public only."
+    echo "ERROR: mode flags were removed. Phase 4 is remote-external only."
     usage
     exit 1
   fi
@@ -303,10 +303,10 @@ main() {
   fi
   remote_require_domain "${DOMAIN}"
 
-  PUBLIC_WEB_HOST="$(remote_public_web_host "${DOMAIN}")"
-  PUBLIC_API_HOST="$(remote_public_api_host "${DOMAIN}")"
-  PUBLIC_WEB_BASE_URL="https://${PUBLIC_WEB_HOST}"
-  PUBLIC_API_BASE_URL="https://${PUBLIC_API_HOST}"
+  EXTERNAL_WEB_HOST="$(remote_external_web_host "${DOMAIN}")"
+  EXTERNAL_API_HOST="$(remote_external_api_host "${DOMAIN}")"
+  EXTERNAL_WEB_BASE_URL="https://${EXTERNAL_WEB_HOST}"
+  EXTERNAL_API_BASE_URL="https://${EXTERNAL_API_HOST}"
 
   mkdir -p "${EVIDENCE_DIR}"
   : >"${LOG_FILE}"
@@ -319,19 +319,19 @@ main() {
     echo "Runtime:"
     echo "- phase id: \`${PHASE_ID}\`"
     echo "- run id: \`${RUN_ID}\`"
-    echo "- public web URL: \`${PUBLIC_WEB_BASE_URL}\`"
-    echo "- public api URL: \`${PUBLIC_API_BASE_URL}\`"
+    echo "- external web URL: \`${EXTERNAL_WEB_BASE_URL}\`"
+    echo "- external api URL: \`${EXTERNAL_API_BASE_URL}\`"
     echo "- pack image: \`${PACK_IMAGE}\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  section "Remote-Public Preflight"
+  section "Remote-External Preflight"
   dns_result="$(remote_dns_check_bundle "${DOMAIN}" "phase4check")"
   printf "%s\n" "${dns_result}" >>"${EVIDENCE_FILE}"
   {
     printf "%s\n" "${dns_result}"
-    remote_tls_verify_host "${PUBLIC_WEB_HOST}"
-    remote_tls_verify_host "${PUBLIC_API_HOST}"
+    remote_tls_verify_host "${EXTERNAL_WEB_HOST}"
+    remote_tls_verify_host "${EXTERNAL_API_HOST}"
     remote_health_check "${DOMAIN}"
   } >>"${LOG_FILE}" 2>&1
   record "- DNS + TLS + health preflight: PASS"
@@ -348,21 +348,21 @@ main() {
   fi
 
   section "Create Sessions"
-  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_A}" -d '{}')"
+  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${EXTERNAL_API_BASE_URL}/api/v2/external/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_A}" -d '{}')"
   assert_eq "${resp_a_code}" "201" "create session A"
   resp_a="$(cat /tmp/g6_create_a.out)"
   record "- create A: \`${resp_a}\`"
   SESSION_ID_A="$(json_field "${resp_a}" "data['data']['session']['id']")"
   SLUG_A="$(json_field "${resp_a}" "data['data']['session']['slug']")"
 
-  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_B}" -d '{}')"
+  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${EXTERNAL_API_BASE_URL}/api/v2/external/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_B}" -d '{}')"
   assert_eq "${resp_b_code}" "201" "create session B"
   resp_b="$(cat /tmp/g6_create_b.out)"
   record "- create B: \`${resp_b}\`"
   SESSION_ID_B="$(json_field "${resp_b}" "data['data']['session']['id']")"
   SLUG_B="$(json_field "${resp_b}" "data['data']['session']['slug']")"
 
-  host_a="$(remote_public_session_host "${SLUG_A}" "${DOMAIN}")"
+  host_a="$(remote_external_session_host "${SLUG_A}" "${DOMAIN}")"
   session_url_a="https://${host_a}/"
   blocked_proxy_url_a="${session_url_a}api/v2/auth/session-proxy"
 
@@ -433,7 +433,7 @@ main() {
   assert_eq "${ws_line}" "alpha" "workspace write/read"
   record "- workspace write/read: \`${ws_line}\`"
 
-  stop_a="$(curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}")"
+  stop_a="$(curl -sS -X POST "${EXTERNAL_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}")"
   assert_eq "$(json_field "${stop_a}" "data['data']['message']")" "Session stop requested." "stop A message"
   record "- stop A: \`${stop_a}\`"
 
@@ -443,7 +443,7 @@ main() {
   snapshot="$(wait_for_stop_snapshot "${SESSION_ID_A}")"
   record "- snapshot: \`${snapshot}\`"
 
-  stop_b="$(curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}")"
+  stop_b="$(curl -sS -X POST "${EXTERNAL_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}")"
   assert_eq "$(json_field "${stop_b}" "data['data']['message']")" "Session stop requested." "stop B message"
   wait_for_stop_snapshot "${SESSION_ID_B}" >/dev/null
   record "- stop B: \`${stop_b}\`"

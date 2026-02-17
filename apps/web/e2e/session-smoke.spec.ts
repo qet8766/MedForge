@@ -15,7 +15,7 @@ function resolveBaseURL(): string {
     return `https://medforge.${domain}`;
   }
 
-  throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-public e2e.");
+  throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-external e2e.");
 }
 
 function resolveDomain(baseURL: string): string {

@@ -8,7 +8,7 @@ RUN npm ci --no-audit --no-fund
 
 COPY . .
 
-# Build-time public env values must be present for client-side API routing.
+# Build-time client env values must be present for client-side API routing.
 ARG NEXT_PUBLIC_API_URL=""
 ARG NEXT_PUBLIC_DOMAIN=""
 ARG DOMAIN=""

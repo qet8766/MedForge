@@ -6,7 +6,7 @@ const ignoreHTTPSErrors = (process.env.E2E_IGNORE_HTTPS_ERRORS ?? "true").toLowe
 const hostRules = process.env.E2E_CHROMIUM_HOST_RULES?.trim();
 
 if (!baseURL) {
-  throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-public e2e.");
+  throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-external e2e.");
 }
 
 export default defineConfig({

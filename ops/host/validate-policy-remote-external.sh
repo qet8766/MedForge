@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Repository policy guard for remote-public-only validation.
+# Repository policy guard for remote-external-only validation.
 # Fails if tracked repo files reintroduce local/split-mode check logic.
 
 set -euo pipefail
@@ -20,13 +20,13 @@ BANNED_PATTERNS=(
 PATHSPECS=(
   "."
   ":(exclude)docs/evidence/**"
-  ":(exclude)ops/host/validate-policy-remote-public.sh"
+  ":(exclude)ops/host/validate-policy-remote-external.sh"
 )
 
 fail=0
 for pattern in "${BANNED_PATTERNS[@]}"; do
   if git grep -n --fixed-strings -- "${pattern}" -- "${PATHSPECS[@]}" >/tmp/remote-policy-hit.out; then
-    echo "ERROR: banned remote-public policy pattern found: ${pattern}"
+    echo "ERROR: banned remote-external policy pattern found: ${pattern}"
     cat /tmp/remote-policy-hit.out
     fail=1
   fi
@@ -36,4 +36,4 @@ if [ "${fail}" -ne 0 ]; then
   exit 1
 fi
 
-echo "Remote-public validation policy check passed."
+echo "Remote-external validation policy check passed."

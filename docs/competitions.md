@@ -83,7 +83,7 @@ Canonical versioned routes:
 
 The competition API is implemented as a modular router package at `apps/api/app/routers/competitions/`:
 
-- `public.py` — public competition and dataset endpoints
+- `catalog.py` — competition and dataset read endpoints
 - `submissions.py` — submission upload and history
 - `admin.py` — admin scoring trigger
 - `leaderboard.py` — leaderboard SQL ranking query
@@ -121,5 +121,5 @@ The competition API is implemented as a modular router package at `apps/api/app/
 ### Security and Data Policy
 
 - Hidden holdout labels are stored server-side only and are never mounted in user sessions.
-- Competition dataset mirrors are intended for internal/private deployment.
-- Public internet redistribution of mirrored Kaggle competition assets is out of scope.
+- Competition dataset mirrors are intended for controlled internal deployment.
+- Open internet redistribution of mirrored Kaggle competition assets is out of scope.

@@ -8,13 +8,13 @@
 
 Implementation status note (2026-02-17):
 
-- Canonical remote-public validation is `PASS` through Phase 5 (`@docs/phase-checking-strategy.md`, `@docs/validation-logs.md`).
+- Canonical remote-external validation is `PASS` through Phase 5 (`@docs/phase-checking-strategy.md`, `@docs/validation-logs.md`).
 - Auth contract evidence: `@docs/evidence/2026-02-17/phase2-auth-api-20260217T064639Z.md`.
 - Routing boundary evidence: `@docs/evidence/2026-02-17/phase4-routing-e2e-20260217T064739Z.md`.
 
 ### Scope
 
-Authentication and wildcard routing contract for public MedForge hosts.
+Authentication and wildcard routing contract for external MedForge hosts.
 
 ### In Scope
 

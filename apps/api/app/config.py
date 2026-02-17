@@ -113,11 +113,7 @@ class Settings:
     cookie_samesite: str = _env("COOKIE_SAMESITE", "lax", lower=True)
     cors_origins: tuple[str, ...] = field(default_factory=_default_cors_origins)
     external_sessions_network: str = field(
-        default_factory=lambda: (
-            os.getenv("EXTERNAL_SESSIONS_NETWORK")
-            or os.getenv("PUBLIC_SESSIONS_NETWORK")
-            or "medforge-external-sessions"
-        ).strip()
+        default_factory=lambda: (os.getenv("EXTERNAL_SESSIONS_NETWORK") or "medforge-external-sessions").strip()
     )
     internal_sessions_network: str = _env("INTERNAL_SESSIONS_NETWORK", "medforge-internal-sessions")
     workspace_zfs_root: str = _env("WORKSPACE_ZFS_ROOT", "tank/medforge/workspaces")

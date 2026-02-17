@@ -110,16 +110,16 @@ docker logs mf-session-<slug>
 
 ### Canonical Validation
 
-Canonical phase validation is remote-public only.
+Canonical phase validation is remote-external only.
 
 ```bash
 # Policy guard (fails if repo code reintroduces local/split validation modes)
-bash ops/host/validate-policy-remote-public.sh
+bash ops/host/validate-policy-remote-external.sh
 
-# Full remote-public phase progression
+# Full remote-external phase progression
 bash ops/host/validate-phases-all.sh
 
-# Phase 4 only (remote-public routing/isolation/browser/websocket)
+# Phase 4 only (remote-external routing/isolation/browser/websocket)
 bash ops/host/validate-phase4-routing-e2e.sh
 ```
 

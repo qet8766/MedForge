@@ -19,7 +19,7 @@ This is the single source of truth for validation phase order, acceptance criter
 
 ### Canonical Sources
 
-- `ops/host/validate-policy-remote-public.sh`
+- `ops/host/validate-policy-remote-external.sh`
 - `ops/host/validate-phases-all.sh`
 - `ops/host/validate-phase*.sh`
 - `docs/validation-logs.md`
@@ -31,7 +31,7 @@ This is the single source of truth for validation phase order, acceptance criter
 - Do not skip phases.
 - Do not advance when the current phase is `FAIL` or `INCONCLUSIVE`.
 - Runtime truth is required; tests are supporting evidence, not sufficient by themselves.
-- Canonical validation is remote-public only. Localhost/local proxy modes are not accepted for `PASS`.
+- Canonical validation is remote-external only. Localhost/local proxy modes are not accepted for `PASS`.
 - Every accepted phase run must produce immutable timestamped evidence artifacts.
 
 ## Status Vocabulary
@@ -42,7 +42,7 @@ This is the single source of truth for validation phase order, acceptance criter
 
 ## Current Canonical Status (2026-02-17)
 
-Latest full progression run completed under the remote-public-only phase model with all phases `PASS`.
+Latest full progression run completed under the remote-external-only phase model with all phases `PASS`.
 
 | Phase | Name | Latest Evidence | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |
@@ -115,12 +115,12 @@ Runner:
 
 ### Phase 3: Session Lifecycle + Recovery
 
-Purpose: verify PUBLIC session lifecycle invariants and recovery correctness.
+Purpose: verify EXTERNAL session lifecycle invariants and recovery correctness.
 
 Required checks:
 
-- PUBLIC create/stop/snapshot runtime witness.
-- `exposure=internal` returns `501`.
+- EXTERNAL create/stop/snapshot runtime witness.
+- INTERNAL create requires entitlement (`403` without `can_use_internal`, `201` with entitlement).
 - GPU exclusivity and per-user concurrency limits under concurrency.
 - Recovery transitions across `starting|running|stopping` and terminal states.
 - Recovery health signaling (`/healthz` degradation and recovery behavior).
@@ -141,7 +141,7 @@ Required checks:
 - East-west isolation blocks direct session-to-session `:8080` access.
 - End-to-end runtime flow (GPU visibility, workspace write/read, stop finalization with snapshot).
 - Browser wildcard + websocket lane (always required).
-- Public DNS + TLS + health preflight for canonical web/api hosts.
+- External DNS + TLS + health preflight for canonical web/api hosts.
 
 Runner:
 
@@ -167,14 +167,14 @@ Runner:
 
 Run all phases in order:
 
-- `bash ops/host/validate-policy-remote-public.sh`
+- `bash ops/host/validate-policy-remote-external.sh`
 - `bash ops/host/validate-phases-all.sh`
 
 The progression runner must stop on first failure.
 
 ## Definition of Done
 
-- User can authenticate and create a PUBLIC GPU session.
+- User can authenticate and create an EXTERNAL GPU session.
 - GPU exclusivity and per-user limits are enforced under concurrent requests.
 - Session work persists in unique per-session ZFS datasets.
 - Stop finalization produces snapshot evidence.

@@ -23,7 +23,7 @@ This file is the concise canonical index for phase validation evidence.
 
 ## Current Canonical Artifacts
 
-Latest canonical full progression pass: `2026-02-17` (remote-public-only policy).
+Latest canonical full progression pass: `2026-02-17` (remote-external-only policy).
 
 | Phase | Name | Latest Artifact | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |

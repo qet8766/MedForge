@@ -18,18 +18,18 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-REMOTE_PUBLIC_LIB="${ROOT_DIR}/ops/host/lib/remote-public.sh"
+REMOTE_EXTERNAL_LIB="${ROOT_DIR}/ops/host/lib/remote-external.sh"
 API_URL="${API_URL:-}"
 COMPOSE_ENV="${COMPOSE_ENV:-${ROOT_DIR}/deploy/compose/.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/deploy/compose/docker-compose.yml}"
 
-if [ ! -f "${REMOTE_PUBLIC_LIB}" ]; then
-  echo "ERROR: missing helper library: ${REMOTE_PUBLIC_LIB}"
+if [ ! -f "${REMOTE_EXTERNAL_LIB}" ]; then
+  echo "ERROR: missing helper library: ${REMOTE_EXTERNAL_LIB}"
   exit 1
 fi
 # shellcheck disable=SC1091
-# shellcheck source=ops/host/lib/remote-public.sh
-source "${REMOTE_PUBLIC_LIB}"
+# shellcheck source=ops/host/lib/remote-external.sh
+source "${REMOTE_EXTERNAL_LIB}"
 
 resolve_api_url() {
   local domain="${DOMAIN:-}"
@@ -39,7 +39,7 @@ resolve_api_url() {
   if [ -z "${domain}" ]; then
     return 1
   fi
-  printf "https://%s\n" "$(remote_public_api_host "${domain}")"
+  printf "https://%s\n" "$(remote_external_api_host "${domain}")"
 }
 
 require_cmd() {

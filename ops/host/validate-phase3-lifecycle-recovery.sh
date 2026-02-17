@@ -7,7 +7,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
-source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
+source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
 PHASE_ID="phase3-lifecycle-recovery"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -84,7 +84,7 @@ run_runtime_core_witness() {
   local session_id slug proxy_code
   local email="phase3-runtime-${RUN_ID}@medforge.test"
 
-  api_host="$(remote_public_api_host "${DOMAIN}")"
+  api_host="$(remote_external_api_host "${DOMAIN}")"
   api_base="https://${api_host}"
   cookie_jar="$(mktemp /tmp/phase3-runtime-cookie.XXXXXX)"
   create_json="$(mktemp /tmp/phase3-runtime-create.XXXXXX)"
@@ -152,7 +152,7 @@ PY
     route_code="$(curl -sS -o /tmp/phase3-runtime-route.out -w '%{http_code}' \
       -b "${cookie_jar}" \
       --max-time 10 \
-      "https://$(remote_public_session_host "${slug}" "${DOMAIN}")" || echo 000)"
+      "https://$(remote_external_session_host "${slug}" "${DOMAIN}")" || echo 000)"
     if [ "${route_code}" = "200" ] || [ "${route_code}" = "302" ]; then
       break
     fi
@@ -178,7 +178,7 @@ PY
     proxy_code="$(curl -sS -o /tmp/phase3-runtime-proxy.out -w '%{http_code}' \
       -b "${cookie_jar}" \
       --max-time 10 \
-      "https://$(remote_public_session_host "${slug}" "${DOMAIN}")" || echo 000)"
+      "https://$(remote_external_session_host "${slug}" "${DOMAIN}")" || echo 000)"
     if [ "${proxy_code}" = "404" ]; then
       break
     fi
@@ -205,7 +205,7 @@ run_lifecycle_recovery_tests() {
   . .venv/bin/activate
 
   pytest -q \
-    tests/test_api.py::test_session_create_rejects_legacy_tier_field \
+    tests/test_api.py::test_session_create_rejects_client_supplied_exposure_field \
     tests/test_api.py::test_internal_session_create_requires_entitlement \
     tests/test_api.py::test_internal_session_create_with_entitlement_returns_running \
     tests/test_api.py::test_session_create_requires_auth \
@@ -249,7 +249,7 @@ main() {
     echo ""
     echo "Runtime:"
     echo "- run id: \`${RUN_ID}\`"
-    echo "- public domain: \`${DOMAIN}\`"
+    echo "- external domain: \`${DOMAIN}\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 

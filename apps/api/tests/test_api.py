@@ -486,10 +486,10 @@ def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens
     _assert_problem(stopped, status_code=404, type_suffix="http/404")
 
 
-def test_session_create_rejects_legacy_tier_field(client, auth_tokens) -> None:
+def test_session_create_rejects_client_supplied_exposure_field(client, auth_tokens) -> None:
     response = client.post(
         "/api/v2/external/sessions",
-        json={"tier": "external"},
+        json={"exposure": "external"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
     _assert_problem(response, status_code=422, type_suffix="validation/request")

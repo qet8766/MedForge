@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
+source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
 PHASE_ID="phase2-auth-api"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -110,8 +110,8 @@ run_remote_auth_smoke() {
   local email cookie_jar signup_code login_code me_code logout_code me_after_logout_code
   local assert_code expected_code
 
-  api_base="https://$(remote_public_api_host "${DOMAIN}")"
-  web_base="https://$(remote_public_web_host "${DOMAIN}")"
+  api_base="https://$(remote_external_api_host "${DOMAIN}")"
+  web_base="https://$(remote_external_web_host "${DOMAIN}")"
   email="phase2-remote-${RUN_ID}@medforge.test"
   cookie_jar="$(mktemp /tmp/phase2-remote-cookie.XXXXXX)"
 
@@ -196,12 +196,12 @@ main() {
     echo ""
     echo "Runtime:"
     echo "- run id: \`${RUN_ID}\`"
-    echo "- public domain: \`${DOMAIN}\`"
+    echo "- external domain: \`${DOMAIN}\`"
     echo "- api tests path: \`apps/api/tests\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  run_check "Remote-Public Auth Smoke" "run_remote_auth_smoke"
+  run_check "Remote-External Auth Smoke" "run_remote_auth_smoke"
   run_check "Auth and Session Contract Tests" "run_auth_contract_tests"
 
   PHASE_STATUS="PASS"

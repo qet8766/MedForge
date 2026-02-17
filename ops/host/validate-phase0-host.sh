@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
+source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
 PHASE_ID="phase0-host"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -121,15 +121,15 @@ zfs_probe() {
 tls_probe() {
   local status web_host api_host
 
-  web_host="$(remote_public_web_host "${DOMAIN}")"
-  api_host="$(remote_public_api_host "${DOMAIN}")"
+  web_host="$(remote_external_web_host "${DOMAIN}")"
+  api_host="$(remote_external_api_host "${DOMAIN}")"
 
   curl -fsS "https://${web_host}" >/dev/null
   curl -fsS "https://${api_host}/healthz" >/dev/null
 
   status="$(curl -sS -o /tmp/${PHASE_ID}-session-proxy.out -w '%{http_code}' \
     "https://${api_host}/api/v2/auth/session-proxy" \
-    -H "Host: $(remote_public_session_host "phase0check" "${DOMAIN}")")"
+    -H "Host: $(remote_external_session_host "phase0check" "${DOMAIN}")")"
 
   case "${status}" in
     401|403|404)
@@ -202,7 +202,7 @@ main() {
   run_check "GPU Runtime In Container" "docker run --rm --gpus all --entrypoint nvidia-smi '${PACK_IMAGE}'"
   run_check "ZFS Pool Health" "zpool list && zpool status '${ZPOOL_NAME}' && sudo -n zfs list '${ZFS_WORKSPACE_ROOT}'"
   run_check "ZFS Write Read Snapshot Probe" "zfs_probe"
-  run_check "Public DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase0check'"
+  run_check "External DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase0check'"
   run_check "Strict TLS Validation" "tls_probe"
 
   PHASE_STATUS="PASS"

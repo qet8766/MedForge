@@ -4,10 +4,10 @@
 > - API read/write surfaces: `/api/v2/external/*` and `/api/v2/internal/*`
 > - Shared auth/identity: `/api/v2/auth/*`, `/api/v2/me`
 > - Session wildcard hosts: `s-<slug>.external.medforge.<domain>` and `s-<slug>.internal.medforge.<domain>`
-> Any residual `PUBLIC/PRIVATE`, `tier`, or non-split `/api/v2/sessions` wording below is legacy and superseded by this v2 contract.
+> Any residual unsplit `/api/v2/sessions` wording below is legacy and superseded by this v2 contract.
 
 Implementation status note (2026-02-17):
-- Canonical validation lane is `remote-public` only.
+- Canonical validation lane is `remote-external` only.
 - Latest full progression is `PASS` through Phase 5 (`docs/phase-checking-strategy.md`, `docs/validation-logs.md`).
 - This file is architecture/runtime contract only; operations runbooks stay in `docs/runbook.md`.
 
@@ -42,13 +42,13 @@ Implementation status note (2026-02-17):
 
 Canonical runtime claim precedence:
 1. Latest accepted phase evidence in `docs/evidence/<date>/`
-2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-public.sh`
+2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-external.sh`
 3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
 
 Status vocabulary: `VERIFIED` (evidenced), `UNVERIFIED` (described but not evidenced), `NOT_IMPLEMENTED` (modeled but runtime-blocked).
 
 Runtime claims become stale until revalidated when these change:
-`apps/api/app/routers/*`, `apps/api/app/session_*`, `apps/api/app/deps.py`, `apps/api/app/config.py`, `deploy/caddy/Caddyfile`, `deploy/compose/docker-compose.yml`, `deploy/compose/.env` policy values, `ops/host/validate-phase*.sh`, `ops/host/lib/remote-public.sh`.
+`apps/api/app/routers/*`, `apps/api/app/session_*`, `apps/api/app/deps.py`, `apps/api/app/config.py`, `deploy/caddy/Caddyfile`, `deploy/compose/docker-compose.yml`, `deploy/compose/.env` policy values, `ops/host/validate-phase*.sh`, `ops/host/lib/remote-external.sh`.
 
 ## Platform Scope
 
@@ -115,9 +115,9 @@ Routing invariants:
 - External wildcard `.../api/v2/auth/session-proxy` is blocked (`403`).
 - Wildcard root matrix: `401` unauthenticated, `403` non-owner, `200` owner/admin for running session; after async stop finalization -> `404`.
 
-Reality gate for public claims:
+Reality gate for external claims:
 - `DOMAIN` must be consistent across Compose/API/web config.
-- Public DNS must resolve `medforge.<domain>`, `external.medforge.<domain>`, `internal.medforge.<domain>`, `api.medforge.<domain>`.
+- External DNS must resolve `medforge.<domain>`, `external.medforge.<domain>`, `internal.medforge.<domain>`, `api.medforge.<domain>`.
 - TLS hostname validation must pass for `medforge.<domain>` and `api.medforge.<domain>`.
 
 ## Session Runtime Contract
@@ -192,8 +192,8 @@ Competition invariants:
 
 | Claim | Status | Notes |
 | --- | --- | --- |
-| INTERNAL exposure runtime create path (`exposure=internal`) | `NOT_IMPLEMENTED` | Runtime returns `501` by design. |
-| Private-network session runtime enforcement | `NOT_IMPLEMENTED` | Model exists structurally; no active private runtime path. |
+| INTERNAL exposure runtime create path (`/api/v2/internal/sessions`) | `VERIFIED` | Runtime path is enabled and guarded by `can_use_internal`. |
+| INTERNAL-network session runtime enforcement | `UNVERIFIED` | Modeled with dedicated runtime network; canonical evidence does not yet include dedicated internal egress assertions. |
 | Multi-host scheduling/orchestration claims | `UNVERIFIED` | Canonical evidence scope is single-host. |
 | Automated snapshot retention workflows | `NOT_IMPLEMENTED` | Not part of current runtime behavior. |
 | Snapshot restore API/UI | `NOT_IMPLEMENTED` | Manual admin ZFS restore only. |
