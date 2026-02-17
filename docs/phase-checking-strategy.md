@@ -10,6 +10,7 @@ This is the single source of truth for validation phase order, acceptance criter
 - per-phase acceptance criteria and runner commands
 - evidence artifact policy and definition of done
 - current canonical status pointers for each phase
+- build/test/validation command entry points used by contributors and operators
 
 ### Out of Scope
 
@@ -22,6 +23,12 @@ This is the single source of truth for validation phase order, acceptance criter
 - `ops/host/validate-policy-remote-external.sh`
 - `ops/host/validate-phases-all.sh`
 - `ops/host/validate-phase*.sh`
+- `ops/host/bootstrap-easy.sh`
+- `ops/host/quick-check.sh`
+- `ops/storage/zfs-setup.sh`
+- `ops/network/firewall-setup.sh`
+- `deploy/compose/docker-compose.yml`
+- `deploy/compose/.env.example`
 - `docs/validation-logs.md`
 - `docs/evidence/`
 
@@ -63,6 +70,35 @@ Latest full progression run completed under the remote-external-only phase model
   - markdown summary artifact
   - raw log artifact
   - concise index pointer update in `docs/validation-logs.md`
+
+## Build, Test, and Validation Entry Points
+
+Use this section as the canonical command inventory for local checks and remote-external validation progression.
+
+### Environment and Platform Bring-Up
+
+- `cp deploy/compose/.env.example deploy/compose/.env`
+- `sudo bash ops/host/bootstrap-easy.sh`
+- `bash ops/host/quick-check.sh`
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`
+- `POOL_DISKS='/dev/sdX' bash ops/storage/zfs-setup.sh`
+- `bash ops/network/firewall-setup.sh`
+
+### Backend, Frontend, and Script Checks
+
+- `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`
+- `cd apps/api && pytest -q`
+- `cd apps/web && npm install && npm run build`
+- `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n`
+- `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` (when available)
+
+### Canonical Remote-External Validation
+
+- `bash ops/host/validate-policy-remote-external.sh`
+- `bash ops/host/validate-phases-all.sh`
+- Platform/session checks must produce accepted phase evidence (`.md` and `.log` artifacts), with runtime witness output (logs, curl output, screenshots where required).
+- Phase-specific reruns use the per-phase runner commands documented in each phase section below.
 
 ## Phase Acceptance Criteria and Commands
 

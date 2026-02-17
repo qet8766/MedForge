@@ -104,28 +104,9 @@ Discard a docs artifact when any of the following is true:
 - `tools/data-prep/`: dataset prep and rehydration helpers.
 
 ## Build, Test, and Validation Commands
-- `cp deploy/compose/.env.example deploy/compose/.env`
-- `sudo bash ops/host/bootstrap-easy.sh`
-- `bash ops/host/quick-check.sh`
-- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`
-- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`
-- `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`
-- `cd apps/api && pytest -q`
-- `cd apps/web && npm install && npm run build`
-- `POOL_DISKS='/dev/sdX' bash ops/storage/zfs-setup.sh`
-- `bash ops/network/firewall-setup.sh`
-
-Canonical remote-external validation:
-- `bash ops/host/validate-policy-remote-external.sh`
-- `bash ops/host/validate-phases-all.sh`
-
-Phase-specific reruns:
-- `bash ops/host/validate-phase0-host.sh`
-- `bash ops/host/validate-phase1-bootstrap.sh`
-- `bash ops/host/validate-phase2-auth-api.sh`
-- `bash ops/host/validate-phase3-lifecycle-recovery.sh`
-- `bash ops/host/validate-phase4-routing-e2e.sh`
-- `bash ops/host/validate-phase5-competitions.sh`
+- Canonical command inventory for bring-up, local checks, and remote-external phase validation is owned by `docs/phase-checking-strategy.md`.
+- Use `docs/phase-checking-strategy.md` for per-phase rerun entrypoints and evidence requirements.
+- Use `docs/runbook.md` for day-2 operational remediation procedures.
 
 ## Engineering Standards
 
@@ -138,12 +119,8 @@ Phase-specific reruns:
 - Import order: stdlib -> third-party -> local, with blank lines between groups (Python and TypeScript).
 
 ### Testing Guidelines
-- Backend checks: `cd apps/api && pytest -q`
-- Frontend checks: `cd apps/web && npm run build`
-- Platform/session checks: follow `docs/phase-checking-strategy.md` with evidence (logs, curl output, screenshots).
-- Ops script checks:
-  - `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n`
-  - `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` (when available)
+- Follow `docs/phase-checking-strategy.md` for canonical test lanes, runner commands, and evidence policy.
+- Treat phase evidence artifacts and runtime witness output as required for platform/session claim validity.
 
 
 ### Error Handling
