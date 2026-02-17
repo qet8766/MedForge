@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { apiPostJson, type AuthUser } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ const COPY = {
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }): React.JSX.Element {
   const copy = COPY[mode];
+  const router = useRouter();
 
   const [email, setEmail] = useState("you@example.com");
   const [password, setPassword] = useState("");
@@ -50,6 +52,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }): React.JSX.Elem
     try {
       const user = await apiPostJson<AuthUser>(copy.endpoint, { email, password });
       setMessage(copy.success(user.email));
+      setTimeout(() => router.push("/sessions"), 600);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : copy.errorFallback);
     } finally {

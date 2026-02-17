@@ -25,6 +25,12 @@ internal.medforge.{$DOMAIN} {
 	reverse_proxy medforge-web:3000
 }
 
+# ── Dev frontend (hot-reload) ────────────────────────────
+dev.medforge.{$DOMAIN} {
+	import tls_dns
+	reverse_proxy medforge-web-dev:3000
+}
+
 # ── API ───────────────────────────────────────────────────
 api.medforge.{$DOMAIN} {
 	import tls_dns
