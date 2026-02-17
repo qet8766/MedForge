@@ -13,7 +13,7 @@ Day-2 operational procedures for the MedForge platform.
 ### Out of Scope
 
 - normative runtime/API contracts (`docs/architecture.md`, `docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
-- schema/entity definitions (`docs/data-model.md`)
+- schema/entity definitions (`apps/api/app/models.py`, `apps/api/app/migrations/`)
 - phase acceptance criteria ownership (`docs/phase-checking-strategy.md`)
 
 ### Canonical Sources

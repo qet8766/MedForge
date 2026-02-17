@@ -2,7 +2,7 @@
 
 ## Policy Authority
 - `AGENTS.md` is the top-level contributor and repository policy contract.
-- Canonical runtime contracts live in `docs/` (see Runtime Contract Source Map).
+- Canonical runtime contracts live in `docs/`, with schema-level contracts owned by API code (see Runtime Contract Source Map).
 
 ## Runtime Truth and Validation
 
@@ -64,9 +64,13 @@ This section defines explicit scope ownership for Markdown under `docs/`.
 | `docs/sessions.md` | Session lifecycle/runtime/recovery contract | Keep |
 | `docs/auth-routing.md` | Cookie auth, origin guard, wildcard routing/forward-auth contract | Keep |
 | `docs/competitions.md` | Competition API/scoring/leaderboard contract | Keep |
-| `docs/data-model.md` | Schema-level enums/tables/invariants | Keep |
 | `docs/dataset-formats.md` | Dataset mirror layout and submission/holdout format contract | Keep |
 | `docs/runbook.md` | Day-2 operations and troubleshooting procedures | Keep |
+
+Schema-level enums/tables/invariants are code-owned by:
+- `apps/api/app/models.py`
+- `apps/api/app/schemas.py`
+- `apps/api/app/migrations/`
 
 #### Evidence Tree Policy (`docs/evidence/**`)
 - Scope is directory-level, not per-artifact prose.
@@ -92,14 +96,14 @@ Discard a docs artifact when any of the following is true:
 
 #### Scope Review Checklist
 - All retained top-level docs have explicit scope sections.
-- Each runtime topic has exactly one canonical owner file.
+- Each runtime topic has exactly one canonical owner (docs file or explicit code source).
 - Canonical evidence pointers resolve to existing artifacts.
 - Cross-links point from non-owner files to owner files rather than duplicating contracts.
 
 ## Project Structure and Module Organization
 - `apps/web`: Next.js + TypeScript frontend.
 - `apps/api`: FastAPI + SQLModel + Pydantic API and workers.
-- `docs/`: architecture, sessions, routing/auth, data model, phase strategy, validation logs, runbook, and evidence.
+- `docs/`: architecture, sessions, routing/auth, competitions, dataset formats, phase strategy, validation logs, runbook, and evidence.
 - `deploy/compose/`: control-plane Compose stack and `.env.example`.
 - `deploy/caddy/`: wildcard TLS/routing config.
 - `deploy/packs/default/`: default code-server pack image.
@@ -140,7 +144,7 @@ Phase-specific reruns:
 - Naming contracts:
   - Compose services/networks: `medforge-*`
   - Session containers: `mf-session-<slug>`
-  - Session slug: 8-char lowercase base32 (see `docs/data-model.md`)
+  - Session slug: 8-char lowercase base32 (see `apps/api/app/session_repo.py`)
 - Import order: stdlib -> third-party -> local, with blank lines between groups (Python and TypeScript).
 - Shell scripts should prefer named functions over long one-liner pipelines.
 
@@ -191,8 +195,12 @@ Runtime behavior is documented in canonical docs under `docs/`:
 - `docs/sessions.md`: session create/stop/current behavior and recovery lifecycle.
 - `docs/auth-routing.md`: cookie auth, origin policy, wildcard routing/auth contract.
 - `docs/competitions.md`: competition API/scoring contract and leaderboard behavior.
-- `docs/data-model.md`: schema-level entities and invariants.
 - `docs/phase-checking-strategy.md` and `docs/validation-logs.md`: accepted phase evidence and canonical status.
+
+Schema-level runtime contracts are code-owned:
+- `apps/api/app/models.py`
+- `apps/api/app/schemas.py`
+- `apps/api/app/migrations/`
 
 Runtime summary:
 - MedForge is a single-host control/data-plane platform for PUBLIC GPU code-server sessions and permanent PUBLIC competitions.
@@ -207,7 +215,7 @@ Duplication policy:
 - `docs/architecture.md`
 - `docs/sessions.md`
 - `docs/auth-routing.md`
-- `docs/data-model.md`
 - `docs/phase-checking-strategy.md`
 - `docs/validation-logs.md`
 - `docs/runbook.md`
+- `apps/api/app/models.py`

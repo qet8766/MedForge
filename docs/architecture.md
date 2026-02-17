@@ -18,7 +18,8 @@ Implementation status note (2026-02-17):
 
 - day-2 operational procedures and remediation commands (`docs/runbook.md`)
 - phase execution steps and acceptance commands (`docs/phase-checking-strategy.md`)
-- endpoint-level deep contracts owned by domain docs (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`, `docs/data-model.md`)
+- endpoint-level deep contracts owned by domain docs (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- schema-level entities/enums/invariants owned by runtime code (`apps/api/app/models.py`, `apps/api/app/migrations/`)
 
 ### Canonical Sources
 
@@ -194,8 +195,9 @@ Competition invariants:
 - `docs/sessions.md`
 - `docs/auth-routing.md`
 - `docs/competitions.md`
-- `docs/data-model.md`
 - `docs/runbook.md`
+- `apps/api/app/models.py`
+- `apps/api/app/migrations/`
 - `deploy/compose/docker-compose.yml`
 - `deploy/caddy/Caddyfile`
 - `apps/api/app/routers/control_plane.py`
