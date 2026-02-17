@@ -23,7 +23,7 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 
 - dataset mirror filesystem and rehydration procedures (`docs/dataset-formats.md`)
 - global auth/routing and wildcard policy (`docs/auth-routing.md`)
-- schema/table-level definitions (`apps/api/app/models.py`, `apps/api/app/migrations/`)
+- schema/table-level definitions (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
 - operational run commands (`docs/runbook.md`)
 
 ### Canonical Sources

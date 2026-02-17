@@ -2,6 +2,7 @@
 
 ## Policy Authority
 - `AGENTS.md` is the top-level contributor and repository policy contract.
+- Canonical policy filename is uppercase `AGENTS.md`; do not create or maintain lowercase `agents.md`.
 - Canonical runtime contracts live in `docs/`, with schema-level contracts owned by API code (see Runtime Contract Source Map).
 
 ## Runtime Truth and Validation
@@ -39,6 +40,7 @@ Runtime claims are stale until revalidated when platform-affecting files change:
 - Keep `docs/phase-checking-strategy.md` and `docs/validation-logs.md` aligned with accepted runs.
 - Each accepted phase run must produce `.md` and `.log` artifacts.
 - Accepted evidence artifacts are immutable once committed.
+- If canonical phase rows diverge between `docs/phase-checking-strategy.md` and `docs/validation-logs.md`, canonical status is invalid until reconciled.
 
 ### Docs Scope Ownership (Canonical)
 This section defines explicit scope ownership for Markdown under `docs/`.
@@ -70,34 +72,31 @@ This section defines explicit scope ownership for Markdown under `docs/`.
 Schema-level enums/tables/invariants are code-owned by:
 - `apps/api/app/models.py`
 - `apps/api/app/schemas.py`
-- `apps/api/app/migrations/`
+- `apps/api/alembic/versions/`
 
 #### Evidence Tree Policy (`docs/evidence/**`)
 - Scope is directory-level, not per-artifact prose.
-- `docs/evidence/<date>/` stores immutable run artifacts (`.md`, `.log`, and related outputs).
-- Canonical evidence set is the files currently referenced by both:
+- `docs/evidence/<date>/` stores run artifacts (`.md`, `.log`, and related outputs).
+- Accepted artifacts become immutable once canonically referenced.
+- Canonical evidence set is exactly the markdown files referenced by both:
   - `docs/phase-checking-strategy.md`
   - `docs/validation-logs.md`
-- Markdown evidence files not referenced by those canonical pointers are discardable under aggressive cleanup.
-
-Current canonical evidence markdown set:
-- `docs/evidence/2026-02-17/phase0-host-20260217T064618Z.md`
-- `docs/evidence/2026-02-17/phase1-bootstrap-20260217T064621Z.md`
-- `docs/evidence/2026-02-17/phase2-auth-api-20260217T064639Z.md`
-- `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T064705Z.md`
-- `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T064739Z.md`
-- `docs/evidence/2026-02-17/phase5-competitions-20260217T064856Z.md`
+- If those two pointer docs disagree for any phase row, canonical status is invalid until reconciled.
+- Markdown evidence files not referenced by both canonical pointer docs are non-canonical and discardable.
+- `.log` artifacts may be retained as run history unless an explicit retention policy states otherwise.
 
 #### Discard Criteria
 Discard a docs artifact when any of the following is true:
 - No explicit single owner scope can be defined.
 - The file duplicates another canonical owner file and contributes no unique contract/ops content.
-- For markdown artifacts under `docs/evidence/`: the artifact is not referenced by canonical phase/status pointers.
+- For markdown artifacts under `docs/evidence/`: the artifact is not referenced by both canonical pointer docs (`docs/phase-checking-strategy.md` and `docs/validation-logs.md`).
 
 #### Scope Review Checklist
 - All retained top-level docs have explicit scope sections.
 - Each runtime topic has exactly one canonical owner (docs file or explicit code source).
-- Canonical evidence pointers resolve to existing artifacts.
+- Every phase row is identical across `docs/phase-checking-strategy.md` and `docs/validation-logs.md` (phase id, path, timestamp, status).
+- Canonical evidence pointers resolve to existing `.md` artifacts on disk.
+- `AGENTS.md` does not declare timestamped canonical evidence lists; canonical evidence authority remains the two pointer docs.
 - Cross-links point from non-owner files to owner files rather than duplicating contracts.
 
 ## Project Structure and Module Organization
@@ -138,15 +137,12 @@ Phase-specific reruns:
 ## Engineering Standards
 
 ### Coding Style and Naming Conventions
-- Use 2-space indentation in YAML/Markdown.
 - Bash scripts use `set -euo pipefail`.
-- Keep env vars uppercase (for example `PACK_IMAGE`, `SESSION_SECRET`).
 - Naming contracts:
   - Compose services/networks: `medforge-*`
   - Session containers: `mf-session-<slug>`
   - Session slug: 8-char lowercase base32 (see `apps/api/app/session_repo.py`)
 - Import order: stdlib -> third-party -> local, with blank lines between groups (Python and TypeScript).
-- Shell scripts should prefer named functions over long one-liner pipelines.
 
 ### Testing Guidelines
 - Backend checks: `cd apps/api && pytest -q`
@@ -156,21 +152,11 @@ Phase-specific reruns:
   - `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n`
   - `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` (when available)
 
-### Commit and Pull Request Guidelines
-- Use clear imperative commit messages.
-- Include issue IDs in `MF-###` format when applicable (example: `MF-006 enforce race-safe GPU allocation`).
-- PRs should include:
-  - Scope summary and linked issue (`MF-###`)
-  - Affected phase(s) and acceptance checks executed
-  - Config/security impact (`.env`, networking, auth headers)
-  - UI/routing screenshots when behavior changes
 
 ### Error Handling
-- No graceful fallback masking. Do not swallow errors with placeholder UI.
-- Let errors bubble up and show concrete failure messages.
+- No graceful fallback masking. Do not swallow errors with placeholder UI. Make it show concrete failure messages.
 
 ### Code Hygiene
-- File splitting: when a file exceeds ~150 lines, split it into focused files and add `@filename` references where code moved.
 - Dead code: delete it; do not comment it out.
 - No wildcard imports (`from x import *`, `import *`).
 - Type annotations: require hints on all Python function signatures and TypeScript `strict` mode.
@@ -199,16 +185,11 @@ Runtime behavior is documented in canonical docs under `docs/`:
 Schema-level runtime contracts are code-owned:
 - `apps/api/app/models.py`
 - `apps/api/app/schemas.py`
-- `apps/api/app/migrations/`
+- `apps/api/alembic/versions/`
 
 Runtime summary:
 - MedForge is a single-host control/data-plane platform for PUBLIC GPU code-server sessions and permanent PUBLIC competitions.
 - API models include `PUBLIC` and `PRIVATE`, but runtime create for `tier=private` returns `501` (`NOT_IMPLEMENTED`).
-
-Duplication policy:
-- `AGENTS.md` is policy-oriented and pointer-oriented for runtime behavior.
-- Runtime details should not be duplicated here when canonical docs above already define them.
-- If duplicated claims diverge, canonical `docs/` runtime contract docs take precedence.
 
 ## Detailed References
 - `docs/architecture.md`

@@ -34,7 +34,7 @@ Session runtime lifecycle and recovery contract.
 
 - auth cookie and wildcard forward-auth contract (`@docs/auth-routing.md`)
 - competition submission/scoring contracts (`@docs/competitions.md`)
-- schema/table definitions (`@apps/api/app/models.py`, `@apps/api/app/migrations/`)
+- schema/table definitions (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
 - operational runbook commands (`@docs/runbook.md`)
 
 ### Canonical Sources
