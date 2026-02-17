@@ -26,7 +26,7 @@ Phase status is reset to `INCONCLUSIVE` until rerun under this phase model.
 | 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T045422Z.md` | `2026-02-17T04:54:22Z` | PASS |
 | 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T045521Z.md` | `2026-02-17T04:55:21Z` | PASS |
 | 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T045621Z.md` | `2026-02-17T04:56:21Z` | PASS |
-| 4 | Routing, Isolation, End-to-End | `none` | `n/a` | INCONCLUSIVE |
+| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T045844Z.md` | `2026-02-17T04:58:44Z` | PASS |
 | 5 | Competition Platform (Alpha) | `none` | `n/a` | INCONCLUSIVE |
 
 ## Evidence Policy
