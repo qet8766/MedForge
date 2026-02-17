@@ -8,7 +8,7 @@ Status reset date: `2026-02-17`.
 
 | Phase | Name | Latest Artifact | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Host Foundation | `none` | `n/a` | INCONCLUSIVE |
+| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T045048Z.md` | `2026-02-17T04:50:48Z` | PASS |
 | 1 | Control Plane Bootstrap | `none` | `n/a` | INCONCLUSIVE |
 | 2 | Auth + Session API Contracts | `none` | `n/a` | INCONCLUSIVE |
 | 3 | Session Lifecycle + Recovery | `none` | `n/a` | INCONCLUSIVE |
