@@ -73,6 +73,26 @@ run_check() {
   record ""
 }
 
+wait_for_health() {
+  local name="$1"
+  local max_attempts="$2"
+  local sleep_seconds="$3"
+  local checker="$4"
+  local attempt=1
+
+  while [ "${attempt}" -le "${max_attempts}" ]; do
+    if "${checker}"; then
+      echo "${name} ready on attempt ${attempt}/${max_attempts}"
+      return 0
+    fi
+    sleep "${sleep_seconds}"
+    attempt=$((attempt + 1))
+  done
+
+  echo "ERROR: ${name} not ready after ${max_attempts} attempts"
+  return 1
+}
+
 cleanup() {
   local exit_code=$?
   if [ "${PHASE_STATUS}" != "PASS" ] && [ -f "${EVIDENCE_FILE}" ]; then
@@ -186,8 +206,8 @@ main() {
   run_check "Compose Up" "compose_up"
   run_check "Compose Service Table" "compose_ps"
   run_check "Core Services Running" "services_running"
-  run_check "API Reachability" "api_health_inside_container"
-  run_check "Web Reachability" "web_health_inside_container"
+  run_check "API Reachability" "wait_for_health api 30 1 api_health_inside_container"
+  run_check "Web Reachability" "wait_for_health web 60 1 web_health_inside_container"
   run_check "Database Seed Invariants" "db_seed_invariants"
 
   PHASE_STATUS="PASS"
