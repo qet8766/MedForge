@@ -70,6 +70,20 @@ Runtime claims are stale until revalidated when platform-affecting files change:
 - Security/config: do not commit secrets (`@deploy/compose/.env` for real values); hosts/ports/URLs from env/config (no hardcoded `localhost:8080`); keep `PACK_IMAGE` digest-pinned; preserve Caddy hardening `request_header -X-Upstream`; do not use `latest` Docker tags; prefer exact dependency pins (or bounded ranges with lockfiles) and digest-pinned images; use `uv` over `pip`.
 - Logging: include context identifiers (`session_id`, `user_id`, `slug`) in lifecycle logs.
 
+## Container Rebuild Policy
+After editing source files for a containerized service, rebuild and restart the affected container(s) in the same change set. Do not consider a change complete until the running container reflects it.
+
+| Source path | Affected service(s) | Command |
+| --- | --- | --- |
+| `@apps/api/**` | `medforge-api`, `medforge-api-worker` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-api medforge-api-worker` |
+| `@apps/web/**` | `medforge-web` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-web` |
+| `@deploy/caddy/Caddyfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml restart medforge-caddy` |
+| `@deploy/caddy/Dockerfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-caddy` |
+| `@deploy/compose/docker-compose.yml` | affected service(s) | `docker compose -f deploy/compose/docker-compose.yml up -d <service>` |
+
+- `medforge-web-dev` (dev compose) uses a live volume mount — no rebuild needed for `@apps/web/**` changes.
+- Caddyfile is mounted read-only into the container — a restart (not rebuild) is sufficient for config changes.
+
 ## Runtime Contract Source Map
 - Schema-level runtime contracts are code-owned by `@apps/api/app/models.py`, `@apps/api/app/schemas.py`, and `@apps/api/alembic/versions/`.
 

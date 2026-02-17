@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -72,17 +73,12 @@ def _default_cookie_domain() -> str:
     return f".medforge.{domain}"
 
 
-def _default_cors_origins() -> tuple[str, ...]:
+def _default_cors_origin_regex() -> str:
     domain = os.getenv("DOMAIN", "").strip().lower()
     if not domain:
-        return tuple()
-    return tuple(
-        sorted(
-            f"{scheme}://{prefix}medforge.{domain}"
-            for scheme in ("http", "https")
-            for prefix in ("", "api.", "external.", "internal.")
-        )
-    )
+        return ""
+    escaped = re.escape(domain)
+    return rf"https?://([a-z0-9-]+\.)*medforge\.{escaped}"
 
 
 def _is_env_set(name: str) -> bool:
@@ -128,7 +124,7 @@ class Settings:
     cookie_domain: str = field(default_factory=lambda: os.getenv("COOKIE_DOMAIN", _default_cookie_domain()).strip())
     cookie_secure: bool = _env_bool("COOKIE_SECURE", "true")
     cookie_samesite: str = _env("COOKIE_SAMESITE", "lax", lower=True)
-    cors_origins: tuple[str, ...] = field(default_factory=_default_cors_origins)
+    cors_origin_regex: str = field(default_factory=_default_cors_origin_regex)
     external_sessions_network: str = field(
         default_factory=lambda: (os.getenv("EXTERNAL_SESSIONS_NETWORK") or "medforge-external-sessions").strip()
     )

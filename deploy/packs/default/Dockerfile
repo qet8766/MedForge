@@ -16,8 +16,12 @@ COPY extras.in /tmp/pack/extras.in
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        curl ca-certificates git wget unzip \
+        curl ca-certificates git git-lfs wget unzip \
         python3 python3-venv \
+        build-essential python3-dev pkg-config \
+        less openssh-client jq htop tmux \
+        libfontconfig1 fonts-dejavu-core \
+    && git lfs install \
     && curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=${CODE_SERVER_VERSION} \
     && curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh \
     && install -m 0755 /root/.local/bin/uv /usr/local/bin/uv \

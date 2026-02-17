@@ -33,6 +33,7 @@ services:
       context: ../../apps/api
       args:
         DOCKER_GID: 995
+    image: medforge-api:local
     user: "0:0"
     privileged: true
     container_name: medforge-api
@@ -94,7 +95,7 @@ services:
 
   # ── Scoring worker ───────────────────────────────────────
   medforge-api-worker:
-    build: ../../apps/api
+    image: medforge-api:local
     container_name: medforge-api-worker
     restart: unless-stopped
     depends_on:

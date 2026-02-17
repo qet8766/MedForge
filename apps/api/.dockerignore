@@ -1,9 +1,38 @@
+# Virtual environment
 .venv/
+
+# Test and lint caches
 tests/
 __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+
+# Build artifacts
 *.pyc
+*.pyo
+*.egg-info/
+
+# Secrets and environment
 .env
+.env.*
+
+# Git
 .git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dev-only databases and logs
+*.db
+*.log
+
+# Legacy requirements (deps from pyproject.toml + uv.lock)
+requirements.txt
+
+# Documentation
+README.md

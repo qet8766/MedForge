@@ -1,7 +1,28 @@
+# Dependencies (installed fresh via npm ci)
 node_modules/
+
+# Build output (generated in builder stage)
 .next/
+
+# Test infrastructure
 e2e/
 test-results/
 playwright-report/
+playwright.config.ts
+
+# Secrets and environment
 .env
+.env.*
+
+# Git
 .git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
