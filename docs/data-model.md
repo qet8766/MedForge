@@ -1,4 +1,4 @@
-## 6. Data Model
+## Data Model
 
 ### Enums
 

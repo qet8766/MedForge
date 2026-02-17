@@ -1,13 +1,11 @@
-## 3. Authentication & Routing
+## Authentication & Routing
 
 Implementation status note (2026-02-16):
 
 - Phase 2 auth foundations are implemented in API:
   - cookie-backed signup/login/logout and `/api/v1/me`
   - `/api/v1/auth/session-proxy` owner/admin authorization with running-session checks
-- Phase 3 recovery orchestration is implemented (startup reconciliation + active-session poller).
 - Phase 4 routing/isolation controls are implemented; canonical validation uses `@docs/phase-checking-strategy.md`.
-- Legacy header identity fallback (`X-User-Id`) is removed from API auth paths.
 - Competition submission uploads are bounded by `SUBMISSION_UPLOAD_MAX_BYTES` (default `10485760`).
 
 ### Cookie Sessions

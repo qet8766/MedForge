@@ -1,4 +1,4 @@
-## 10. Competitions (Alpha)
+## Competitions
 
 MedForge alpha includes permanent mock competitions with Kaggle-style submissions and leaderboards.
 

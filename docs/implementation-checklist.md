@@ -1,4 +1,4 @@
-## 8. Implementation Checklist
+## Implementation Checklist
 
 Purpose: translate the spec into ticket-ready implementation work with explicit state transitions, idempotency rules, and acceptance checks.
 

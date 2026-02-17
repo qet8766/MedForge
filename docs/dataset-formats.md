@@ -1,4 +1,4 @@
-## 5. Dataset Formats
+## Dataset Formats
 
 Storage root: `${MEDFORGE_DATASETS_ROOT}/`
 

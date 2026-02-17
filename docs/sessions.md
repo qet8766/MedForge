@@ -1,6 +1,6 @@
-## 4. Sessions
+## Sessions
 
-Implementation status note (2026-02-16):
+Implementation status note (2026-02-17):
 
 - Core Phase 3 flow is implemented for PUBLIC sessions:
   - `POST /api/v1/sessions` performs allocation + launch and returns running/error terminalization.
@@ -69,7 +69,7 @@ Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pa
 3. Count user active sessions (`starting | running | stopping`). If >= `max_concurrent_sessions`, reject.
 4. Select a free enabled GPU and lock it (`FOR UPDATE`). Pick an enabled `gpu_devices.id` not assigned to an active session.
 5. Insert session row: `status='starting'`, chosen `gpu_id`, `slug`, `pack_id`, and `workspace_zfs=tank/medforge/workspaces/<user_id>/<session_id>`.
-6. If insert fails due to `UNIQUE(gpu_id, gpu_active)` conflict, retry a fixed number of times.
+6. If insert fails due to an integrity conflict (for example slug/workspace uniqueness), roll back and retry a fixed number of times.
 7. `COMMIT`
 
 **After commit, spawn container:**
@@ -80,7 +80,7 @@ Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pa
 - Mount: `/workspace` from session dataset (`workspace_zfs`)
 - GPU: Docker runtime device binding to one physical GPU (`--gpus "device=<gpu_idx>"`) plus env vars above for in-container visibility
 
-Update session: set `container_id`, `status='running'`, `started_at`. On failure (dataset create or container start): set `status='error'`, `stopped_at`, `error_message`. Leaving active status frees the GPU automatically (generated column becomes NULL, unique constraint releases).
+Update session: set `container_id`, `status='running'`, `started_at`. On failure (dataset create or container start): set `status='error'`, `stopped_at`, `error_message`. Leaving active status makes the GPU available for subsequent allocations because allocator selection excludes non-terminal active rows.
 
 #### Stop -- `POST /api/v1/sessions/{id}/stop`
 
