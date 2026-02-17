@@ -52,9 +52,10 @@ Runtime constraints (applied by the session manager when creating the container)
 - `--auth none` on code-server (Caddy is the access boundary).
 - Non-root user (UID/GID 1000).
 - `cap-drop=ALL`, not privileged, no Docker socket.
-- `security_opt=["no-new-privileges:true"]`
+- EXTERNAL: `cap_add=[CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, FSETID, KILL]`, no `no-new-privileges` (allows sudo/setuid inside session).
+- INTERNAL: no capabilities added back, `security_opt=["no-new-privileges:true"]`.
 - Container name: `mf-session-<slug>`
-- Network: `medforge-external-sessions`
+- Network: `medforge-external-sessions` or `medforge-internal-sessions` (by exposure)
 
 Mounts:
 
@@ -100,7 +101,7 @@ Inputs: optional `pack_id` (defaults to seeded pack).
 
 - Ensure session workspace dataset exists at `workspace_zfs`, set owner to UID/GID 1000:1000, and apply optional quota.
 - Name: `mf-session-<slug>`
-- Network: `medforge-external-sessions`
+- Network: `medforge-external-sessions` or `medforge-internal-sessions` (by exposure)
 - Mount: `/workspace` from session dataset (`workspace_zfs`)
 - GPU: Docker runtime device binding to one physical GPU (`--gpus "device=<gpu_idx>"`) plus env vars above for in-container visibility
 

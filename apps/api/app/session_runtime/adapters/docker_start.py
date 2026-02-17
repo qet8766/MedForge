@@ -86,6 +86,8 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
         capabilities=[["gpu"]],
     )
 
+    is_external = request.exposure == "EXTERNAL"
+
     container = client.containers.run(
         request.image_ref,
         name=request.container_name,
@@ -93,8 +95,11 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
         network=request.sessions_network,
         user="1000:1000",
         cap_drop=["ALL"],
+        cap_add=["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "FSETID", "KILL"]
+        if is_external
+        else None,
         privileged=False,
-        security_opt=["no-new-privileges:true"],
+        security_opt=None if is_external else ["no-new-privileges:true"],
         environment=env,
         volumes={request.workspace_mount: {"bind": "/workspace", "mode": "rw"}},
         device_requests=[device_request],
