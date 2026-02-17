@@ -1,0 +1,123 @@
+
+### Create Sessions
+
+- create A: `{"data":{"message":"Session started.","session":{"id":"aefa4942-6021-4d74-8590-27fc357bd76e","user_id":"11ae945a-942b-4d37-8a9e-2112259b3401","tier":"public","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"ab5ba768b09b0980c3ef4b332c1ed51fe8e282f97bd1fd77b3e5891dea7a41e6","gpu_id":0,"slug":"rwdhvy2m","workspace_zfs":"tank/medforge/workspaces/11ae945a-942b-4d37-8a9e-2112259b3401/aefa4942-6021-4d74-8590-27fc357bd76e","created_at":"2026-02-17T05:11:16.627989","started_at":"2026-02-17T05:11:17.298029","stopped_at":null,"error_message":null}},"meta":{"request_id":"131d904f-3ea5-411b-af5f-f090cec4f8e9","api_version":"v1.0","timestamp":"2026-02-17T05:11:17.312473Z","limit":null,"next_cursor":null,"has_more":null}}`
+- create B: `{"data":{"message":"Session started.","session":{"id":"bb33cee6-2e81-488a-b433-d27f479eccc4","user_id":"51288d8c-81d3-422c-bbfd-0f55053bb836","tier":"public","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"443082b2eabfb6e3f32a42fa7d3e10206719907f8122c409db500f803b6a7a36","gpu_id":1,"slug":"p52pf2dk","workspace_zfs":"tank/medforge/workspaces/51288d8c-81d3-422c-bbfd-0f55053bb836/bb33cee6-2e81-488a-b433-d27f479eccc4","created_at":"2026-02-17T05:11:17.412027","started_at":"2026-02-17T05:11:18.042502","stopped_at":null,"error_message":null}},"meta":{"request_id":"8da7f6f9-73b7-4a8c-8c46-2cba0f45088e","api_version":"v1.0","timestamp":"2026-02-17T05:11:18.057786Z","limit":null,"next_cursor":null,"has_more":null}}`
+
+### Routing Authorization Matrix
+
+- unauthenticated: `401` body=`{"type":"https://medforge.dev/problems/http/401","title":"Unauthorized","status":401,"detail":"Authentication required.","instance":"/api/v1/auth/session-proxy","code":"401","request_id":"3f3c1a9a-4739-4905-8c88-74f19a143f72"}`
+- non-owner: `403` body=`{"type":"https://medforge.dev/problems/http/403","title":"Forbidden","status":403,"detail":"Session access denied.","instance":"/api/v1/auth/session-proxy","code":"403","request_id":"d6a57a97-c9cd-40da-8142-25aaef2c9bc9"}`
+- owner spoof attempt: `200` x-upstream=`mf-session-rwdhvy2m:8080`
+
+### East-West Isolation
+
+- firewall: `East–west isolation applied (bridge=br-55088beacfcf, caddy=172.30.0.4)`
+- session B -> session A :8080 blocked (exit=`28`, stderr=`curl: (28) Connection timed out after 3002 milliseconds`)
+
+### End-to-End Core Runtime
+
+- GPU in session A: `NVIDIA GeForce RTX 5090`
+- workspace write/read: `alpha`
+- stop A: `{"data":{"message":"Session stop requested."},"meta":{"request_id":"e4fe4093-a4f0-4d8c-b008-f758ceb21b05","api_version":"v1.0","timestamp":"2026-02-17T05:11:21.660212Z","limit":null,"next_cursor":null,"has_more":null}}`
+- stopped host check: `404` body=`{"type":"https://medforge.dev/problems/http/404","title":"Not Found","status":404,"detail":"Session not found.","instance":"/api/v1/auth/session-proxy","code":"404","request_id":"0b169623-b889-4956-b590-e3079f7c505c"}`
+- snapshot: `tank/medforge/workspaces/11ae945a-942b-4d37-8a9e-2112259b3401/aefa4942-6021-4d74-8590-27fc357bd76e@stop-1771305084342`
+- stop B: `{"data":{"message":"Session stop requested."},"meta":{"request_id":"76605655-9493-4f8d-86e6-8ab4815d55c8","api_version":"v1.0","timestamp":"2026-02-17T05:11:24.827368Z","limit":null,"next_cursor":null,"has_more":null}}`
+
+### Browser + Websocket Lane
+
+
+> medforge-web@0.1.0 test:e2e
+> playwright test e2e/session-smoke.spec.ts --reporter=line
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:353522) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:353522) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop
+[1A[2K  1 passed (14.8s)
+- browser base URL: `http://medforge.localtest.me:18080`
+- e2e user: `e2e-1771305072@medforge.test`
+- wildcard session URL: `http://s-mpg3gnfb.medforge.localtest.me:18080`
+- wildcard slug: `mpg3gnfb`
+- websocket attempts observed: `1`
+- websocket connections with frame traffic: `1`
+- websocket auth 403 entries: `0`
+
+### API Log Snippet
+
+```text
+INFO:     Started server process [352036]
+INFO:     Waiting for application startup.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 2474ec93cdb5, initial_schema
+INFO  [alembic.runtime.migration] Running upgrade 2474ec93cdb5 -> a1b2c3d4e5f6, drop_gpu_active
+2026-02-17 14:11:17 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 request_id=131d904f-3ea5-411b-af5f-f090cec4f8e9 session_id=aefa4942-6021-4d74-8590-27fc357bd76e slug=rwdhvy2m tier=PUBLIC user_id=11ae945a-942b-4d37-8a9e-2112259b3401
+2026-02-17 14:11:18 [info     ] session.start                  gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 request_id=8da7f6f9-73b7-4a8c-8c46-2cba0f45088e session_id=bb33cee6-2e81-488a-b433-d27f479eccc4 slug=p52pf2dk tier=PUBLIC user_id=51288d8c-81d3-422c-bbfd-0f55053bb836
+2026-02-17 14:11:19 [info     ] session.recovery.decision      container_id=ab5ba768b09b0980c3ef4b332c1ed51fe8e282f97bd1fd77b3e5891dea7a41e6 correlation_id=6fccff9e-8065-4aa7-b47a-04a9fdc89271 recovery_mode=poll session_id=aefa4942-6021-4d74-8590-27fc357bd76e slug=rwdhvy2m state=running user_id=11ae945a-942b-4d37-8a9e-2112259b3401
+2026-02-17 14:11:19 [info     ] session.recovery.decision      container_id=443082b2eabfb6e3f32a42fa7d3e10206719907f8122c409db500f803b6a7a36 correlation_id=6fccff9e-8065-4aa7-b47a-04a9fdc89271 recovery_mode=poll session_id=bb33cee6-2e81-488a-b433-d27f479eccc4 slug=p52pf2dk state=running user_id=51288d8c-81d3-422c-bbfd-0f55053bb836
+2026-02-17 14:11:24 [info     ] session.stop                   correlation_id=09af0ec4-73a2-4e2d-b729-44289a97c4d2 gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=aefa4942-6021-4d74-8590-27fc357bd76e slug=rwdhvy2m tier=PUBLIC user_id=11ae945a-942b-4d37-8a9e-2112259b3401
+2026-02-17 14:11:24 [info     ] session.recovery.decision      container_id=443082b2eabfb6e3f32a42fa7d3e10206719907f8122c409db500f803b6a7a36 correlation_id=09af0ec4-73a2-4e2d-b729-44289a97c4d2 recovery_mode=poll session_id=bb33cee6-2e81-488a-b433-d27f479eccc4 slug=p52pf2dk state=running user_id=51288d8c-81d3-422c-bbfd-0f55053bb836
+2026-02-17 14:11:24 [info     ] session.poll.updated           correlation_id=09af0ec4-73a2-4e2d-b729-44289a97c4d2 recovery_mode=poll updated=1
+2026-02-17 14:11:29 [info     ] session.stop                   correlation_id=7e96a491-611e-47dc-94ae-bb3831a34762 gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=bb33cee6-2e81-488a-b433-d27f479eccc4 slug=p52pf2dk tier=PUBLIC user_id=51288d8c-81d3-422c-bbfd-0f55053bb836
+2026-02-17 14:11:29 [info     ] session.poll.updated           correlation_id=7e96a491-611e-47dc-94ae-bb3831a34762 recovery_mode=poll updated=1
+2026-02-17 14:11:45 [info     ] session.recovery.decision      container_id=b8017b7b772b364ba62acec1363e8bc2b1e828a2a0e54e4dbf8ba86430b82e65 correlation_id=eceadc1c-5696-4af5-acc4-f476db944b98 recovery_mode=poll session_id=767df5e3-bff2-4041-8756-4872e310c5c7 slug=mpg3gnfb state=running user_id=7a800def-ccee-4289-8097-fcedb75e6a10
+2026-02-17 14:11:45 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 request_id=77678c0d-cde4-4b29-8fd8-13674adf774a session_id=767df5e3-bff2-4041-8756-4872e310c5c7 slug=mpg3gnfb tier=PUBLIC user_id=7a800def-ccee-4289-8097-fcedb75e6a10
+2026-02-17 14:11:45 [info     ] session.poll.updated           correlation_id=eceadc1c-5696-4af5-acc4-f476db944b98 recovery_mode=poll updated=1
+```
+
+### Web Log Snippet
+
+```text
+
+> medforge-web@0.1.0 dev
+> next dev --hostname 0.0.0.0 --port 3000
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+
+✓ Starting...
+✓ Ready in 546ms
+ GET / 200 in 539ms (compile: 285ms, render: 254ms)
+ GET /auth/login 200 in 96ms (compile: 21ms, render: 75ms)
+⚠ Cross origin request detected from medforge.localtest.me to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /auth/signup 200 in 114ms (compile: 26ms, render: 87ms)
+ GET /sessions 200 in 72ms (compile: 19ms, render: 53ms)
+ GET /auth/login 200 in 46ms (compile: 3ms, render: 43ms)
+ GET /sessions 200 in 40ms (compile: 2ms, render: 38ms)
+```
+
+### Caddy Log Snippet
+
+```text
+{"level":"info","ts":1771305075.0351555,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+{"level":"info","ts":1771305075.0353918,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+{"level":"info","ts":1771305075.0354247,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+{"level":"warn","ts":1771305075.0361776,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"warn","ts":1771305075.036232,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+{"level":"info","ts":1771305075.036837,"msg":"adapted config to JSON","adapter":"caddyfile"}
+{"level":"warn","ts":1771305075.0368443,"msg":"Caddyfile input is not formatted; run 'caddy fmt --overwrite' to fix inconsistencies","adapter":"caddyfile","file":"/etc/caddy/Caddyfile","line":2}
+{"level":"info","ts":1771305075.038132,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+{"level":"info","ts":1771305075.0402086,"logger":"http.auto_https","msg":"automatic HTTPS is completely disabled for server","server_name":"srv0"}
+{"level":"info","ts":1771305075.0402827,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0xc00082af80"}
+{"level":"warn","ts":1771305075.0410268,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":18080"}
+{"level":"warn","ts":1771305075.0410368,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":18080"}
+{"level":"info","ts":1771305075.0410388,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+{"level":"info","ts":1771305075.048149,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+{"level":"info","ts":1771305075.0481803,"msg":"serving initial configuration"}
+{"level":"info","ts":1771305075.0530047,"logger":"tls","msg":"cleaning storage unit","storage":"FileStorage:/data/caddy"}
+{"level":"info","ts":1771305075.055653,"logger":"tls","msg":"finished cleaning storage units"}
+{"level":"error","ts":1771305076.0222054,"logger":"http.log.error","msg":"dial tcp 172.30.0.1:3000: connect: connection refused","request":{"remote_ip":"172.30.0.1","remote_port":"56622","client_ip":"172.30.0.1","proto":"HTTP/1.1","method":"GET","host":"medforge.localtest.me:18080","uri":"/","headers":{"User-Agent":["curl/8.5.0"],"Accept":["*/*"]}},"duration":0.000433193,"status":502,"err_id":"dzy3dj0tb","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+```
+
+Validation complete: /home/shk/projects/MedForge/docs/evidence/2026-02-17/phase4-routing-e2e-20260217T051112Z.md

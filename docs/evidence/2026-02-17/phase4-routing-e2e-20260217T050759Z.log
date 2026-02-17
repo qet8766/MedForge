@@ -1,0 +1,90 @@
+
+### Create Sessions
+
+- create A: `{"data":{"message":"Session started.","session":{"id":"60720900-3acf-4901-b02a-499989e2ade2","user_id":"021a1c8a-606d-4fff-bf05-36b537afbb5c","tier":"public","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"aee3b121f79e9e1f899d6c36f144f7997851cd6df5125fea75947708c8d8c1d2","gpu_id":0,"slug":"rwdconcc","workspace_zfs":"tank/medforge/workspaces/021a1c8a-606d-4fff-bf05-36b537afbb5c/60720900-3acf-4901-b02a-499989e2ade2","created_at":"2026-02-17T05:08:03.556191","started_at":"2026-02-17T05:08:04.219385","stopped_at":null,"error_message":null}},"meta":{"request_id":"35a397aa-adb6-4fdb-819c-329018eeda38","api_version":"v1.0","timestamp":"2026-02-17T05:08:04.230758Z","limit":null,"next_cursor":null,"has_more":null}}`
+- create B: `{"data":{"message":"Session started.","session":{"id":"949068e8-3048-457b-b018-f0fe667828b8","user_id":"7920be84-eccb-4334-86a3-3403ddc1be65","tier":"public","pack_id":"00000000-0000-0000-0000-000000000100","status":"running","container_id":"95e3a5c8334d557adad6dcf916cc7c5060a6cd66bdffaf7e5ac289816bc4b619","gpu_id":1,"slug":"3janqpsj","workspace_zfs":"tank/medforge/workspaces/7920be84-eccb-4334-86a3-3403ddc1be65/949068e8-3048-457b-b018-f0fe667828b8","created_at":"2026-02-17T05:08:04.330287","started_at":"2026-02-17T05:08:04.985594","stopped_at":null,"error_message":null}},"meta":{"request_id":"11275546-d1c4-4890-8a80-ad4cfa4e2736","api_version":"v1.0","timestamp":"2026-02-17T05:08:04.998366Z","limit":null,"next_cursor":null,"has_more":null}}`
+
+### Routing Authorization Matrix
+
+- unauthenticated: `401` body=`{"type":"https://medforge.dev/problems/http/401","title":"Unauthorized","status":401,"detail":"Authentication required.","instance":"/api/v1/auth/session-proxy","code":"401","request_id":"db7934a4-20b2-481b-a2c5-5822386edfa6"}`
+- non-owner: `403` body=`{"type":"https://medforge.dev/problems/http/403","title":"Forbidden","status":403,"detail":"Session access denied.","instance":"/api/v1/auth/session-proxy","code":"403","request_id":"265cf312-1a80-4123-a856-0f873dd58e11"}`
+- owner spoof attempt: `200` x-upstream=`mf-session-rwdconcc:8080`
+
+### East-West Isolation
+
+- firewall: `East–west isolation applied (bridge=br-55088beacfcf, caddy=172.30.0.2)`
+- session B -> session A :8080 blocked (exit=`28`, stderr=`curl: (28) Connection timed out after 3002 milliseconds`)
+
+### End-to-End Core Runtime
+
+- GPU in session A: `NVIDIA GeForce RTX 5090`
+- workspace write/read: `alpha`
+- stop A: `{"data":{"message":"Session stop requested."},"meta":{"request_id":"1f95c081-f956-42a2-a106-f4a7e81f4abb","api_version":"v1.0","timestamp":"2026-02-17T05:08:08.552023Z","limit":null,"next_cursor":null,"has_more":null}}`
+- stopped host check: `404` body=`{"type":"https://medforge.dev/problems/http/404","title":"Not Found","status":404,"detail":"Session not found.","instance":"/api/v1/auth/session-proxy","code":"404","request_id":"41464b3c-196f-4697-bf7a-21fae3b3f812"}`
+- snapshot: `tank/medforge/workspaces/021a1c8a-606d-4fff-bf05-36b537afbb5c/60720900-3acf-4901-b02a-499989e2ade2@stop-1771304891668`
+- stop B: `{"data":{"message":"Session stop requested."},"meta":{"request_id":"84e5e0d4-c46e-434e-b5f4-9c2cf7f10a77","api_version":"v1.0","timestamp":"2026-02-17T05:08:12.719343Z","limit":null,"next_cursor":null,"has_more":null}}`
+
+### Browser + Websocket Lane
+
+
+> medforge-web@0.1.0 test:e2e
+> playwright test e2e/session-smoke.spec.ts --reporter=line
+
+
+Running 1 test using 1 worker
+
+[1A[2K(node:348099) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:348099) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/1] [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop
+[1A[2K  1) [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+    Call Log:
+    - Timeout 30000ms exceeded while waiting on the predicate
+
+      108 |   await sessionPage.goto(sessionOrigin, { waitUntil: "domcontentloaded" });
+      109 |   await expect(sessionPage.getByText("Session upstream missing")).toHaveCount(0);
+    > 110 |   await expect.poll(() => websocketState.withFrames, { timeout: 30_000 }).toBeGreaterThan(0);
+          |   ^
+      111 |   await sessionPage.close();
+      112 |
+      113 |   await page.getByTestId("session-stop").click();
+        at /home/shk/projects/MedForge/apps/web/e2e/session-smoke.spec.ts:110:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/video-1.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop 

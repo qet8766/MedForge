@@ -165,6 +165,17 @@ cleanup_stale_runtime() {
   docker rm -f "${CADDY_CONTAINER}" >/dev/null 2>&1 || true
 }
 
+resolve_caddy_ip() {
+  local container_name
+  if [ "${WITH_BROWSER}" = true ]; then
+    container_name="${CADDY_CONTAINER}"
+  else
+    container_name="medforge-caddy"
+  fi
+
+  docker inspect -f '{{with index .NetworkSettings.Networks "medforge-public-sessions"}}{{.IPAddress}}{{end}}' "${container_name}" 2>/dev/null || true
+}
+
 resolve_pack_image() {
   if [[ "${PACK_IMAGE}" == *@sha256:* ]]; then
     PACK_IMAGE_RESOLVED="${PACK_IMAGE}"
@@ -628,8 +639,14 @@ main() {
     record "- owner spoof attempt: \`${code}\` x-upstream=\`${upstream}\`"
 
     section "East-West Isolation"
+    local caddy_ip
+    caddy_ip="$(resolve_caddy_ip)"
+    if [ -z "${caddy_ip}" ]; then
+      echo "ERROR: could not resolve Caddy IP on medforge-public-sessions."
+      exit 1
+    fi
     local firewall_out
-    firewall_out="$(sudo bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
+    firewall_out="$(sudo CADDY_IP="${caddy_ip}" bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
     record "- firewall: \`${firewall_out}\`"
 
     set +e
