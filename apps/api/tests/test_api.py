@@ -32,24 +32,6 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
     return headers
 
 
-def test_versioned_routes_match_legacy_routes(client) -> None:
-    legacy = client.get("/api/competitions")
-    legacy_data, legacy_meta = _assert_success(legacy, status_code=200)
-    assert legacy_meta["api_version"] == "v1.0"
-    assert legacy.headers.get("deprecation") == "true"
-    assert "sunset" in legacy.headers
-    assert 'rel="deprecation"' in legacy.headers.get("link", "")
-
-    versioned = client.get("/api/v1/competitions")
-    versioned_data, versioned_meta = _assert_success(versioned, status_code=200)
-    assert versioned_meta["api_version"] == "v1.0"
-    assert "deprecation" not in versioned.headers
-    assert "sunset" not in versioned.headers
-    assert "link" not in versioned.headers
-
-    assert versioned_data == legacy_data
-
-
 def test_openapi_problem_responses_use_problem_media_type(client) -> None:
     schema = client.app.openapi()
     login_401 = schema["paths"]["/api/v1/auth/login"]["post"]["responses"]["401"]
@@ -62,7 +44,7 @@ def test_openapi_problem_responses_use_problem_media_type(client) -> None:
 
 
 def test_list_competitions(client) -> None:
-    response = client.get("/api/competitions")
+    response = client.get("/api/v1/competitions")
     data, meta = _assert_success(response, status_code=200)
     _ = meta
 
@@ -79,7 +61,7 @@ def test_list_competitions(client) -> None:
 
 
 def test_competition_detail_status(client) -> None:
-    response = client.get("/api/competitions/titanic-survival")
+    response = client.get("/api/v1/competitions/titanic-survival")
     data, _ = _assert_success(response, status_code=200)
     assert data["status"] == "active"
     assert data["competition_tier"] == "public"
@@ -91,7 +73,7 @@ def test_competition_detail_status(client) -> None:
 
 
 def test_competition_detail_missing_returns_problem_404(client) -> None:
-    response = client.get("/api/competitions/does-not-exist")
+    response = client.get("/api/v1/competitions/does-not-exist")
     payload = _assert_problem(
         response,
         status_code=404,
@@ -101,7 +83,7 @@ def test_competition_detail_missing_returns_problem_404(client) -> None:
 
 
 def test_dataset_missing_returns_problem_404(client) -> None:
-    response = client.get("/api/datasets/missing-dataset")
+    response = client.get("/api/v1/datasets/missing-dataset")
     payload = _assert_problem(
         response,
         status_code=404,
@@ -113,7 +95,7 @@ def test_dataset_missing_returns_problem_404(client) -> None:
 def test_submit_and_score_titanic(client, auth_tokens) -> None:
     csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
     response = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -124,7 +106,7 @@ def test_submit_and_score_titanic(client, auth_tokens) -> None:
     assert data["submission"]["official_score"]["metric_version"] == "accuracy-v1"
     assert data["remaining_today"] == 0
 
-    leaderboard = client.get("/api/competitions/titanic-survival/leaderboard")
+    leaderboard = client.get("/api/v1/competitions/titanic-survival/leaderboard")
     leaderboard_data, _ = _assert_success(leaderboard, status_code=200)
     entries = leaderboard_data["entries"]
     assert len(entries) == 1
@@ -135,14 +117,14 @@ def test_submit_and_score_titanic(client, auth_tokens) -> None:
 def test_submission_cap_enforced(client, auth_tokens) -> None:
     csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
     first = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
     assert first.status_code == 201
 
     second = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds2.csv", csv_payload, "text/csv")},
     )
@@ -157,7 +139,7 @@ def test_submission_cap_enforced(client, auth_tokens) -> None:
 def test_invalid_schema_rejected(client, auth_tokens) -> None:
     invalid_csv = "PassengerId,WrongColumn\n892,0\n"
     response = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("invalid.csv", invalid_csv, "text/csv")},
     )
@@ -180,20 +162,20 @@ def test_leaderboard_respects_higher_is_better_flag(client, db_engine, auth_toke
     worst_csv = "PassengerId,Survived\n892,1\n893,0\n894,1\n"
 
     first = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("high.csv", perfect_csv, "text/csv")},
     )
     assert first.status_code == 201
 
     second = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_B),
         files={"file": ("low.csv", worst_csv, "text/csv")},
     )
     assert second.status_code == 201
 
-    leaderboard = client.get("/api/competitions/titanic-survival/leaderboard")
+    leaderboard = client.get("/api/v1/competitions/titanic-survival/leaderboard")
     leaderboard_data, _ = _assert_success(leaderboard, status_code=200)
     entries = leaderboard_data["entries"]
 
@@ -205,7 +187,7 @@ def test_leaderboard_respects_higher_is_better_flag(client, db_engine, auth_toke
 
 
 def test_leaderboard_rejects_invalid_pagination(client) -> None:
-    invalid_limit = client.get("/api/competitions/titanic-survival/leaderboard?limit=0")
+    invalid_limit = client.get("/api/v1/competitions/titanic-survival/leaderboard?limit=0")
     limit_payload = _assert_problem(
         invalid_limit,
         status_code=400,
@@ -213,7 +195,7 @@ def test_leaderboard_rejects_invalid_pagination(client) -> None:
     )
     assert "between 1 and 500" in limit_payload["detail"]
 
-    invalid_cursor = client.get("/api/competitions/titanic-survival/leaderboard?cursor=not-a-cursor")
+    invalid_cursor = client.get("/api/v1/competitions/titanic-survival/leaderboard?cursor=not-a-cursor")
     cursor_payload = _assert_problem(
         invalid_cursor,
         status_code=400,
@@ -227,21 +209,21 @@ def test_list_my_submissions_returns_desc_created_order(client, auth_tokens) -> 
     second_csv = "image_id,label\n0,42\n1,9\n2,99\n"
 
     first = client.post(
-        "/api/competitions/cifar-100-classification/submissions",
+        "/api/v1/competitions/cifar-100-classification/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("first.csv", first_csv, "text/csv")},
     )
     assert first.status_code == 201
 
     second = client.post(
-        "/api/competitions/cifar-100-classification/submissions",
+        "/api/v1/competitions/cifar-100-classification/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("second.csv", second_csv, "text/csv")},
     )
     assert second.status_code == 201
 
     response = client.get(
-        "/api/competitions/cifar-100-classification/submissions/me",
+        "/api/v1/competitions/cifar-100-classification/submissions/me",
         headers=_auth_headers(auth_tokens, USER_A),
     )
     data, meta = _assert_success(response, status_code=200)
@@ -273,7 +255,7 @@ def test_submission_internal_failure_returns_problem_500(client, monkeypatch, au
 
     csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
     response = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -286,7 +268,7 @@ def test_submission_internal_failure_returns_problem_500(client, monkeypatch, au
     assert payload["detail"] == "An internal error occurred while processing the submission."
 
     submissions = client.get(
-        "/api/competitions/titanic-survival/submissions/me",
+        "/api/v1/competitions/titanic-survival/submissions/me",
         headers=_auth_headers(auth_tokens, USER_A),
     )
     data, _ = _assert_success(submissions, status_code=200)
@@ -296,19 +278,19 @@ def test_submission_internal_failure_returns_problem_500(client, monkeypatch, au
 
 
 def test_me_requires_auth(client) -> None:
-    response = client.get("/api/me")
+    response = client.get("/api/v1/me")
     _assert_problem(response, status_code=401, type_suffix="http/401")
 
 
 def test_me_rejects_legacy_header_auth(client) -> None:
-    response = client.get("/api/me", headers={"X-User-Id": USER_A})
+    response = client.get("/api/v1/me", headers={"X-User-Id": USER_A})
     _assert_problem(response, status_code=401, type_suffix="http/401")
 
 
 def test_submission_rejects_disallowed_origin(client, auth_tokens) -> None:
     csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
     response = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A, {"Origin": "https://evil.example"}),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -323,7 +305,7 @@ def test_submission_rejects_disallowed_origin(client, auth_tokens) -> None:
 def test_admin_score_rejects_disallowed_origin(client, auth_tokens) -> None:
     csv_payload = "PassengerId,Survived\n892,0\n893,1\n894,0\n"
     created = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -332,7 +314,7 @@ def test_admin_score_rejects_disallowed_origin(client, auth_tokens) -> None:
     submission_id = created_data["submission"]["id"]
 
     disallowed = client.post(
-        f"/api/admin/submissions/{submission_id}/score",
+        f"/api/v1/admin/submissions/{submission_id}/score",
         headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": "https://evil.example"}),
     )
     payload = _assert_problem(
@@ -343,7 +325,7 @@ def test_admin_score_rejects_disallowed_origin(client, auth_tokens) -> None:
     assert payload["detail"] == "Request origin is not allowed."
 
     allowed = client.post(
-        f"/api/admin/submissions/{submission_id}/score",
+        f"/api/v1/admin/submissions/{submission_id}/score",
         headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": "http://localhost:3000"}),
     )
     data, _ = _assert_success(allowed, status_code=200)
@@ -353,7 +335,7 @@ def test_admin_score_rejects_disallowed_origin(client, auth_tokens) -> None:
 def test_admin_score_missing_submission_returns_problem_404(client, auth_tokens) -> None:
     missing_submission_id = "00000000-0000-0000-0000-00000000aaaa"
     response = client.post(
-        f"/api/admin/submissions/{missing_submission_id}/score",
+        f"/api/v1/admin/submissions/{missing_submission_id}/score",
         headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": "http://localhost:3000"}),
     )
     payload = _assert_problem(
@@ -367,7 +349,7 @@ def test_admin_score_missing_submission_returns_problem_404(client, auth_tokens)
 def test_admin_score_requires_admin_role(client, auth_tokens) -> None:
     missing_submission_id = "00000000-0000-0000-0000-00000000aaaa"
     response = client.post(
-        f"/api/admin/submissions/{missing_submission_id}/score",
+        f"/api/v1/admin/submissions/{missing_submission_id}/score",
         headers=_auth_headers(auth_tokens, USER_A, {"Origin": "http://localhost:3000"}),
     )
     _assert_problem(response, status_code=403, type_suffix="competitions/admin-access-denied")
@@ -383,7 +365,7 @@ def test_submission_upload_size_limit_returns_structured_422(client, test_settin
 
     csv_payload = "PassengerId,Survived\n892,0\n"
     response = client.post(
-        "/api/competitions/titanic-survival/submissions",
+        "/api/v1/competitions/titanic-survival/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -404,7 +386,7 @@ def test_submission_upload_size_limit_returns_structured_422(client, test_settin
 
 def test_signup_login_logout_cookie_flow(client) -> None:
     signup = client.post(
-        "/api/auth/signup",
+        "/api/v1/auth/signup",
         json={"email": "dev@example.com", "password": "sufficiently-strong"},
         headers={"Origin": "http://localhost:3000"},
     )
@@ -412,32 +394,32 @@ def test_signup_login_logout_cookie_flow(client) -> None:
     assert user["email"] == "dev@example.com"
     assert user["role"] == "user"
 
-    me = client.get("/api/me")
+    me = client.get("/api/v1/me")
     me_data, _ = _assert_success(me, status_code=200)
     assert me_data["user_id"] == user["user_id"]
 
-    logout = client.post("/api/auth/logout", headers={"Origin": "http://localhost:3000"})
+    logout = client.post("/api/v1/auth/logout", headers={"Origin": "http://localhost:3000"})
     logout_data, _ = _assert_success(logout, status_code=200)
     assert logout_data["message"] == "Signed out."
 
-    me_after_logout = client.get("/api/me")
+    me_after_logout = client.get("/api/v1/me")
     _assert_problem(me_after_logout, status_code=401, type_suffix="http/401")
 
     login = client.post(
-        "/api/auth/login",
+        "/api/v1/auth/login",
         json={"email": "dev@example.com", "password": "sufficiently-strong"},
         headers={"Origin": "http://localhost:3000"},
     )
     _assert_success(login, status_code=200)
 
-    me_after_login = client.get("/api/me")
+    me_after_login = client.get("/api/v1/me")
     me_after_login_data, _ = _assert_success(me_after_login, status_code=200)
     assert me_after_login_data["email"] == "dev@example.com"
 
 
 def test_session_proxy_requires_auth(client) -> None:
     response = client.get(
-        "/api/auth/session-proxy",
+        "/api/v1/auth/session-proxy",
         headers={"Host": "s-abc12345.medforge.example.com"},
     )
     _assert_problem(response, status_code=401, type_suffix="http/401")
@@ -445,7 +427,7 @@ def test_session_proxy_requires_auth(client) -> None:
 
 def test_session_proxy_returns_404_for_invalid_host(client, auth_tokens) -> None:
     response = client.get(
-        "/api/auth/session-proxy",
+        "/api/v1/auth/session-proxy",
         headers=_auth_headers(auth_tokens, USER_A, {"Host": "invalid.medforge.example.com"}),
     )
     _assert_problem(response, status_code=404, type_suffix="http/404")
@@ -471,13 +453,13 @@ def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens
         session.commit()
 
     unauthorized = client.get(
-        "/api/auth/session-proxy",
+        "/api/v1/auth/session-proxy",
         headers=_auth_headers(auth_tokens, USER_B, {"Host": "s-abc12345.medforge.example.com"}),
     )
     _assert_problem(unauthorized, status_code=403, type_suffix="http/403")
 
     authorized = client.get(
-        "/api/auth/session-proxy",
+        "/api/v1/auth/session-proxy",
         headers=_auth_headers(
             auth_tokens,
             USER_A,
@@ -497,7 +479,7 @@ def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens
         session.commit()
 
     stopped = client.get(
-        "/api/auth/session-proxy",
+        "/api/v1/auth/session-proxy",
         headers=_auth_headers(auth_tokens, USER_A, {"Host": "s-abc12345.medforge.example.com"}),
     )
     _assert_problem(stopped, status_code=404, type_suffix="http/404")
@@ -505,7 +487,7 @@ def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens
 
 def test_session_create_private_returns_501(client, auth_tokens) -> None:
     response = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "private"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -515,7 +497,7 @@ def test_session_create_private_returns_501(client, auth_tokens) -> None:
 
 def test_session_create_uppercase_tier_rejected(client, auth_tokens) -> None:
     response = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "PUBLIC"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -523,13 +505,13 @@ def test_session_create_uppercase_tier_rejected(client, auth_tokens) -> None:
 
 
 def test_session_create_requires_auth(client) -> None:
-    response = client.post("/api/sessions", json={"tier": "public"})
+    response = client.post("/api/v1/sessions", json={"tier": "public"})
     _assert_problem(response, status_code=401, type_suffix="http/401")
 
 
 def test_session_create_public_returns_running(client, auth_tokens) -> None:
     response = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -543,14 +525,14 @@ def test_session_create_public_returns_running(client, auth_tokens) -> None:
 
 def test_session_create_enforces_user_limit(client, auth_tokens) -> None:
     first = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
     assert first.status_code == 201
 
     second = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -568,7 +550,7 @@ def test_session_create_exhausts_gpu_capacity(client, db_engine, auth_tokens) ->
 
     statuses = [
         client.post(
-            "/api/sessions",
+            "/api/v1/sessions",
             json={"tier": "public"},
             headers=_auth_headers(auth_tokens, USER_A),
         ).status_code
@@ -580,7 +562,7 @@ def test_session_create_exhausts_gpu_capacity(client, db_engine, auth_tokens) ->
 
 def test_session_stop_owner_marks_stopping_and_is_idempotent(client, auth_tokens) -> None:
     created = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -589,20 +571,20 @@ def test_session_stop_owner_marks_stopping_and_is_idempotent(client, auth_tokens
     session_id = created_data["session"]["id"]
 
     stopped = client.post(
-        f"/api/sessions/{session_id}/stop",
+        f"/api/v1/sessions/{session_id}/stop",
         headers=_auth_headers(auth_tokens, USER_A),
     )
     stopped_data, _ = _assert_success(stopped, status_code=202)
     assert stopped_data["message"] == "Session stop requested."
 
     repeated = client.post(
-        f"/api/sessions/{session_id}/stop",
+        f"/api/v1/sessions/{session_id}/stop",
         headers=_auth_headers(auth_tokens, USER_A),
     )
     repeated_data, _ = _assert_success(repeated, status_code=202)
     assert repeated_data["message"] == "Session stop requested."
 
-    current = client.get("/api/sessions/current", headers=_auth_headers(auth_tokens, USER_A))
+    current = client.get("/api/v1/sessions/current", headers=_auth_headers(auth_tokens, USER_A))
     current_data, _ = _assert_success(current, status_code=200)
     assert current_data["session"] is not None
     assert current_data["session"]["status"] == "stopping"
@@ -610,7 +592,7 @@ def test_session_stop_owner_marks_stopping_and_is_idempotent(client, auth_tokens
 
 def test_session_stop_forbidden_for_other_user(client, auth_tokens) -> None:
     created = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -619,7 +601,7 @@ def test_session_stop_forbidden_for_other_user(client, auth_tokens) -> None:
     session_id = created_data["session"]["id"]
 
     denied = client.post(
-        f"/api/sessions/{session_id}/stop",
+        f"/api/v1/sessions/{session_id}/stop",
         headers=_auth_headers(auth_tokens, USER_B),
     )
     _assert_problem(denied, status_code=403, type_suffix="http/403")
@@ -627,7 +609,7 @@ def test_session_stop_forbidden_for_other_user(client, auth_tokens) -> None:
 
 def test_session_stop_terminal_row_returns_current_state(client, db_engine, auth_tokens) -> None:
     created = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -642,7 +624,7 @@ def test_session_stop_terminal_row_returns_current_state(client, db_engine, auth
         session.commit()
 
     response = client.post(
-        f"/api/sessions/{session_id}/stop",
+        f"/api/v1/sessions/{session_id}/stop",
         headers=_auth_headers(auth_tokens, USER_A),
     )
     payload, _ = _assert_success(response, status_code=202)
@@ -665,7 +647,7 @@ def test_session_create_runtime_failure_marks_error(client, db_engine, monkeypat
     )
 
     response = client.post(
-        "/api/sessions",
+        "/api/v1/sessions",
         json={"tier": "public"},
         headers=_auth_headers(auth_tokens, USER_A),
     )
@@ -690,7 +672,7 @@ def test_submit_and_score_rsna_detection(client, auth_tokens) -> None:
         "p3,0.90,50.0,60.0,150.0,160.0\n"
     )
     response = client.post(
-        "/api/competitions/rsna-pneumonia-detection/submissions",
+        "/api/v1/competitions/rsna-pneumonia-detection/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -702,7 +684,7 @@ def test_submit_and_score_rsna_detection(client, auth_tokens) -> None:
 def test_submit_and_score_cifar100(client, auth_tokens) -> None:
     csv_payload = "image_id,label\n0,42\n1,7\n2,99\n"
     response = client.post(
-        "/api/competitions/cifar-100-classification/submissions",
+        "/api/v1/competitions/cifar-100-classification/submissions",
         headers=_auth_headers(auth_tokens, USER_A),
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
@@ -711,7 +693,7 @@ def test_submit_and_score_cifar100(client, auth_tokens) -> None:
     assert data["submission"]["score_status"] == "scored"
     assert data["submission"]["official_score"]["primary_score"] == 1.0
 
-    leaderboard = client.get("/api/competitions/cifar-100-classification/leaderboard")
+    leaderboard = client.get("/api/v1/competitions/cifar-100-classification/leaderboard")
     leaderboard_data, _ = _assert_success(leaderboard, status_code=200)
     entries = leaderboard_data["entries"]
     assert len(entries) == 1

@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 #
-# Manual host validation runner for Gate 5/6 checks.
+# Manual host validation runner for Phase 4 routing/isolation/e2e checks.
 # Starts a local API process in docker runtime mode, performs create/stop and
 # routing/isolation checks, and writes evidence to a markdown file.
 #
 # Usage:
-#   bash ops/host/validate-gate56.sh
-#   bash ops/host/validate-gate56.sh --with-browser
+#   bash ops/host/validate-phase4-routing-e2e.sh
+#   bash ops/host/validate-phase4-routing-e2e.sh --with-browser
+#   bash ops/host/validate-phase4-routing-e2e.sh --core-only
 #
 # Optional env:
 #   API_PORT=8000
 #   PACK_IMAGE=medforge-pack-default:local
-#   EVIDENCE_FILE=docs/host-validation-$(date +%F).md
-#   DB_PATH=apps/api/gate-evidence.db
+#   EVIDENCE_FILE=docs/evidence/<date>/phase4-routing-e2e-<timestamp>.md
+#   DB_PATH=apps/api/phase4-evidence.db
 #   BROWSER_DOMAIN=localtest.me
 #   CADDY_PORT=18080
 #   CADDY_IMAGE=caddy:2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
@@ -23,16 +24,20 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PHASE_ID="phase4-routing-e2e"
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 API_PORT="${API_PORT:-8000}"
 API_URL="http://127.0.0.1:${API_PORT}"
 REQUEST_API_URL="${API_URL}"
 PACK_IMAGE="${PACK_IMAGE:-medforge-pack-default:local}"
 PACK_IMAGE_RESOLVED=""
-DB_PATH="${DB_PATH:-${ROOT_DIR}/apps/api/gate-evidence.db}"
-EVIDENCE_FILE="${EVIDENCE_FILE:-${ROOT_DIR}/docs/host-validation-$(date +%F).md}"
-API_LOG="${ROOT_DIR}/apps/api/.gate56-api.log"
+DB_PATH="${DB_PATH:-${ROOT_DIR}/apps/api/phase4-evidence.db}"
+EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
+EVIDENCE_FILE="${EVIDENCE_FILE:-${EVIDENCE_DIR}/${PHASE_ID}-${RUN_ID}.md}"
+API_LOG="${ROOT_DIR}/apps/api/.phase4-api.log"
 
 WITH_BROWSER=false
+CORE_ONLY=false
 BROWSER_DOMAIN="${BROWSER_DOMAIN:-localtest.me}"
 CADDY_PORT="${CADDY_PORT:-18080}"
 WEB_PORT="${WEB_PORT:-3000}"
@@ -40,15 +45,15 @@ BROWSER_BASE_URL="${BROWSER_BASE_URL:-http://medforge.${BROWSER_DOMAIN}:${CADDY_
 E2E_USER_EMAIL="${E2E_USER_EMAIL:-e2e-$(date +%s)@medforge.test}"
 E2E_USER_PASSWORD="${E2E_USER_PASSWORD:-Password123!}"
 E2E_RESULT_FILE="${E2E_RESULT_FILE:-/tmp/medforge-e2e-result.json}"
-WEB_LOG="${ROOT_DIR}/apps/web/.gate56-web.log"
-CADDY_LOG="${ROOT_DIR}/ops/host/.gate56-caddy.log"
-CADDY_CONTAINER="medforge-gate56-caddy"
+WEB_LOG="${ROOT_DIR}/apps/web/.phase4-web.log"
+CADDY_LOG="${ROOT_DIR}/ops/host/.phase4-caddy.log"
+CADDY_CONTAINER="medforge-phase4-caddy"
 CADDY_IMAGE="${CADDY_IMAGE:-caddy:2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d}"
 CADDYFILE=""
 CADDY_STARTED=false
 
-AUTH_USER_A_EMAIL="${AUTH_USER_A_EMAIL:-gate-user-a@medforge.test}"
-AUTH_USER_B_EMAIL="${AUTH_USER_B_EMAIL:-gate-user-b@medforge.test}"
+AUTH_USER_A_EMAIL="${AUTH_USER_A_EMAIL:-phase-user-a@medforge.test}"
+AUTH_USER_B_EMAIL="${AUTH_USER_B_EMAIL:-phase-user-b@medforge.test}"
 AUTH_USER_PASSWORD="${AUTH_USER_PASSWORD:-Password123!}"
 
 API_PID=""
@@ -64,10 +69,11 @@ AUTH_COOKIE_B=""
 
 usage() {
   cat <<'USAGE'
-Usage: bash ops/host/validate-gate56.sh [--with-browser]
+Usage: bash ops/host/validate-phase4-routing-e2e.sh [--with-browser] [--core-only]
 
 Options:
   --with-browser   Run Playwright browser smoke through a local Caddy wildcard proxy.
+  --core-only      Run runtime create/stop/snapshot checks only (skip routing/isolation/browser).
   -h, --help       Show this help message.
 USAGE
 }
@@ -77,6 +83,9 @@ parse_args() {
     case "$1" in
       --with-browser)
         WITH_BROWSER=true
+        ;;
+      --core-only)
+        CORE_ONLY=true
         ;;
       -h|--help)
         usage
@@ -90,6 +99,11 @@ parse_args() {
     esac
     shift
   done
+
+  if [ "${WITH_BROWSER}" = true ] && [ "${CORE_ONLY}" = true ]; then
+    echo "ERROR: --with-browser cannot be used with --core-only."
+    exit 1
+  fi
 }
 
 require_cmd() {
@@ -245,8 +259,8 @@ ensure_cookie_session() {
   local label="$4"
 
   local signup_code
-  signup_code="$(curl -sS -o /tmp/g56_signup_"${label}".out -w '%{http_code}' \
-    -X POST "${REQUEST_API_URL}/api/auth/signup" \
+  signup_code="$(curl -sS -o /tmp/phase4_signup_"${label}".out -w '%{http_code}' \
+    -X POST "${REQUEST_API_URL}/api/v1/auth/signup" \
     -H 'content-type: application/json' \
     -H 'Origin: http://localhost:3000' \
     -c "${jar}" -b "${jar}" \
@@ -258,13 +272,13 @@ ensure_cookie_session() {
 
   if [ "${signup_code}" != "409" ]; then
     echo "ERROR: failed to sign up ${label} user (code=${signup_code})"
-    cat /tmp/g56_signup_"${label}".out || true
+    cat /tmp/phase4_signup_"${label}".out || true
     exit 1
   fi
 
   local login_code
-  login_code="$(curl -sS -o /tmp/g56_login_"${label}".out -w '%{http_code}' \
-    -X POST "${REQUEST_API_URL}/api/auth/login" \
+  login_code="$(curl -sS -o /tmp/phase4_login_"${label}".out -w '%{http_code}' \
+    -X POST "${REQUEST_API_URL}/api/v1/auth/login" \
     -H 'content-type: application/json' \
     -H 'Origin: http://localhost:3000' \
     -c "${jar}" -b "${jar}" \
@@ -272,7 +286,7 @@ ensure_cookie_session() {
 
   if [ "${login_code}" != "200" ]; then
     echo "ERROR: failed to log in ${label} user (code=${login_code})"
-    cat /tmp/g56_login_"${label}".out || true
+    cat /tmp/phase4_login_"${label}".out || true
     exit 1
   fi
 }
@@ -371,14 +385,14 @@ start_local_caddy() {
     return
   fi
 
-  CADDYFILE="$(mktemp /tmp/medforge-gate56-caddy.XXXXXX)"
+  CADDYFILE="$(mktemp /tmp/medforge-phase4-caddy.XXXXXX)"
   cat >"${CADDYFILE}" <<CADDY
 {
   auto_https off
 }
 
 http://medforge.${BROWSER_DOMAIN}:${CADDY_PORT} {
-  @api path /api/*
+  @api path /api/v1/*
   handle @api {
     reverse_proxy host.docker.internal:${API_PORT}
   }
@@ -422,11 +436,13 @@ CADDY
     docker rm -f "${CADDY_CONTAINER}" >/dev/null 2>&1
   fi
 
+  local sessions_bridge_ip="${PUBLIC_SESSIONS_BRIDGE_IP:-172.30.0.1}"
+
   rm -f "${CADDY_LOG}"
   docker run -d --rm \
     --name "${CADDY_CONTAINER}" \
     --network medforge-public-sessions \
-    --add-host host.docker.internal:host-gateway \
+    --add-host host.docker.internal:${sessions_bridge_ip} \
     -p "${CADDY_PORT}:${CADDY_PORT}" \
     -v "${CADDYFILE}:/etc/caddy/Caddyfile:ro" \
     "${CADDY_IMAGE}" >/dev/null
@@ -437,7 +453,7 @@ CADDY
 }
 
 run_browser_smoke() {
-  section "Gate 5/6 Browser + Websocket"
+  section "Browser + Websocket Lane"
 
   require_cmd node
   require_cmd npm
@@ -529,16 +545,21 @@ main() {
   resolve_pack_image
   cleanup_stale_runtime
 
+  mkdir -p "${EVIDENCE_DIR}"
+
   {
-    echo "## Host Validation Evidence ($(date +%F))"
+    echo "## Phase 4 Routing and End-to-End Evidence ($(date -u +%F))"
     echo ""
-    echo "Generated by: \`ops/host/validate-gate56.sh\`"
+    echo "Generated by: \`ops/host/validate-phase4-routing-e2e.sh\`"
     echo ""
     echo "Runtime:"
+    echo "- phase id: \`${PHASE_ID}\`"
+    echo "- run id: \`${RUN_ID}\`"
     echo "- API URL: \`${API_URL}\`"
     echo "- Request API URL: \`${REQUEST_API_URL}\`"
     echo "- Pack image: \`${PACK_IMAGE_RESOLVED}\`"
     echo "- DB path: \`${DB_PATH}\`"
+    echo "- Core-only mode: \`${CORE_ONLY}\`"
     echo "- Browser lane enabled: \`${WITH_BROWSER}\`"
     if [ "${WITH_BROWSER}" = true ]; then
       echo "- Browser base URL: \`${BROWSER_BASE_URL}\`"
@@ -552,8 +573,8 @@ main() {
     start_local_caddy
     REQUEST_API_URL="http://api.medforge.${BROWSER_DOMAIN}:${CADDY_PORT}"
   fi
-  COOKIE_JAR_A="$(mktemp /tmp/medforge-g56-cookie-a.XXXXXX)"
-  COOKIE_JAR_B="$(mktemp /tmp/medforge-g56-cookie-b.XXXXXX)"
+  COOKIE_JAR_A="$(mktemp /tmp/medforge-phase4-cookie-a.XXXXXX)"
+  COOKIE_JAR_B="$(mktemp /tmp/medforge-phase4-cookie-b.XXXXXX)"
   ensure_cookie_session "${AUTH_USER_A_EMAIL}" "${AUTH_USER_PASSWORD}" "${COOKIE_JAR_A}" "user_a"
   ensure_cookie_session "${AUTH_USER_B_EMAIL}" "${AUTH_USER_PASSWORD}" "${COOKIE_JAR_B}" "user_b"
   AUTH_COOKIE_A="$(cookie_token_from_jar "${COOKIE_JAR_A}")"
@@ -583,45 +604,47 @@ main() {
   local host_a
   host_a="s-${SLUG_A}.medforge.${BROWSER_DOMAIN}"
 
-  section "Gate 5 Auth Matrix"
   local code
-  code="$(curl -sS -o /tmp/g5_unauth.out -w '%{http_code}' "${API_URL}/api/v1/auth/session-proxy" -H "Host: ${host_a}")"
-  assert_eq "${code}" "401" "unauthenticated session-proxy"
-  record "- unauthenticated: \`${code}\` body=\`$(cat /tmp/g5_unauth.out)\`"
+  if [ "${CORE_ONLY}" = false ]; then
+    section "Routing Authorization Matrix"
+    code="$(curl -sS -o /tmp/g5_unauth.out -w '%{http_code}' "${API_URL}/api/v1/auth/session-proxy" -H "Host: ${host_a}")"
+    assert_eq "${code}" "401" "unauthenticated session-proxy"
+    record "- unauthenticated: \`${code}\` body=\`$(cat /tmp/g5_unauth.out)\`"
 
-  code="$(curl -sS -o /tmp/g5_nonowner.out -w '%{http_code}' "${API_URL}/api/v1/auth/session-proxy" -H "Host: ${host_a}" -H "Cookie: medforge_session=${AUTH_COOKIE_B}")"
-  assert_eq "${code}" "403" "non-owner session-proxy"
-  record "- non-owner: \`${code}\` body=\`$(cat /tmp/g5_nonowner.out)\`"
+    code="$(curl -sS -o /tmp/g5_nonowner.out -w '%{http_code}' "${API_URL}/api/v1/auth/session-proxy" -H "Host: ${host_a}" -H "Cookie: medforge_session=${AUTH_COOKIE_B}")"
+    assert_eq "${code}" "403" "non-owner session-proxy"
+    record "- non-owner: \`${code}\` body=\`$(cat /tmp/g5_nonowner.out)\`"
 
-  local headers
-  headers="$(curl -sS -D - -o /tmp/g5_owner.out "${API_URL}/api/v1/auth/session-proxy" -H "Host: ${host_a}" -H 'X-Upstream: evil-target:8080' -H "Cookie: medforge_session=${AUTH_COOKIE_A}")"
-  code="$(printf '%s\n' "${headers}" | awk 'NR==1{print $2}')"
-  assert_eq "${code}" "200" "owner session-proxy"
-  local upstream
-  upstream="$(printf '%s\n' "${headers}" | awk 'tolower($1)=="x-upstream:"{print $2}' | tr -d '\r')"
-  if [ -z "${upstream}" ]; then
-    echo "ERROR: missing X-Upstream response header"
-    exit 1
+    local headers
+    headers="$(curl -sS -D - -o /tmp/g5_owner.out "${API_URL}/api/v1/auth/session-proxy" -H "Host: ${host_a}" -H 'X-Upstream: evil-target:8080' -H "Cookie: medforge_session=${AUTH_COOKIE_A}")"
+    code="$(printf '%s\n' "${headers}" | awk 'NR==1{print $2}')"
+    assert_eq "${code}" "200" "owner session-proxy"
+    local upstream
+    upstream="$(printf '%s\n' "${headers}" | awk 'tolower($1)=="x-upstream:"{print $2}' | tr -d '\r')"
+    if [ -z "${upstream}" ]; then
+      echo "ERROR: missing X-Upstream response header"
+      exit 1
+    fi
+    record "- owner spoof attempt: \`${code}\` x-upstream=\`${upstream}\`"
+
+    section "East-West Isolation"
+    local firewall_out
+    firewall_out="$(sudo bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
+    record "- firewall: \`${firewall_out}\`"
+
+    set +e
+    docker exec "mf-session-${SLUG_B}" curl -sS --max-time 3 "http://mf-session-${SLUG_A}:8080" >/tmp/g5_iso.out 2>/tmp/g5_iso.err
+    local iso_rc=$?
+    set -e
+    if [ "${iso_rc}" -eq 0 ]; then
+      echo "ERROR: isolation check unexpectedly succeeded."
+      echo "stdout: $(cat /tmp/g5_iso.out)"
+      exit 1
+    fi
+    record "- session B -> session A :8080 blocked (exit=\`${iso_rc}\`, stderr=\`$(cat /tmp/g5_iso.err)\`)"
   fi
-  record "- owner spoof attempt: \`${code}\` x-upstream=\`${upstream}\`"
 
-  section "Gate 5 Isolation"
-  local firewall_out
-  firewall_out="$(sudo bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
-  record "- firewall: \`${firewall_out}\`"
-
-  set +e
-  docker exec "mf-session-${SLUG_B}" curl -sS --max-time 3 "http://mf-session-${SLUG_A}:8080" >/tmp/g5_iso.out 2>/tmp/g5_iso.err
-  local iso_rc=$?
-  set -e
-  if [ "${iso_rc}" -eq 0 ]; then
-    echo "ERROR: isolation check unexpectedly succeeded."
-    echo "stdout: $(cat /tmp/g5_iso.out)"
-    exit 1
-  fi
-  record "- session B -> session A :8080 blocked (exit=\`${iso_rc}\`, stderr=\`$(cat /tmp/g5_iso.err)\`)"
-
-  section "Gate 6 End-to-End Core"
+  section "End-to-End Core Runtime"
   local gpu_line
   gpu_line="$(docker exec "mf-session-${SLUG_A}" nvidia-smi --query-gpu=name --format=csv,noheader | head -n1)"
   if [[ "${gpu_line}" != *NVIDIA* ]]; then
@@ -640,8 +663,10 @@ main() {
   assert_eq "$(json_field "${stop_a}" "data['data']['message']")" "Session stop requested." "stop A message"
   record "- stop A: \`${stop_a}\`"
 
-  code="$(wait_for_session_proxy_not_running "${host_a}" "${AUTH_COOKIE_A}")"
-  record "- stopped host check: \`${code}\` body=\`$(cat /tmp/g5_stopped.out)\`"
+  if [ "${CORE_ONLY}" = false ]; then
+    code="$(wait_for_session_proxy_not_running "${host_a}" "${AUTH_COOKIE_A}")"
+    record "- stopped host check: \`${code}\` body=\`$(cat /tmp/g5_stopped.out)\`"
+  fi
 
   local snapshot
   snapshot="$(wait_for_stop_snapshot "${SESSION_ID_A}")"
@@ -658,6 +683,10 @@ main() {
 
   if [ "${WITH_BROWSER}" = true ]; then
     run_browser_smoke
+  elif [ "${CORE_ONLY}" = true ]; then
+    section "Skipped Lanes"
+    record "- Routing matrix and isolation checks skipped in core-only mode."
+    record "- Browser and websocket lane skipped in core-only mode."
   else
     section "Residual Gaps"
     record "- Caddy wildcard websocket validation is not covered by this script."

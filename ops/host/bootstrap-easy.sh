@@ -249,7 +249,8 @@ main() {
   echo "Next:"
   echo "  1) Edit deploy/compose/.env secrets and domain settings."
   echo "  2) Start stack: docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build"
-  echo "  3) Validate host flow: bash ops/host/validate-gate56.sh"
+  echo "  3) Validate phase flow: bash ops/host/validate-phases-all.sh"
+  echo "     (or run phase 4 only: bash ops/host/validate-phase4-routing-e2e.sh --with-browser)"
 }
 
 main "$@"

@@ -32,7 +32,7 @@ export default function CompetitionSubmitPage(): React.JSX.Element {
 
     setIsSubmitting(true);
     try {
-      const payload = await apiSubmitFile(`/api/competitions/${slug}/submissions`, file);
+      const payload = await apiSubmitFile(`/api/v1/competitions/${slug}/submissions`, file);
       setResult(JSON.stringify(payload, null, 2));
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Submission failed");

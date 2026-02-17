@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const COPY = {
   login: {
-    endpoint: "/api/auth/login",
+    endpoint: "/api/v1/auth/login",
     title: "Login",
     description: "Sign in to your MedForge account",
     submit: "Sign in",
@@ -21,7 +21,7 @@ const COPY = {
     testId: "login",
   },
   signup: {
-    endpoint: "/api/auth/signup",
+    endpoint: "/api/v1/auth/signup",
     title: "Sign up",
     description: "Create a new MedForge account",
     submit: "Create account",

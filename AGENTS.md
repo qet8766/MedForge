@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`medforge-spec.md` is the top-level source of truth. Use `docs/` for detailed design and delivery docs (`architecture.md`, `build-gates.md`, `implementation-checklist.md`, etc.).
+`medforge-spec.md` is the top-level source of truth. Use `docs/` for detailed design and delivery docs (`architecture.md`, `phase-checking-strategy.md`, `implementation-checklist.md`, etc.).
 Deployment assets live in `deploy/`:
 - `deploy/compose/`: control-plane Compose stack and `.env.example`
 - `deploy/caddy/`: wildcard TLS/routing config
@@ -20,7 +20,8 @@ Primary app code lives in `apps/web` and `apps/api`; supporting specs/docs live 
 - `cp deploy/compose/.env.example deploy/compose/.env`: create local environment file.
 - `sudo bash ops/host/bootstrap-easy.sh`: one-command host bootstrap (NVIDIA runtime, ZFS datasets, bridge firewall settings, local pack build).
 - `bash ops/host/quick-check.sh`: fast local lint/type/test/build pass.
-- `bash ops/host/validate-gate56.sh --with-browser`: run host Gate 5/6 validation (core + browser/websocket lane) and write evidence markdown.
+- `bash ops/host/validate-phase4-routing-e2e.sh --with-browser`: run host Phase 4 validation (routing + isolation + e2e + browser/websocket lane) and write evidence markdown.
+- `bash ops/host/validate-phases-all.sh --with-browser`: run full Phase 0-5 progression and write per-phase evidence artifacts.
 - `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`: build and start control-plane services.
 - `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`: stream key service logs.
 - `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`: install API dependencies used by tests + `quick-check`.
@@ -38,17 +39,17 @@ Use 2-space indentation in YAML/Markdown, and Bash with `set -euo pipefail`. Kee
 - Shell scripts: prefer named functions over long one-liner pipes. Break complex logic into readable steps.
 
 ## Testing Guidelines
-Run `cd apps/api && pytest -q` for backend checks and `cd apps/web && npm run build` for frontend validation. Still validate platform/session behavior against `docs/build-gates.md` with evidence (logs, curl output, screenshots). For ops scripts, run `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n` and `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` when available.
+Run `cd apps/api && pytest -q` for backend checks and `cd apps/web && npm run build` for frontend validation. Still validate platform/session behavior against `docs/phase-checking-strategy.md` with evidence (logs, curl output, screenshots). For ops scripts, run `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n` and `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` when available.
 
 ## Commit & Pull Request Guidelines
 Use clear imperative commits and include issue IDs from `docs/issue-plan.md` when applicable (example: `MF-006 enforce race-safe GPU allocation`). PRs should include:
 - scope summary and linked issue (`MF-###`)
-- affected gate(s) and acceptance checks executed
+- affected phase(s) and acceptance checks executed
 - config/security impact (`.env`, networking, auth headers)
 - UI/routing screenshots when behavior changes
 
 ## Error Handling
-- **No graceful fallbacks**: do not swallow errors with try/catch to show fallback UI. Let errors propagate and show real error messages. If something is broken the user needs to see what failed, not a "something went wrong" placeholder.
+- **No graceful fallbacks**: do not swallow errors with try/catch to show fallback UI. Let errors bubble up and show real error messages. If something is broken the user needs to see what failed, not a "something went wrong" placeholder.
 
 ## Code Hygiene
 - **File splitting**: when a file exceeds ~150 lines, split it into smaller focused files. Always add `@filename` references in the relevant places so readers can trace where code moved.

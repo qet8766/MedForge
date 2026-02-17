@@ -21,7 +21,7 @@ export default async function DatasetDetailPage({
   params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
   const resolvedParams = await params;
-  const dataset = await apiGet<DatasetDetail>(`/api/datasets/${resolvedParams.slug}`);
+  const dataset = await apiGet<DatasetDetail>(`/api/v1/datasets/${resolvedParams.slug}`);
 
   return (
     <div className="max-w-3xl space-y-6">

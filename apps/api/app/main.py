@@ -15,10 +15,8 @@ from app.api_contract import ApiEnvelope, envelope
 from app.config import get_settings
 from app.database import engine, init_db
 from app.http_contract import (
-    apply_legacy_api_deprecation_headers,
     default_problem_responses,
     include_api_routers,
-    is_legacy_api_path,
 )
 from app.problem_details import register_problem_exception_handler
 from app.routers.auth import router as auth_router
@@ -139,8 +137,6 @@ async def request_contract_middleware(request: Request, call_next: RequestRespon
     structlog.contextvars.bind_contextvars(request_id=request_id)
     response = await call_next(request)
     response.headers["X-Request-Id"] = request_id
-    if is_legacy_api_path(request.url.path):
-        apply_legacy_api_deprecation_headers(response, settings=settings)
     return response
 
 

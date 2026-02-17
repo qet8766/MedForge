@@ -229,7 +229,7 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 
 ### Phase 2: Hardening (MF-101 through MF-105)
 
-#### MF-101: Automated Gate Test Suite — Done
+#### MF-101: Automated Phase Validation Test Suite — Done
 
 - `tests/test_concurrency.py` — 8-way parallel session create; assert exactly 7 succeed, 8th returns GPU exhaustion error.
 - `tests/test_poller_sla.py` — Force container states via `RecoveryRuntime`, verify poller detects within configurable interval.
@@ -267,6 +267,6 @@ Purpose: translate the spec into ticket-ready implementation work with explicit 
 All criteria met as of 2026-02-16:
 
 - [x] All Phase 1 tickets (1-10) are implemented.
-- [x] Gate acceptance checks in `docs/build-gates.md` pass.
+- [ ] Phase acceptance checks rerun and accepted under `docs/phase-checking-strategy.md`.
 - [x] No known path leaves a session stuck in an active non-running state.
 - [x] Phase 2 hardening (MF-101 to MF-105) complete: 112 total tests, operational scripts, runbook.

@@ -5,16 +5,16 @@ FastAPI + SQLModel service for competition catalog, submissions, and leaderboard
 Current alpha scope:
 
 - Competition endpoints are implemented.
-- Gate 2 auth foundations are implemented:
-  - `POST /api/auth/signup`
-  - `POST /api/auth/login`
-  - `POST /api/auth/logout`
-  - `GET /api/me` (cookie auth)
-  - `GET /api/auth/session-proxy` (owner/admin + running-session check)
-- Gate 3 alpha lifecycle routes are implemented for PUBLIC sessions:
-  - `POST /api/sessions` (`tier=public` create, `tier=private` returns `501`)
-  - `POST /api/sessions/{id}/stop` (idempotent async stop request; reconciliation performs stop + snapshot terminalization)
-- Gate 4 recovery paths are implemented in API:
+- Phase 2 auth foundations are implemented:
+  - `POST /api/v1/auth/signup`
+  - `POST /api/v1/auth/login`
+  - `POST /api/v1/auth/logout`
+  - `GET /api/v1/me` (cookie auth)
+  - `GET /api/v1/auth/session-proxy` (owner/admin + running-session check)
+- Phase 3 lifecycle routes are implemented for PUBLIC sessions:
+  - `POST /api/v1/sessions` (`tier=public` create, `tier=private` returns `501`)
+  - `POST /api/v1/sessions/{id}/stop` (idempotent async stop request; reconciliation performs stop + snapshot terminalization)
+- Phase 3 recovery paths are implemented in API:
   - startup reconciliation for `starting|running|stopping`
   - periodic poller for active session container-death detection
 

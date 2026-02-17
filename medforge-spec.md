@@ -7,16 +7,16 @@ This file is the big-picture source of truth. Detailed docs are split below, but
 
 ---
 
-## Status Snapshot (2026-02-16)
+## Status Snapshot (2026-02-17)
 
 - Implemented in this repo now:
   - Competition catalog/submission/leaderboard APIs and web pages.
   - Scoring worker + optional auto-score-on-submit path.
-  - Gate 2 auth foundations: `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, and `GET /api/me`.
-  - Session proxy authorization contract (`GET /api/auth/session-proxy`) for owner/admin on running session rows.
-  - Gate 3 alpha lifecycle for PUBLIC: `POST /api/sessions` and `POST /api/sessions/{id}/stop`.
-  - Gate 4 recovery paths: startup reconciliation + periodic poller for active session/container drift.
-  - Host evidence pass for Gate 5/6 checks (auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot-on-stop, wildcard browser routing, websocket activity).
+  - Phase 2 auth foundations: `POST /api/v1/auth/signup`, `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, and `GET /api/v1/me`.
+  - Session proxy authorization contract (`GET /api/v1/auth/session-proxy`) for owner/admin on running session rows.
+  - Phase 3 lifecycle for PUBLIC: `POST /api/v1/sessions` and `POST /api/v1/sessions/{id}/stop`.
+  - Phase 3 recovery paths: startup reconciliation + periodic poller for active session/container drift.
+  - Historical pre-phase evidence was retired from the repo; canonical validation follows `docs/phase-checking-strategy.md`.
 
 ---
 
@@ -38,7 +38,7 @@ This file is the big-picture source of truth. Detailed docs are split below, but
 Implementation note:
 
 - The platform spec targets ZFS for workspace datasets and snapshots.
-- The MedForge repo currently lives on `ext4`; ZFS pool/datasets should be verified/provisioned during Gate 0 for runtime workspace storage.
+- The MedForge repo currently lives on `ext4`; ZFS pool/datasets are verified/provisioned during Phase 0 for runtime workspace storage.
 - `/data` exists on this host but is not part of the current MedForge pathing/spec.
 
 ---
@@ -93,17 +93,17 @@ Detailed doc:
 | `medforge-web` | Next.js frontend |
 | `medforge-api` | FastAPI + session manager |
 | `MariaDB` | System of record |
-| `Caddy` | TLS termination, wildcard routing, auth gateway |
+| `Caddy` | TLS termination, wildcard routing, auth boundary proxy |
 
 ### Data Plane
 
 - One Docker container per session (`mf-session-<slug>`).
-- `code-server` runs with `--auth none`; Caddy/API is the access gate.
+- `code-server` runs with `--auth none`; Caddy/API is the access boundary.
 - Session workspace mount is per-session ZFS dataset, not shared across sessions.
 
 ### Network and Access Model
 
-- `medforge-control`: web/api/db traffic.
+- `medforge-control`: web-to-api-to-db traffic.
 - `medforge-public-sessions`: PUBLIC session containers.
 - `medforge-private-sessions`: placeholder network.
 - Caddy joins control + public sessions networks.
@@ -127,7 +127,7 @@ Detailed doc:
 
 ## 4. Session Lifecycle Snapshot
 
-### Create (`POST /api/sessions`)
+### Create (`POST /api/v1/sessions`)
 
 - Validate auth and input (`tier`, optional `pack_id`).
 - Reject `tier=private` with `501`.
@@ -143,7 +143,7 @@ Detailed doc:
 4. set runtime env (`MEDFORGE_SESSION_ID`, `MEDFORGE_USER_ID`, `MEDFORGE_TIER`, `MEDFORGE_GPU_ID`, `NVIDIA_VISIBLE_DEVICES`, `CUDA_VISIBLE_DEVICES=0`)
 5. finalize as `running` or terminal `error`.
 
-### Stop (`POST /api/sessions/{id}/stop`)
+### Stop (`POST /api/v1/sessions/{id}/stop`)
 
 - Transition to `stopping`.
 - Graceful terminate, then force-kill if required.
@@ -176,7 +176,7 @@ Detailed docs:
 - Legacy header identity fallback (`X-User-Id`) is removed from auth flow.
 - Cookie scope: subdomain-wide for `*.medforge.<domain>`.
 - State-changing endpoints enforce Origin checks.
-- Wildcard session routing uses `GET /api/auth/session-proxy`.
+- Wildcard session routing uses `GET /api/v1/auth/session-proxy`.
 - API returns upstream only for authenticated owner/admin when session is running.
 - Client-provided upstream hints are never trusted.
 - Session-to-session direct access to `:8080` is blocked by firewall policy.
@@ -189,22 +189,20 @@ Detailed doc:
 
 ## 6. Delivery Plan
 
-### Build Gates
+### Validation Phases
 
-| Gate | Outcome |
+| Phase | Outcome |
 | --- | --- |
-| Gate 0 | Host foundation: Docker/NVIDIA/ZFS/DNS/TLS ready |
-| Gate 1 | Compose and DB bootstrap complete |
-| Gate 2 | Auth and forward-auth contract complete |
-| Gate 3 | Session lifecycle (`create`, `stop`, snapshots) complete |
-| Gate 4 | Fault recovery (`poller`, `boot reconcile`) complete |
-| Gate 5 | Wildcard routing + east-west isolation complete |
-| Gate 6 | End-to-end user flow complete |
-| Gate 7 | Permanent competition portal + scoring complete |
+| Phase 0 | Host foundation: Docker/NVIDIA/ZFS/DNS/TLS validation |
+| Phase 1 | Compose and DB bootstrap validation |
+| Phase 2 | Auth and session API contract validation |
+| Phase 3 | Session lifecycle and recovery validation |
+| Phase 4 | Wildcard routing, isolation, and end-to-end validation |
+| Phase 5 | Competition platform and scoring validation |
 
 ### Phased Execution
 
-- Phase 1 (MVP through Gate 7): issues `MF-001` to `MF-019`, estimated `24.0d`.
+- Phase 1 (MVP through Phase 5): issues `MF-001` to `MF-019`, estimated `24.0d`.
 - Phase 2 (hardening): issues `MF-101` to `MF-105`, estimated `7.0d`.
 
 ### Critical Exit Criteria
@@ -218,7 +216,7 @@ Detailed doc:
 
 Detailed docs:
 
-- `@docs/build-gates.md`
+- `@docs/phase-checking-strategy.md`
 - `@docs/implementation-checklist.md`
 - `@docs/issue-plan.md`
 - `@docs/competitions.md`

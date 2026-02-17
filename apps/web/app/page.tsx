@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const competitions = await apiGet<CompetitionSummary[]>("/api/competitions");
+  const competitions = await apiGet<CompetitionSummary[]>("/api/v1/competitions");
 
   return (
     <div className="space-y-8">

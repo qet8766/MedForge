@@ -14,7 +14,7 @@ export default async function CompetitionDetailPage({
   params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
   const resolvedParams = await params;
-  const competition = await apiGet<CompetitionDetail>(`/api/competitions/${resolvedParams.slug}`);
+  const competition = await apiGet<CompetitionDetail>(`/api/v1/competitions/${resolvedParams.slug}`);
 
   return (
     <div className="space-y-6">

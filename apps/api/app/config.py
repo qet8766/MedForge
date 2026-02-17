@@ -131,9 +131,6 @@ class Settings:
     session_mem_reservation: str | None = _env_opt_str("SESSION_MEM_RESERVATION", "8g")
     session_shm_size: str | None = _env_opt_str("SESSION_SHM_SIZE", "4g")
     session_pids_limit: int | None = _env_opt_int("SESSION_PIDS_LIMIT")
-    legacy_api_deprecation_enabled: bool = _env_bool("LEGACY_API_DEPRECATION_ENABLED", "true")
-    legacy_api_sunset: str = _env("LEGACY_API_SUNSET", "Wed, 31 Dec 2026 23:59:59 GMT")
-    legacy_api_deprecation_link: str = _env("LEGACY_API_DEPRECATION_LINK", "/docs/api-deprecations#legacy-api")
 
 
 _SETTINGS: Settings | None = None

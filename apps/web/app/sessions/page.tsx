@@ -39,7 +39,7 @@ export default function SessionsPage(): React.JSX.Element {
 
   const rehydrateCurrentSession = useCallback(async (announce: boolean): Promise<void> => {
     try {
-      const response = await apiGet<SessionCurrentResponse>("/api/sessions/current");
+      const response = await apiGet<SessionCurrentResponse>("/api/v1/sessions/current");
       setCurrentSession(response.session);
       if (!announce) {
         return;
@@ -66,7 +66,7 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleWhoAmI(): Promise<void> {
     setError("");
     try {
-      const me = await apiGet<MeResponse>("/api/me");
+      const me = await apiGet<MeResponse>("/api/v1/me");
       setStatus(`Signed in as ${me.email ?? me.user_id} (${me.role}).`);
       await rehydrateCurrentSession(false);
     } catch (requestError) {
@@ -78,7 +78,7 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleCreateSession(): Promise<void> {
     setError("");
     try {
-      const response = await apiPostJson<SessionCreateResponse>("/api/sessions", { tier: "public" });
+      const response = await apiPostJson<SessionCreateResponse>("/api/v1/sessions", { tier: "public" });
       setStatus(
         `${response.message} Slug: ${response.session.slug}, GPU: ${response.session.gpu_id}, status: ${response.session.status}.`
       );
@@ -96,7 +96,7 @@ export default function SessionsPage(): React.JSX.Element {
     }
 
     try {
-      const response = await apiPostJson<SessionActionResponse>(`/api/sessions/${currentSession.id}/stop`, {});
+      const response = await apiPostJson<SessionActionResponse>(`/api/v1/sessions/${currentSession.id}/stop`, {});
       setStatus(response.message);
       await rehydrateCurrentSession(false);
     } catch (requestError) {
@@ -107,7 +107,7 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleLogout(): Promise<void> {
     setError("");
     try {
-      await apiPostJson<SessionActionResponse>("/api/auth/logout", {});
+      await apiPostJson<SessionActionResponse>("/api/v1/auth/logout", {});
       setStatus("Signed out.");
       setCurrentSession(null);
     } catch (requestError) {
@@ -143,7 +143,7 @@ export default function SessionsPage(): React.JSX.Element {
               Stop Current Session
             </Button>
             <Button variant="secondary" onClick={handleWhoAmI} data-testid="session-whoami">
-              Check /api/me
+              Check /api/v1/me
             </Button>
             <Button variant="ghost" onClick={handleLogout} data-testid="session-logout">
               Sign out

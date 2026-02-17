@@ -2,17 +2,16 @@
 
 Implementation status note (2026-02-16):
 
-- Core Gate 3 alpha flow is implemented for PUBLIC sessions:
+- Core Phase 3 flow is implemented for PUBLIC sessions:
   - `POST /api/v1/sessions` performs allocation + launch and returns running/error terminalization.
   - `POST /api/v1/sessions/{id}/stop` records an async stop request (`202 Accepted`) and is idempotent.
   - `GET /api/v1/sessions/current` returns the caller's most recent active (`starting|running|stopping`) session, or `null`.
-  - Legacy `/api/*` aliases remain active during migration and include deprecation headers.
   - `apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
-- Gate 4 recovery paths are implemented:
+- Phase 3 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
   - active-session poller for `starting|running|stopping` transitions
 - Runtime internals are split into `app/session_runtime/` ports/adapters with DTO-based method contracts (no ORM models in runtime API).
-- Host evidence confirms GPU/session create-stop-snapshot behavior on this machine (`@docs/host-validation-2026-02-16.md`).
+- Historical pre-phase host evidence was retired from the repo; canonical progression uses `@docs/phase-checking-strategy.md`.
 
 ### Packs
 
@@ -24,7 +23,7 @@ Image definition: `@deploy/packs/default/Dockerfile`
 
 Runtime constraints (applied by the session manager when creating the container):
 
-- `--auth none` on code-server (Caddy is the gate).
+- `--auth none` on code-server (Caddy is the access boundary).
 - Non-root user (UID/GID 1000).
 - `cap-drop=ALL`, not privileged, no Docker socket.
 - `security_opt=["no-new-privileges:true"]`

@@ -2,13 +2,12 @@
 
 Implementation status note (2026-02-16):
 
-- Gate 2 auth foundations are implemented in API:
+- Phase 2 auth foundations are implemented in API:
   - cookie-backed signup/login/logout and `/api/v1/me`
   - `/api/v1/auth/session-proxy` owner/admin authorization with running-session checks
-- Gate 4 recovery orchestration is implemented (startup reconciliation + active-session poller).
-- Gate 5 routing/isolation controls are in place; API auth matrix + spoof + east-west block + wildcard browser routing + websocket activity were validated on host (`@docs/host-validation-2026-02-16.md`).
+- Phase 3 recovery orchestration is implemented (startup reconciliation + active-session poller).
+- Phase 4 routing/isolation controls are implemented; canonical validation uses `@docs/phase-checking-strategy.md`.
 - Legacy header identity fallback (`X-User-Id`) is removed from API auth paths.
-- `/api/*` compatibility aliases remain enabled and include deprecation headers.
 - Competition submission uploads are bounded by `SUBMISSION_UPLOAD_MAX_BYTES` (default `10485760`).
 
 ### Cookie Sessions
@@ -56,7 +55,7 @@ Caddy behaviour:
 
 ### East-West Isolation
 
-Session containers must not reach other session containers' port 8080 over the Docker network. code-server runs with `--auth none`; Caddy/forward_auth is the only gate.
+Session containers must not reach other session containers' port 8080 over the Docker network. code-server runs with `--auth none`; Caddy/forward_auth is the only enforcement boundary.
 
 Firewall script: `@ops/network/firewall-setup.sh`
 

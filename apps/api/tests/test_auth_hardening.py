@@ -66,7 +66,7 @@ def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens)
         session.commit()
 
     response = client.get(
-        "/api/auth/session-proxy",
+        "/api/v1/auth/session-proxy",
         headers=_auth_headers(
             auth_tokens,
             USER_A,
@@ -92,7 +92,7 @@ def test_origin_matrix_allowed_origins(client, auth_tokens) -> None:
     ]
     for origin in good_origins:
         resp = client.post(
-            "/api/auth/signup",
+            "/api/v1/auth/signup",
             json={"email": f"origin-test-{origin.replace(':', '-').replace('/', '-')}@example.com", "password": "sufficiently-strong"},
             headers={"Origin": origin},
         )
@@ -108,7 +108,7 @@ def test_origin_matrix_rejected_origins(client, auth_tokens) -> None:
     ]
     for origin in bad_origins:
         resp = client.post(
-            "/api/sessions",
+            "/api/v1/sessions",
             json={"tier": "public"},
             headers=_auth_headers(auth_tokens, USER_A, {"Origin": origin}),
         )
@@ -122,13 +122,13 @@ def test_auth_signup_rate_limit_429(client) -> None:
     """Rapid signup requests → 429 after exceeding rate limit."""
     for i in range(10):
         client.post(
-            "/api/auth/signup",
+            "/api/v1/auth/signup",
             json={"email": f"ratelimit-{i}@example.com", "password": "sufficiently-strong"},
             headers={"Origin": "http://localhost:3000"},
         )
 
     response = client.post(
-        "/api/auth/signup",
+        "/api/v1/auth/signup",
         json={"email": "ratelimit-overflow@example.com", "password": "sufficiently-strong"},
         headers={"Origin": "http://localhost:3000"},
     )
@@ -145,13 +145,13 @@ def test_auth_login_rate_limit_429(client) -> None:
     """Rapid login requests → 429 after exceeding rate limit."""
     for i in range(10):
         client.post(
-            "/api/auth/login",
+            "/api/v1/auth/login",
             json={"email": f"ratelimit-login-{i}@example.com", "password": "wrong"},
             headers={"Origin": "http://localhost:3000"},
         )
 
     response = client.post(
-        "/api/auth/login",
+        "/api/v1/auth/login",
         json={"email": "ratelimit-login-overflow@example.com", "password": "wrong"},
         headers={"Origin": "http://localhost:3000"},
     )
@@ -169,7 +169,7 @@ def test_auth_login_rate_limit_429(client) -> None:
 def test_logout_invalidates_token(client) -> None:
     """After logout, the old token must return 401."""
     signup = client.post(
-        "/api/auth/signup",
+        "/api/v1/auth/signup",
         json={"email": "fixation-test@example.com", "password": "sufficiently-strong"},
         headers={"Origin": "http://localhost:3000"},
     )
@@ -184,10 +184,10 @@ def test_logout_invalidates_token(client) -> None:
             break
     assert token is not None
 
-    logout = client.post("/api/auth/logout", headers={"Origin": "http://localhost:3000"})
+    logout = client.post("/api/v1/auth/logout", headers={"Origin": "http://localhost:3000"})
     assert logout.status_code == 200
 
-    me = client.get("/api/me", headers={"Cookie": f"medforge_session={token}"})
+    me = client.get("/api/v1/me", headers={"Cookie": f"medforge_session={token}"})
     assert me.status_code == 401
 
 
@@ -216,7 +216,7 @@ def test_idle_ttl_expires_session(client, db_engine, test_settings, auth_tokens)
         session.add(auth_session)
         session.commit()
 
-    me = client.get("/api/me", headers=_auth_headers(auth_tokens, USER_A))
+    me = client.get("/api/v1/me", headers=_auth_headers(auth_tokens, USER_A))
     assert me.status_code == 401
 
 
@@ -247,5 +247,5 @@ def test_max_ttl_expires_session(client, db_engine, test_settings, auth_tokens) 
         session.add(auth_session)
         session.commit()
 
-    me = client.get("/api/me", headers=_auth_headers(auth_tokens, USER_A))
+    me = client.get("/api/v1/me", headers=_auth_headers(auth_tokens, USER_A))
     assert me.status_code == 401

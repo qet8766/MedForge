@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function DatasetsPage(): Promise<React.JSX.Element> {
-  const datasets = await apiGet<DatasetSummary[]>("/api/datasets");
+  const datasets = await apiGet<DatasetSummary[]>("/api/v1/datasets");
 
   return (
     <div className="space-y-6">

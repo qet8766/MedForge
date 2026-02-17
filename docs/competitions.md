@@ -43,10 +43,6 @@ Canonical versioned routes:
 - `GET /api/v1/datasets` (`limit`, `cursor`)
 - `GET /api/v1/datasets/{slug}`
 
-Compatibility alias during migration:
-- The same routes remain available under `/api/*`.
-- `/api/*` responses include `Deprecation`, `Sunset`, and `Link: <...>; rel="deprecation"` headers.
-
 ### Router Module Structure
 
 The competition API is implemented as a modular router package at `apps/api/app/routers/competitions/`:
@@ -73,7 +69,7 @@ The competition API is implemented as a modular router package at `apps/api/app/
 - Errors use RFC 7807-style payloads (`application/problem+json`) with:
   - `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`
   - optional `errors` array for validation-style failures
-- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api/v1` (with `/api` compatibility aliases during migration).
+- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api/v1`.
 
 ### Migration Notes
 

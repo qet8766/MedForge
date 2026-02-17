@@ -4,7 +4,7 @@ Implementation status note (2026-02-16):
 
 - Competition-plane components are implemented (`medforge-web`, `medforge-api`, `medforge-db`, `medforge-caddy`, and `medforge-api-worker`).
 - Session lifecycle and recovery orchestration are implemented in API for PUBLIC alpha sessions.
-- Host-level Gate 5/6 validation is completed (auth matrix, upstream-header spoof resistance, east-west session isolation, GPU/workspace/snapshot checks, and browser wildcard websocket lane) with evidence in `@docs/host-validation-2026-02-16.md`.
+- Historical pre-phase host validation artifacts were retired from the repo; canonical validation now uses `@docs/phase-checking-strategy.md`.
 
 ### Control Plane
 
@@ -13,7 +13,7 @@ Implementation status note (2026-02-16):
 | **medforge-web** | Next.js frontend                         |
 | **medforge-api** | FastAPI session + competition APIs       |
 | **MariaDB**      | Persistent state                         |
-| **Caddy**        | Reverse proxy + wildcard TLS + auth gate |
+| **Caddy**        | Reverse proxy + wildcard TLS + auth boundary |
 
 ### Data Plane
 

@@ -5,10 +5,10 @@ MedForge provisions GPU-backed development sessions (code-server in the browser)
 Current implementation note (2026-02-16):
 
 - Competition APIs/UI and scoring are implemented.
-- Gate 2 auth foundations are implemented (cookie auth endpoints, `/api/me`, and session-proxy auth checks).
-- Gate 3 alpha lifecycle is implemented for PUBLIC create/stop, including allocation and async stop requests with recovery-driven snapshot terminalization.
-- Gate 4 recovery behavior is implemented (startup reconciliation + active-session poller).
-- Gate 5/6 host evidence is complete (`@docs/host-validation-2026-02-16.md`): auth matrix, spoof resistance, east-west block, GPU visibility, workspace write, snapshot checks, wildcard browser routing, and websocket activity passed.
+- Phase 2 auth foundations are implemented (cookie auth endpoints, `/api/v1/me`, and session-proxy auth checks).
+- Phase 3 lifecycle is implemented for PUBLIC create/stop, including allocation and async stop requests with recovery-driven snapshot terminalization.
+- Phase 3 recovery behavior is implemented (startup reconciliation + active-session poller).
+- Historical pre-phase host evidence was retired from the repo; canonical progression now follows `@docs/phase-checking-strategy.md`.
 
 ### Goals
 

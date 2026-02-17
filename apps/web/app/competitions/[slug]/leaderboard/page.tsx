@@ -23,7 +23,7 @@ export default async function CompetitionLeaderboardPage({
 }): Promise<React.JSX.Element> {
   const resolvedParams = await params;
   const leaderboard = await apiGet<LeaderboardResponse>(
-    `/api/competitions/${resolvedParams.slug}/leaderboard`
+    `/api/v1/competitions/${resolvedParams.slug}/leaderboard`
   );
 
   return (

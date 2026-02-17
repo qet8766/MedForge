@@ -21,10 +21,8 @@ import app.config as config_module
 from app.config import Settings, get_settings
 from app.database import get_session, run_migrations
 from app.http_contract import (
-    apply_legacy_api_deprecation_headers,
     default_problem_responses,
     include_api_routers,
-    is_legacy_api_path,
 )
 from app.models import AuthSession, Competition, Role, User
 from app.problem_details import register_problem_exception_handler
@@ -204,8 +202,6 @@ def client(test_settings: Settings, db_engine) -> Iterator[TestClient]:
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         response.headers["X-Request-Id"] = request.state.request_id
-        if is_legacy_api_path(request.url.path):
-            apply_legacy_api_deprecation_headers(response, settings=test_settings)
         return response
 
     register_problem_exception_handler(app)

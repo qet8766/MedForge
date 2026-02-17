@@ -1,4 +1,4 @@
-"""MF-101: Concurrent session creation gate test.
+"""MF-101: Concurrent session creation capacity test.
 
 Validates that GPU allocation respects capacity limits:
 - 7 GPUs are seeded by default → exactly 7 sessions should succeed
@@ -36,7 +36,7 @@ def test_8way_parallel_session_create_respects_gpu_capacity(
 
     def _create() -> int:
         resp = client.post(
-            "/api/sessions",
+            "/api/v1/sessions",
             json={"tier": "public"},
             headers=_auth_headers(auth_tokens, USER_A),
         )
@@ -76,7 +76,7 @@ def test_sequential_session_create_exhausts_gpus(
     statuses = []
     for _ in range(8):
         resp = client.post(
-            "/api/sessions",
+            "/api/v1/sessions",
             json={"tier": "public"},
             headers=_auth_headers(auth_tokens, USER_A),
         )
