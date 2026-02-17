@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 
 import { apiSubmitFile } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function CompetitionSubmitPage({
-  params,
-}: {
-  params: { slug: string };
-}): React.JSX.Element {
+export default function CompetitionSubmitPage(): React.JSX.Element {
+  const params = useParams();
+  const rawSlug = params.slug;
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
+
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -31,7 +32,7 @@ export default function CompetitionSubmitPage({
 
     setIsSubmitting(true);
     try {
-      const payload = await apiSubmitFile(`/api/competitions/${params.slug}/submissions`, file);
+      const payload = await apiSubmitFile(`/api/competitions/${slug}/submissions`, file);
       setResult(JSON.stringify(payload, null, 2));
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Submission failed");
@@ -44,7 +45,7 @@ export default function CompetitionSubmitPage({
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Submit</h1>
-        <p className="text-muted-foreground">{params.slug}</p>
+        <p className="text-muted-foreground">{slug}</p>
       </div>
 
       <Card>

@@ -1,8 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export default function ProfilePage({ params }: { params: { handle: string } }): React.JSX.Element {
-  const initials = params.handle.slice(0, 2).toUpperCase();
+export default async function ProfilePage({
+  params,
+}: {
+  params: { handle: string } | Promise<{ handle: string }>;
+}): Promise<React.JSX.Element> {
+  const resolvedParams = await params;
+  const initials = resolvedParams.handle.slice(0, 2).toUpperCase();
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -15,7 +20,7 @@ export default function ProfilePage({ params }: { params: { handle: string } }):
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-2xl">{params.handle}</CardTitle>
+              <CardTitle className="text-2xl">{resolvedParams.handle}</CardTitle>
               <CardDescription>Member profile</CardDescription>
             </div>
           </div>

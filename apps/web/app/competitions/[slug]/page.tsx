@@ -11,9 +11,10 @@ export const dynamic = "force-dynamic";
 export default async function CompetitionDetailPage({
   params,
 }: {
-  params: { slug: string };
+  params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
-  const competition = await apiGet<CompetitionDetail>(`/api/competitions/${params.slug}`);
+  const resolvedParams = await params;
+  const competition = await apiGet<CompetitionDetail>(`/api/competitions/${resolvedParams.slug}`);
 
   return (
     <div className="space-y-6">

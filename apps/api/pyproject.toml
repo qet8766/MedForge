@@ -107,10 +107,20 @@ known-first-party = ["app"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = ["docker.*", "pydicom.*", "nibabel.*", "SimpleITK.*", "monai.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["testcontainers.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true
+
 
 # ── Pytest ────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]

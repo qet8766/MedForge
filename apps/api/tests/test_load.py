@@ -17,6 +17,8 @@ from sqlmodel import Session
 
 from app.models import User
 
+from .test_helpers import assert_success as _assert_success
+
 pytestmark = pytest.mark.load
 
 USER_A = "00000000-0000-0000-0000-000000000011"
@@ -54,7 +56,8 @@ def _run_create_stop_cycle(client, auth_tokens: dict[str, str]) -> CycleResult:
             session_id=None,
         )
 
-    session_id = create_resp.json()["data"]["session"]["id"]
+    create_data, _ = _assert_success(create_resp, status_code=201)
+    session_id = str(create_data["session"]["id"])
 
     t1 = time.monotonic()
     stop_resp = client.post(

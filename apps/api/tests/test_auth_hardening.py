@@ -21,6 +21,8 @@ from app.config import get_settings
 from app.models import AuthSession
 from app.security import hash_session_token
 
+from .test_helpers import assert_problem as _assert_problem
+
 USER_A = "00000000-0000-0000-0000-000000000011"
 USER_B = "00000000-0000-0000-0000-000000000012"
 
@@ -39,16 +41,6 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
     if extra:
         headers.update(extra)
     return headers
-
-
-def _assert_problem(response, *, status_code: int, type_suffix: str) -> dict[str, object]:
-    assert response.status_code == status_code
-    content_type = response.headers.get("content-type", "")
-    assert "application/problem+json" in content_type
-    payload = response.json()
-    assert payload["status"] == status_code
-    assert payload["type"] == f"https://medforge.dev/problems/{type_suffix}"
-    return payload
 
 
 # ── X-Upstream spoof rejection ──────────────────────────────────────
@@ -140,8 +132,11 @@ def test_auth_signup_rate_limit_429(client) -> None:
         json={"email": "ratelimit-overflow@example.com", "password": "sufficiently-strong"},
         headers={"Origin": "http://localhost:3000"},
     )
-    assert response.status_code == 429
-    payload = response.json()
+    payload = _assert_problem(
+        response,
+        status_code=429,
+        type_suffix="rate-limit/exceeded",
+    )
     assert payload["code"] == "rate_limit_exceeded"
     assert "Retry-After" in response.headers
 
@@ -160,8 +155,11 @@ def test_auth_login_rate_limit_429(client) -> None:
         json={"email": "ratelimit-login-overflow@example.com", "password": "wrong"},
         headers={"Origin": "http://localhost:3000"},
     )
-    assert response.status_code == 429
-    payload = response.json()
+    payload = _assert_problem(
+        response,
+        status_code=429,
+        type_suffix="rate-limit/exceeded",
+    )
     assert payload["code"] == "rate_limit_exceeded"
 
 

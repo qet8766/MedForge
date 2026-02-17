@@ -19,10 +19,11 @@ type LeaderboardResponse = {
 export default async function CompetitionLeaderboardPage({
   params,
 }: {
-  params: { slug: string };
+  params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
+  const resolvedParams = await params;
   const leaderboard = await apiGet<LeaderboardResponse>(
-    `/api/competitions/${params.slug}/leaderboard`
+    `/api/competitions/${resolvedParams.slug}/leaderboard`
   );
 
   return (

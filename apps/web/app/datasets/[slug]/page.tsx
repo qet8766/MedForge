@@ -18,9 +18,10 @@ function formatBytes(bytes: number): string {
 export default async function DatasetDetailPage({
   params,
 }: {
-  params: { slug: string };
+  params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
-  const dataset = await apiGet<DatasetDetail>(`/api/datasets/${params.slug}`);
+  const resolvedParams = await params;
+  const dataset = await apiGet<DatasetDetail>(`/api/datasets/${resolvedParams.slug}`);
 
   return (
     <div className="max-w-3xl space-y-6">

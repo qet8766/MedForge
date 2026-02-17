@@ -15,6 +15,9 @@ from app.session_runtime import (
     SessionStartResult,
 )
 
+from .test_helpers import assert_problem as _assert_problem
+from .test_helpers import assert_success as _assert_success
+
 USER_A = "00000000-0000-0000-0000-000000000011"
 USER_B = "00000000-0000-0000-0000-000000000012"
 ADMIN_USER = "00000000-0000-0000-0000-000000000013"
@@ -27,32 +30,6 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
     if extra:
         headers.update(extra)
     return headers
-
-
-def _assert_success(response, *, status_code: int) -> tuple[object, dict[str, object]]:
-    assert response.status_code == status_code
-    payload = response.json()
-    assert "data" in payload
-    assert "meta" in payload
-    meta = payload["meta"]
-    assert isinstance(meta["request_id"], str)
-    assert meta["request_id"]
-    return payload["data"], meta
-
-
-def _assert_problem(response, *, status_code: int, type_suffix: str) -> dict[str, object]:
-    assert response.status_code == status_code
-    content_type = response.headers.get("content-type", "")
-    assert "application/problem+json" in content_type
-    payload = response.json()
-    assert payload["status"] == status_code
-    assert payload["type"] == f"https://medforge.dev/problems/{type_suffix}"
-    assert payload["instance"]
-    assert isinstance(payload["title"], str)
-    assert isinstance(payload["detail"], str)
-    assert isinstance(payload["code"], str)
-    assert isinstance(payload["request_id"], str)
-    return payload
 
 
 def test_versioned_routes_match_legacy_routes(client) -> None:
@@ -351,7 +328,8 @@ def test_admin_score_rejects_disallowed_origin(client, auth_tokens) -> None:
         files={"file": ("preds.csv", csv_payload, "text/csv")},
     )
     assert created.status_code == 201
-    submission_id = created.json()["data"]["submission"]["id"]
+    created_data, _ = _assert_success(created, status_code=201)
+    submission_id = created_data["submission"]["id"]
 
     disallowed = client.post(
         f"/api/admin/submissions/{submission_id}/score",
@@ -607,7 +585,8 @@ def test_session_stop_owner_marks_stopping_and_is_idempotent(client, auth_tokens
         headers=_auth_headers(auth_tokens, USER_A),
     )
     assert created.status_code == 201
-    session_id = created.json()["data"]["session"]["id"]
+    created_data, _ = _assert_success(created, status_code=201)
+    session_id = created_data["session"]["id"]
 
     stopped = client.post(
         f"/api/sessions/{session_id}/stop",
@@ -636,7 +615,8 @@ def test_session_stop_forbidden_for_other_user(client, auth_tokens) -> None:
         headers=_auth_headers(auth_tokens, USER_A),
     )
     assert created.status_code == 201
-    session_id = created.json()["data"]["session"]["id"]
+    created_data, _ = _assert_success(created, status_code=201)
+    session_id = created_data["session"]["id"]
 
     denied = client.post(
         f"/api/sessions/{session_id}/stop",
@@ -652,7 +632,8 @@ def test_session_stop_terminal_row_returns_current_state(client, db_engine, auth
         headers=_auth_headers(auth_tokens, USER_A),
     )
     assert created.status_code == 201
-    session_id = created.json()["data"]["session"]["id"]
+    created_data, _ = _assert_success(created, status_code=201)
+    session_id = created_data["session"]["id"]
     with Session(db_engine) as session:
         row = session.exec(select(SessionRecord).where(SessionRecord.id == UUID(session_id))).one()
         row.status = SessionStatus.STOPPED
