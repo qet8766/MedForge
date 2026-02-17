@@ -57,9 +57,8 @@ def enforce_submission_cap(session: Session, *, competition: Competition, user_i
 
 
 def get_competition_paths(settings: Settings, slug: str) -> tuple[Path, Path]:
-    base = settings.competitions_data_dir / slug
-    labels_path = base / "holdout_labels.csv"
-    manifest_path = base / "manifest.json"
+    labels_path = settings.test_holdouts_dir / slug / "holdout_labels.csv"
+    manifest_path = settings.public_eval_data_root / slug / "manifest.json"
     return labels_path, manifest_path
 
 

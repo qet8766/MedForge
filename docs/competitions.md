@@ -55,7 +55,7 @@ Seed set includes EXTERNAL competitions and one INTERNAL competition (`oxford-pe
 2. API validates schema and daily cap.
 3. Submission is created as `score_status=queued`.
 4. If `AUTO_SCORE_ON_SUBMIT=true` (default), API scores immediately; otherwise the worker scores asynchronously.
-5. Scoring reads holdout labels + `manifest.json` metadata (`evaluation_split_version`, policy fields, expected row count).
+5. Scoring reads hidden holdout labels from `TEST_HOLDOUTS_DIR` and `manifest.json` metadata from `PUBLIC_EVAL_DATA_ROOT` (`evaluation_split_version`, policy fields, expected row count).
 6. Scoring appends an official row in `submission_scores` with `primary_score`, `score_components_json`, `scorer_version`, `metric_version`, `evaluation_split_version`, and `manifest_sha256`.
 7. Leaderboard ranks by best per-user official `primary_score`; deterministic tie-break uses earliest score timestamp then submission ID.
 

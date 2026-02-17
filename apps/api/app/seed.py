@@ -166,14 +166,14 @@ def _split_pack_image(image: str) -> tuple[str, str]:
     return image_ref, image_ref.split("@sha256:", 1)[1]
 
 
-def _dataset_payload_with_storage_path(dataset_payload: DatasetSeed, datasets_root: Path) -> DatasetSeedResolved:
+def _dataset_payload_with_storage_path(dataset_payload: DatasetSeed, training_data_root: Path) -> DatasetSeedResolved:
     payload: DatasetSeedResolved = {
         "slug": dataset_payload["slug"],
         "title": dataset_payload["title"],
         "source": dataset_payload["source"],
         "exposure": dataset_payload["exposure"],
         "license": dataset_payload["license"],
-        "storage_path": str(datasets_root / dataset_payload["dataset_dir"]),
+        "storage_path": str(training_data_root / dataset_payload["dataset_dir"]),
         "bytes": dataset_payload["bytes"],
         "checksum": dataset_payload["checksum"],
     }
@@ -208,10 +208,10 @@ def seed_defaults(session: Session) -> None:
     session.flush()
 
     dataset_by_slug: dict[str, Dataset] = {}
-    datasets_root = settings.datasets_root
+    training_data_root = settings.training_data_root
 
     for dataset_payload in SEED_DATASETS:
-        resolved_dataset_payload = _dataset_payload_with_storage_path(dataset_payload, datasets_root)
+        resolved_dataset_payload = _dataset_payload_with_storage_path(dataset_payload, training_data_root)
         existing_dataset = session.exec(
             select(Dataset).where(Dataset.slug == dataset_payload["slug"])
         ).first()

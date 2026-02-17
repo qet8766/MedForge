@@ -85,6 +85,18 @@ def _default_cors_origins() -> tuple[str, ...]:
     )
 
 
+def _is_env_set(name: str) -> bool:
+    return os.getenv(name) is not None
+
+
+def _resolve_path(path: Path) -> Path:
+    return path.expanduser().resolve(strict=False)
+
+
+def _paths_overlap(a: Path, b: Path) -> bool:
+    return a == b or a in b.parents or b in a.parents
+
+
 # ---------------------------------------------------------------------------
 # Settings
 # ---------------------------------------------------------------------------
@@ -96,12 +108,17 @@ class Settings:
     domain: str = _env("DOMAIN", "example.com", lower=True)
     pack_image: str = _env("PACK_IMAGE", "")
     session_secret: str = _env("SESSION_SECRET", "dev-session-secret")
-    datasets_root: Path = field(
+    training_data_root: Path = field(
         default_factory=lambda: Path(
-            os.getenv("MEDFORGE_DATASETS_ROOT", "/data/medforge/datasets").strip() or "/data/medforge/datasets"
+            os.getenv("TRAINING_DATA_ROOT", "/data/medforge/datasets/train").strip() or "/data/medforge/datasets/train"
         )
     )
-    competitions_data_dir: Path = field(default_factory=lambda: Path(os.getenv("COMPETITIONS_DATA_DIR", "data/competitions")))
+    public_eval_data_root: Path = field(
+        default_factory=lambda: Path(os.getenv("PUBLIC_EVAL_DATA_ROOT", "data/public-eval").strip() or "data/public-eval")
+    )
+    test_holdouts_dir: Path = field(
+        default_factory=lambda: Path(os.getenv("TEST_HOLDOUTS_DIR", "data/scoring-holdouts").strip() or "data/scoring-holdouts")
+    )
     submissions_dir: Path = field(default_factory=lambda: Path(os.getenv("SUBMISSIONS_DIR", "data/submissions")))
     auto_score_on_submit: bool = _env_bool("AUTO_SCORE_ON_SUBMIT", "true")
     submission_upload_max_bytes: int = _env_int("SUBMISSION_UPLOAD_MAX_BYTES", 10 * 1024 * 1024, min=1)
@@ -133,6 +150,39 @@ class Settings:
     session_mem_reservation: str | None = _env_opt_str("SESSION_MEM_RESERVATION", "8g")
     session_shm_size: str | None = _env_opt_str("SESSION_SHM_SIZE", "4g")
     session_pids_limit: int | None = _env_opt_int("SESSION_PIDS_LIMIT")
+
+    def __post_init__(self) -> None:
+        legacy_env_map = {
+            "MEDFORGE_DATASETS_ROOT": "TRAINING_DATA_ROOT",
+            "COMPETITIONS_DATA_DIR": "TEST_HOLDOUTS_DIR",
+        }
+        legacy_vars = [f"{old} -> {new}" for old, new in legacy_env_map.items() if _is_env_set(old)]
+        if legacy_vars:
+            raise ValueError(
+                "Legacy dataset environment variables are not supported: "
+                + ", ".join(legacy_vars)
+            )
+
+        resolved_training = _resolve_path(self.training_data_root)
+        resolved_public_eval = _resolve_path(self.public_eval_data_root)
+        resolved_holdouts = _resolve_path(self.test_holdouts_dir)
+
+        roots = (
+            ("TRAINING_DATA_ROOT", resolved_training),
+            ("PUBLIC_EVAL_DATA_ROOT", resolved_public_eval),
+            ("TEST_HOLDOUTS_DIR", resolved_holdouts),
+        )
+        for idx, (name_a, path_a) in enumerate(roots):
+            for name_b, path_b in roots[idx + 1 :]:
+                if _paths_overlap(path_a, path_b):
+                    raise ValueError(
+                        "Dataset path isolation violation: "
+                        f"{name_a}={path_a} overlaps {name_b}={path_b}."
+                    )
+
+        object.__setattr__(self, "training_data_root", resolved_training)
+        object.__setattr__(self, "public_eval_data_root", resolved_public_eval)
+        object.__setattr__(self, "test_holdouts_dir", resolved_holdouts)
 
 
 _SETTINGS: Settings | None = None

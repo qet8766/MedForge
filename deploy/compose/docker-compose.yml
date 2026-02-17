@@ -62,7 +62,9 @@ services:
       SESSION_PIDS_LIMIT: ${SESSION_PIDS_LIMIT}
       PACK_IMAGE: ${PACK_IMAGE}                   # e.g. medforge-pack-default@sha256:...
       AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
-      MEDFORGE_DATASETS_ROOT: ${MEDFORGE_DATASETS_ROOT:-/data/medforge/datasets}
+      TRAINING_DATA_ROOT: ${TRAINING_DATA_ROOT:-/data/medforge/datasets/train}
+      PUBLIC_EVAL_DATA_ROOT: ${PUBLIC_EVAL_DATA_ROOT:-data/public-eval}
+      TEST_HOLDOUTS_DIR: ${TEST_HOLDOUTS_DIR:-data/scoring-holdouts}
       AUTH_IDLE_TTL_SECONDS: ${AUTH_IDLE_TTL_SECONDS}
       AUTH_MAX_TTL_SECONDS: ${AUTH_MAX_TTL_SECONDS}
       COOKIE_NAME: ${COOKIE_NAME}
@@ -101,6 +103,9 @@ services:
     environment:
       DATABASE_URL: mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@medforge-db:3306/medforge
       AUTO_SCORE_ON_SUBMIT: ${AUTO_SCORE_ON_SUBMIT}
+      TRAINING_DATA_ROOT: ${TRAINING_DATA_ROOT:-/data/medforge/datasets/train}
+      PUBLIC_EVAL_DATA_ROOT: ${PUBLIC_EVAL_DATA_ROOT:-data/public-eval}
+      TEST_HOLDOUTS_DIR: ${TEST_HOLDOUTS_DIR:-data/scoring-holdouts}
     networks:
       - medforge-control
 

@@ -2,11 +2,11 @@
 
 ### Scope
 
-Canonical dataset mirror layout and submission/holdout format requirements.
+Canonical dataset layout and submission/holdout format requirements.
 
 ### In Scope
 
-- required on-disk mirror shape under `MEDFORGE_DATASETS_ROOT`
+- required on-disk layout for `TRAINING_DATA_ROOT`, `PUBLIC_EVAL_DATA_ROOT`, and `TEST_HOLDOUTS_DIR`
 - per-competition dataset and submission column/row format contracts
 - holdout/manifest placement and scoring input format expectations
 
@@ -19,33 +19,53 @@ Canonical dataset mirror layout and submission/holdout format requirements.
 
 ### Canonical Sources
 
-- `apps/api/data/competitions/`
+- `apps/api/data/public-eval/`
+- `apps/api/data/scoring-holdouts/`
 - `apps/api/app/scoring/`
 - `apps/api/app/storage.py`
 - `tools/data-prep/`
 
-Storage root: `${MEDFORGE_DATASETS_ROOT}/`
+Canonical roots:
+
+- `TRAINING_DATA_ROOT` (training-only files)
+- `PUBLIC_EVAL_DATA_ROOT` (public non-training evaluation inputs + `manifest.json`)
+- `TEST_HOLDOUTS_DIR` (hidden holdout labels only)
 
 Recommended values:
 
-- Local repo development: `MEDFORGE_DATASETS_ROOT=../../datasets` (from `apps/api`)
-- Host deployment mirror: `MEDFORGE_DATASETS_ROOT=/data/medforge/datasets`
+- Local repo development (from `apps/api`):
+  - `TRAINING_DATA_ROOT=../../datasets/train`
+  - `PUBLIC_EVAL_DATA_ROOT=data/public-eval`
+  - `TEST_HOLDOUTS_DIR=data/scoring-holdouts`
+- Host deployment:
+  - `TRAINING_DATA_ROOT=/data/medforge/datasets/train`
+  - `PUBLIC_EVAL_DATA_ROOT=/data/medforge/datasets/public-eval`
+  - `TEST_HOLDOUTS_DIR=/data/medforge/scoring-holdouts`
 
 Before running shell examples below:
 
 ```bash
-export MEDFORGE_DATASETS_ROOT="${MEDFORGE_DATASETS_ROOT:-/data/medforge/datasets}"
+export TRAINING_DATA_ROOT="${TRAINING_DATA_ROOT:-/data/medforge/datasets/train}"
+export PUBLIC_EVAL_DATA_ROOT="${PUBLIC_EVAL_DATA_ROOT:-data/public-eval}"
+export TEST_HOLDOUTS_DIR="${TEST_HOLDOUTS_DIR:-data/scoring-holdouts}"
 ```
 
-**Two distinct paths exist — don't confuse them:**
+**Three distinct roots exist — keep them isolated:**
 
-- `${MEDFORGE_DATASETS_ROOT}/` — full dataset mirrors (training data, images, CSVs), either repo-local for development or host-level for deployed environments.
-- `{COMPETITIONS_DATA_DIR}` (default `data/competitions` relative to API root) — holdout labels + scoring manifests only. Used by the scoring engine at runtime.
+- `${TRAINING_DATA_ROOT}/` — training files only.
+- `${PUBLIC_EVAL_DATA_ROOT}/` — public evaluation inputs + `manifest.json` used by scoring and user-facing format validation.
+- `${TEST_HOLDOUTS_DIR}/` — hidden holdout labels used by scoring only.
+
+Runtime guardrails:
+
+- API startup fails if any legacy variables are present: `MEDFORGE_DATASETS_ROOT`, `COMPETITIONS_DATA_DIR`.
+- API startup fails when any pair of roots overlap (same path, parent/child, or symlink overlap).
 
 Retention policy:
 
-- Keep full source datasets under the storage root; do not keep only holdout labels.
-- `apps/api/data/competitions/*` contains scoring manifests + hidden holdout labels only, not the raw competition datasets.
+- Keep full source training and public evaluation inputs in their dedicated roots.
+- `apps/api/data/public-eval/*` contains only public eval artifacts (`manifest.json`, test IDs/images, sample submission files).
+- `apps/api/data/scoring-holdouts/*` contains hidden holdout labels only.
 
 Competition evaluation uses a canonical-test-first policy:
 
@@ -56,18 +76,19 @@ Competition evaluation uses a canonical-test-first policy:
 
 Expected on-disk dataset coverage:
 
-| Dataset path | Required files/directories |
-|--------------|----------------------------|
-| `${MEDFORGE_DATASETS_ROOT}/titanic-kaggle/` | `train.csv`, `test.csv`, `sample_submission.csv` |
-| `${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/` | `train_labels.csv`, `detailed_class_info.csv`, `test_ids.csv`, `sample_submission.csv`, `train_images/` (21,347 `.dcm`), `test_images/` (5,337 `.dcm`) |
-| `${MEDFORGE_DATASETS_ROOT}/cifar-100/` | `train_labels.csv`, `test_ids.csv`, `sample_submission.csv`, `train/` (50,000 `.png`), `test/` (10,000 `.png`) |
+| Dataset slug | Training root (`${TRAINING_DATA_ROOT}/...`) | Public eval root (`${PUBLIC_EVAL_DATA_ROOT}/...`) |
+|--------------|----------------------------------------------|----------------------------------------------------|
+| `titanic-kaggle` | `train.csv` | `test.csv`, `sample_submission.csv`, `manifest.json` (under competition slug) |
+| `rsna-pneumonia-detection` | `train_labels.csv`, `detailed_class_info.csv`, `train_images/` | `test_ids.csv`, `sample_submission.csv`, `test_images/`, `manifest.json` (under competition slug) |
+| `cifar-100` | `train_labels.csv`, `train/` | `test_ids.csv`, `sample_submission.csv`, `test/`, `manifest.json` (under competition slug) |
 
 ---
 
 ### 1. Titanic — Machine Learning from Disaster
 
 **Dataset slug:** `titanic-kaggle` | **Competition slug:** `titanic-survival`
-**Path:** `${MEDFORGE_DATASETS_ROOT}/titanic-kaggle/`
+**Training path:** `${TRAINING_DATA_ROOT}/titanic-kaggle/`
+**Public eval path:** `${PUBLIC_EVAL_DATA_ROOT}/titanic-kaggle/`
 **Metric:** accuracy | **Source:** [Kaggle](https://www.kaggle.com/competitions/titanic)
 
 Predict which passengers survived the 1912 Titanic shipwreck.
@@ -79,6 +100,8 @@ Predict which passengers survived the 1912 Titanic shipwreck.
 | `train.csv` | 891 | Labelled training set (original Kaggle train split) |
 | `test.csv` | 418 | Unlabelled test set (original Kaggle test split) |
 | `sample_submission.csv` | 418 | Sample submission |
+
+Placement contract: `train.csv` is stored under `${TRAINING_DATA_ROOT}/titanic-kaggle/`; `test.csv` and `sample_submission.csv` are stored under `${PUBLIC_EVAL_DATA_ROOT}/titanic-kaggle/`.
 
 #### Columns
 
@@ -112,7 +135,8 @@ PassengerId,Survived
 ### 2. RSNA Pneumonia Detection
 
 **Dataset slug:** `rsna-pneumonia-detection-challenge` | **Competition slug:** `rsna-pneumonia-detection`
-**Path:** `${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/`
+**Training path:** `${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/`
+**Public eval path:** `${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/`
 **Metric:** mAP @ IoU [0.4–0.75] | **Source:** [Kaggle](https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge)
 
 Object detection — localize pneumonia opacities with bounding boxes on frontal-view chest X-rays. Scored with mean average precision across IoU thresholds 0.4–0.75. Dataset provided by RSNA, NIH, and MD.ai. Original Kaggle filenames were prefixed `stage_2_`; renamed here.
@@ -127,6 +151,8 @@ Object detection — localize pneumonia opacities with bounding boxes on frontal
 | `sample_submission.csv` | 5,337 rows | Sample submission (empty detection rows) |
 | `train_images/` | 21,347 `.dcm` | Training chest X-rays (1024x1024, 8-bit, MONOCHROME2) |
 | `test_images/` | 5,337 `.dcm` | Test chest X-rays |
+
+Placement contract: `train_labels.csv`, `detailed_class_info.csv`, and `train_images/` live under `${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/`; `test_ids.csv`, `sample_submission.csv`, and `test_images/` live under `${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/`.
 
 #### `train_labels.csv`
 
@@ -163,7 +189,8 @@ One row per predicted detection; multiple rows per patient OK. No-detection: one
 ### 3. CIFAR-100 Classification
 
 **Dataset slug:** `cifar-100` | **Competition slug:** `cifar-100-classification`
-**Path:** `${MEDFORGE_DATASETS_ROOT}/cifar-100/`
+**Training path:** `${TRAINING_DATA_ROOT}/cifar-100/`
+**Public eval path:** `${PUBLIC_EVAL_DATA_ROOT}/cifar-100/`
 **Metric:** accuracy | **Source:** [University of Toronto](https://www.cs.toronto.edu/~kriz/cifar.html)
 
 Classify 32x32 colour images into 100 fine-grained categories. Uses the **original CIFAR-100 test set** as holdout (not an 80/20 split).
@@ -177,6 +204,8 @@ Classify 32x32 colour images into 100 fine-grained categories. Uses the **origin
 | `test_ids.csv` | 10,000 rows | Test image IDs (no labels) |
 | `test/` | 10,000 `.png` | 32x32 test images |
 | `sample_submission.csv` | 10,000 rows | Sample submission (all zeros) |
+
+Placement contract: `train_labels.csv` and `train/` live under `${TRAINING_DATA_ROOT}/cifar-100/`; `test_ids.csv`, `test/`, and `sample_submission.csv` live under `${PUBLIC_EVAL_DATA_ROOT}/cifar-100/`.
 
 #### Columns
 
@@ -206,17 +235,30 @@ Prerequisites for Kaggle downloads: installed `kaggle` CLI and `~/.kaggle/kaggle
 #### Titanic (Kaggle)
 
 ```bash
-mkdir -p ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle
-kaggle competitions download -c titanic -p ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle --force
-find ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d ${MEDFORGE_DATASETS_ROOT}/titanic-kaggle
+tmp_dir="$(mktemp -d)"
+mkdir -p "${TRAINING_DATA_ROOT}/titanic-kaggle" "${PUBLIC_EVAL_DATA_ROOT}/titanic-kaggle"
+kaggle competitions download -c titanic -p "${tmp_dir}" --force
+find "${tmp_dir}" -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d "${tmp_dir}"
+mv "${tmp_dir}/train.csv" "${TRAINING_DATA_ROOT}/titanic-kaggle/train.csv"
+mv "${tmp_dir}/test.csv" "${PUBLIC_EVAL_DATA_ROOT}/titanic-kaggle/test.csv"
+mv "${tmp_dir}/gender_submission.csv" "${PUBLIC_EVAL_DATA_ROOT}/titanic-kaggle/sample_submission.csv"
+rm -rf "${tmp_dir}"
 ```
 
 #### RSNA Pneumonia (Kaggle)
 
 ```bash
-mkdir -p ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection
-kaggle competitions download -c rsna-pneumonia-detection-challenge -p ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection --force
-find ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection
+tmp_dir="$(mktemp -d)"
+mkdir -p "${TRAINING_DATA_ROOT}/rsna-pneumonia-detection" "${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection"
+kaggle competitions download -c rsna-pneumonia-detection-challenge -p "${tmp_dir}" --force
+find "${tmp_dir}" -maxdepth 1 -name '*.zip' -print0 | xargs -0 -n1 unzip -o -d "${tmp_dir}"
+mv "${tmp_dir}/train_labels.csv" "${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/train_labels.csv"
+mv "${tmp_dir}/detailed_class_info.csv" "${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/detailed_class_info.csv"
+mv "${tmp_dir}/train_images" "${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/train_images"
+mv "${tmp_dir}/test_ids.csv" "${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/test_ids.csv"
+mv "${tmp_dir}/sample_submission.csv" "${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/sample_submission.csv"
+mv "${tmp_dir}/test_images" "${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/test_images"
+rm -rf "${tmp_dir}"
 ```
 
 #### CIFAR-100 (torchvision)
@@ -228,11 +270,13 @@ from pathlib import Path
 import csv
 from torchvision.datasets import CIFAR100
 
-root = Path(os.environ["MEDFORGE_DATASETS_ROOT"]) / "cifar-100"
-cache = root / ".torchvision-cache"
-train_dir = root / "train"
-test_dir = root / "test"
-root.mkdir(parents=True, exist_ok=True)
+train_root = Path(os.environ["TRAINING_DATA_ROOT"]) / "cifar-100"
+eval_root = Path(os.environ["PUBLIC_EVAL_DATA_ROOT"]) / "cifar-100"
+cache = train_root / ".torchvision-cache"
+train_dir = train_root / "train"
+test_dir = eval_root / "test"
+train_root.mkdir(parents=True, exist_ok=True)
+eval_root.mkdir(parents=True, exist_ok=True)
 cache.mkdir(parents=True, exist_ok=True)
 train_dir.mkdir(parents=True, exist_ok=True)
 test_dir.mkdir(parents=True, exist_ok=True)
@@ -242,18 +286,18 @@ test = CIFAR100(root=str(cache), train=False, download=True)
 
 for i, (img, label) in enumerate(train):
   img.save(train_dir / f"{i}.png")
-with (root / "train_labels.csv").open("w", newline="", encoding="utf-8") as f:
+with (train_root / "train_labels.csv").open("w", newline="", encoding="utf-8") as f:
   w = csv.writer(f)
   w.writerow(["image_id", "label"])
   w.writerows((i, int(train[i][1])) for i in range(len(train)))
 
 for i, (img, _) in enumerate(test):
   img.save(test_dir / f"{i}.png")
-with (root / "test_ids.csv").open("w", newline="", encoding="utf-8") as f:
+with (eval_root / "test_ids.csv").open("w", newline="", encoding="utf-8") as f:
   w = csv.writer(f)
   w.writerow(["image_id"])
   w.writerows((i,) for i in range(len(test)))
-with (root / "sample_submission.csv").open("w", newline="", encoding="utf-8") as f:
+with (eval_root / "sample_submission.csv").open("w", newline="", encoding="utf-8") as f:
   w = csv.writer(f)
   w.writerow(["image_id", "label"])
   w.writerows((i, 0) for i in range(len(test)))
@@ -263,17 +307,22 @@ PY
 Quick checks:
 
 ```bash
-find ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l   # 21347
-find ${MEDFORGE_DATASETS_ROOT}/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l    # 5337
-find ${MEDFORGE_DATASETS_ROOT}/cifar-100/train -type f -name '*.png' | wc -l                          # 50000
-find ${MEDFORGE_DATASETS_ROOT}/cifar-100/test -type f -name '*.png' | wc -l                           # 10000
+find ${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l       # 21347
+find ${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l     # 5337
+find ${TRAINING_DATA_ROOT}/cifar-100/train -type f -name '*.png' | wc -l                              # 50000
+find ${PUBLIC_EVAL_DATA_ROOT}/cifar-100/test -type f -name '*.png' | wc -l                            # 10000
 ```
 
 ---
 
 ### Scoring
 
-Holdout labels live in `{COMPETITIONS_DATA_DIR}/{competition_slug}/holdout_labels.csv` (default `data/competitions` relative to API root). Each directory also contains a strict `manifest.json` with:
+Scoring inputs are split by sensitivity:
+
+- Public manifest: `${PUBLIC_EVAL_DATA_ROOT}/{competition_slug}/manifest.json`
+- Hidden labels: `${TEST_HOLDOUTS_DIR}/{competition_slug}/holdout_labels.csv`
+
+`manifest.json` defines:
 
 - `evaluation_split_version`
 - `scoring_mode`

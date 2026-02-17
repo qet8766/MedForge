@@ -52,15 +52,21 @@ def mariadb_url():
 
 @pytest.fixture()
 def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
-    competitions_dir = tmp_path / "competitions"
+    public_eval_dir = tmp_path / "public-eval"
+    holdouts_dir = tmp_path / "scoring-holdouts"
     submissions_dir = tmp_path / "submissions"
 
-    (competitions_dir / "titanic-survival").mkdir(parents=True, exist_ok=True)
-    (competitions_dir / "rsna-pneumonia-detection").mkdir(parents=True, exist_ok=True)
-    (competitions_dir / "cifar-100-classification").mkdir(parents=True, exist_ok=True)
-    (competitions_dir / "oxford-pet-segmentation").mkdir(parents=True, exist_ok=True)
+    (public_eval_dir / "titanic-survival").mkdir(parents=True, exist_ok=True)
+    (public_eval_dir / "rsna-pneumonia-detection").mkdir(parents=True, exist_ok=True)
+    (public_eval_dir / "cifar-100-classification").mkdir(parents=True, exist_ok=True)
+    (public_eval_dir / "oxford-pet-segmentation").mkdir(parents=True, exist_ok=True)
 
-    (competitions_dir / "titanic-survival" / "manifest.json").write_text(
+    (holdouts_dir / "titanic-survival").mkdir(parents=True, exist_ok=True)
+    (holdouts_dir / "rsna-pneumonia-detection").mkdir(parents=True, exist_ok=True)
+    (holdouts_dir / "cifar-100-classification").mkdir(parents=True, exist_ok=True)
+    (holdouts_dir / "oxford-pet-segmentation").mkdir(parents=True, exist_ok=True)
+
+    (public_eval_dir / "titanic-survival" / "manifest.json").write_text(
         (
             '{"evaluation_split_version":"titanic-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
@@ -69,12 +75,12 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         ),
         encoding="utf-8",
     )
-    (competitions_dir / "titanic-survival" / "holdout_labels.csv").write_text(
+    (holdouts_dir / "titanic-survival" / "holdout_labels.csv").write_text(
         "PassengerId,Survived\n892,0\n893,1\n894,0\n",
         encoding="utf-8",
     )
 
-    (competitions_dir / "rsna-pneumonia-detection" / "manifest.json").write_text(
+    (public_eval_dir / "rsna-pneumonia-detection" / "manifest.json").write_text(
         (
             '{"evaluation_split_version":"rsna-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
@@ -83,7 +89,7 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         ),
         encoding="utf-8",
     )
-    (competitions_dir / "rsna-pneumonia-detection" / "holdout_labels.csv").write_text(
+    (holdouts_dir / "rsna-pneumonia-detection" / "holdout_labels.csv").write_text(
         "patientId,x,y,width,height,Target\n"
         "p1,100.0,150.0,200.0,250.0,1\n"
         "p1,300.0,400.0,180.0,220.0,1\n"
@@ -92,7 +98,7 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         encoding="utf-8",
     )
 
-    (competitions_dir / "cifar-100-classification" / "manifest.json").write_text(
+    (public_eval_dir / "cifar-100-classification" / "manifest.json").write_text(
         (
             '{"evaluation_split_version":"cifar100-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
@@ -101,12 +107,12 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         ),
         encoding="utf-8",
     )
-    (competitions_dir / "cifar-100-classification" / "holdout_labels.csv").write_text(
+    (holdouts_dir / "cifar-100-classification" / "holdout_labels.csv").write_text(
         "image_id,label\n0,42\n1,7\n2,99\n",
         encoding="utf-8",
     )
 
-    (competitions_dir / "oxford-pet-segmentation" / "manifest.json").write_text(
+    (public_eval_dir / "oxford-pet-segmentation" / "manifest.json").write_text(
         (
             '{"evaluation_split_version":"pet-seg-test","scoring_mode":"single_realtime_hidden",'
             '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
@@ -115,14 +121,15 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         ),
         encoding="utf-8",
     )
-    (competitions_dir / "oxford-pet-segmentation" / "holdout_labels.csv").write_text(
+    (holdouts_dir / "oxford-pet-segmentation" / "holdout_labels.csv").write_text(
         'image_id,rle_mask\npet-0001,"1 3 10 2"\npet-0002,""\npet-0003,"5 2 20 3"\n',
         encoding="utf-8",
     )
 
     return Settings(
         database_url=mariadb_url,
-        competitions_data_dir=competitions_dir,
+        public_eval_data_root=public_eval_dir,
+        test_holdouts_dir=holdouts_dir,
         submissions_dir=submissions_dir,
         auto_score_on_submit=True,
         pack_image="medforge-pack-default@sha256:0000000000000000000000000000000000000000000000000000000000000000",

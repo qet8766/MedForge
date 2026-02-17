@@ -161,6 +161,8 @@ Storage/runtime guarantees:
 - Optional quota can be applied at dataset creation.
 - Stop snapshots use `<workspace_zfs>@stop-<unixms>`.
 - `PACK_IMAGE` is digest-pinned (`image@sha256:...`).
+- Competition data uses three disjoint roots: `TRAINING_DATA_ROOT` (training), `PUBLIC_EVAL_DATA_ROOT` (public eval + manifest), and `TEST_HOLDOUTS_DIR` (hidden labels only).
+- Session containers never mount `TEST_HOLDOUTS_DIR`; hidden holdouts remain API/worker-only.
 
 Operational detail references: `docs/runbook.md`, `ops/storage/zfs-setup.sh`, `ops/network/firewall-setup.sh`, `ops/host/bootstrap-easy.sh`.
 

@@ -117,6 +117,29 @@ run_scoring_tests() {
   pytest -q tests/test_scoring.py
 }
 
+run_dataset_isolation_contract_checks() {
+  cd "${ROOT_DIR}"
+
+  if rg -n "MEDFORGE_DATASETS_ROOT|COMPETITIONS_DATA_DIR" deploy/compose/.env.example deploy/compose/docker-compose.yml >/dev/null 2>&1; then
+    echo "ERROR: legacy dataset env vars still present in deploy configuration."
+    return 1
+  fi
+
+  rg -n "TRAINING_DATA_ROOT|PUBLIC_EVAL_DATA_ROOT|TEST_HOLDOUTS_DIR" \
+    deploy/compose/.env.example \
+    deploy/compose/docker-compose.yml \
+    apps/api/app/config.py >/dev/null
+
+  rg -n "volumes=\\{request\\.workspace_mount: \\{\"bind\": \"/workspace\", \"mode\": \"rw\"\\}\\}" \
+    apps/api/app/session_runtime/adapters/docker_start.py >/dev/null
+
+  if rg -n "TEST_HOLDOUTS_DIR|PUBLIC_EVAL_DATA_ROOT|test_holdouts_dir|public_eval_data_root|scoring-holdouts|public-eval" \
+    apps/api/app/session_runtime >/dev/null 2>&1; then
+    echo "ERROR: session runtime references scoring data roots."
+    return 1
+  fi
+}
+
 run_remote_competitions_smoke() {
   local api_base web_base
   local email cookie_jar signup_code login_code list_code detail_code leaderboard_code
@@ -208,6 +231,7 @@ main() {
   remote_require_domain "${DOMAIN}"
   require_cmd curl
   require_cmd python3
+  require_cmd rg
 
   mkdir -p "${EVIDENCE_DIR}"
   : >"${LOG_FILE}"
@@ -224,6 +248,7 @@ main() {
   } >"${EVIDENCE_FILE}"
 
   run_check "Remote-External Competition Smoke" "run_remote_competitions_smoke"
+  run_check "Dataset Isolation Policy Checks" "run_dataset_isolation_contract_checks"
   run_check "Competition API Contract Lanes" "run_competition_api_tests"
   run_check "Competition Scoring Determinism Lanes" "run_scoring_tests"
 
