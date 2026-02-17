@@ -16,11 +16,6 @@
 2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-public.sh`
 3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
 
-### Status Terms
-- `VERIFIED`: backed by accepted canonical evidence.
-- `UNVERIFIED`: described in code/docs but not covered by accepted evidence.
-- `NOT_IMPLEMENTED`: intentionally modeled but blocked at runtime.
-
 ### Revalidation Triggers
 Runtime claims are stale until revalidated when platform-affecting files change:
 - `apps/api/app/routers/*`
@@ -54,8 +49,6 @@ This section defines explicit scope ownership for Markdown under `docs/`.
 - Runtime contract precedence remains:
   1. Latest accepted evidence under `docs/evidence/<date>/`
   2. Validation runners under `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-public.sh`
-  3. Source contracts in runtime code/config
-- If a docs file cannot be assigned a narrow explicit scope, discard it.
 
 #### Top-Level Scope Ownership
 | File | Owner Scope | Keep/Discard |
@@ -190,12 +183,3 @@ Schema-level runtime contracts are code-owned:
 Runtime summary:
 - MedForge is a single-host control/data-plane platform for PUBLIC GPU code-server sessions and permanent PUBLIC competitions.
 - API models include `PUBLIC` and `PRIVATE`, but runtime create for `tier=private` returns `501` (`NOT_IMPLEMENTED`).
-
-## Detailed References
-- `docs/architecture.md`
-- `docs/sessions.md`
-- `docs/auth-routing.md`
-- `docs/phase-checking-strategy.md`
-- `docs/validation-logs.md`
-- `docs/runbook.md`
-- `apps/api/app/models.py`
