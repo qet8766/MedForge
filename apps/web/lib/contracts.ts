@@ -1,7 +1,7 @@
 export type CompetitionSummary = {
   slug: string;
   title: string;
-  competition_tier: "public" | "private";
+  competition_exposure: "external" | "internal";
   metric: string;
   metric_version: string;
   scoring_mode: string;
@@ -34,6 +34,7 @@ export type DatasetSummary = {
   slug: string;
   title: string;
   source: string;
+  exposure: "external" | "internal";
 };
 
 export type DatasetDetail = DatasetSummary & {
@@ -53,6 +54,7 @@ export type MeResponse = {
   user_id: string;
   role: "user" | "admin";
   email: string | null;
+  can_use_internal: boolean;
 };
 
 export type SessionStatus = "starting" | "running" | "stopping" | "stopped" | "error";
@@ -60,7 +62,7 @@ export type SessionStatus = "starting" | "running" | "stopping" | "stopped" | "e
 export type SessionRead = {
   id: string;
   user_id: string;
-  tier: "public" | "private";
+  exposure: "external" | "internal";
   pack_id: string;
   status: SessionStatus;
   container_id: string | null;

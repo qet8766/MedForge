@@ -22,7 +22,7 @@ class CompetitionSummary(BaseModel):
 
     slug: str
     title: str
-    competition_tier: Literal["public", "private"]
+    competition_exposure: Literal["external", "internal"]
     metric: str
     metric_version: str
     scoring_mode: str
@@ -32,9 +32,9 @@ class CompetitionSummary(BaseModel):
     is_permanent: bool
     submission_cap_per_day: int
 
-    @field_validator("competition_tier", mode="before")
+    @field_validator("competition_exposure", mode="before")
     @classmethod
-    def normalize_competition_tier(cls, value: object) -> str:
+    def normalize_competition_exposure(cls, value: object) -> str:
         return _lower_enum_value(value)
 
 
@@ -51,6 +51,12 @@ class DatasetSummary(BaseModel):
     slug: str
     title: str
     source: str
+    exposure: Literal["external", "internal"]
+
+    @field_validator("exposure", mode="before")
+    @classmethod
+    def normalize_dataset_exposure(cls, value: object) -> str:
+        return _lower_enum_value(value)
 
 
 class DatasetDetail(DatasetSummary):
@@ -109,10 +115,12 @@ class MeResponse(BaseModel):
     user_id: UUID
     role: Role
     email: str | None = None
+    can_use_internal: bool
 
 
 class SessionCreateRequest(BaseModel):
-    tier: Literal["public", "private"] = "public"
+    model_config = ConfigDict(extra="forbid")
+
     pack_id: UUID | None = None
 
 
@@ -125,7 +133,7 @@ class SessionRead(BaseModel):
 
     id: UUID
     user_id: UUID
-    tier: Literal["public", "private"]
+    exposure: Literal["external", "internal"]
     pack_id: UUID
     status: SessionStatus
     container_id: str | None
@@ -137,9 +145,9 @@ class SessionRead(BaseModel):
     stopped_at: datetime | None
     error_message: str | None
 
-    @field_validator("tier", mode="before")
+    @field_validator("exposure", mode="before")
     @classmethod
-    def normalize_tier(cls, value: object) -> str:
+    def normalize_exposure(cls, value: object) -> str:
         return _lower_enum_value(value)
 
 
@@ -161,6 +169,7 @@ class AuthUserResponse(BaseModel):
     user_id: UUID
     email: str
     role: Role
+    can_use_internal: bool
 
 
 class HealthResponse(BaseModel):

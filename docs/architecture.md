@@ -1,5 +1,11 @@
 # MedForge Architecture (Canonical)
 
+> V2 Update (2026-02-17): Exposure split is now canonical.
+> - API read/write surfaces: `/api/v2/external/*` and `/api/v2/internal/*`
+> - Shared auth/identity: `/api/v2/auth/*`, `/api/v2/me`
+> - Session wildcard hosts: `s-<slug>.external.medforge.<domain>` and `s-<slug>.internal.medforge.<domain>`
+> Any residual `PUBLIC/PRIVATE`, `tier`, or non-split `/api/v2/sessions` wording below is legacy and superseded by this v2 contract.
+
 Implementation status note (2026-02-17):
 - Canonical validation lane is `remote-public` only.
 - Latest full progression is `PASS` through Phase 5 (`docs/phase-checking-strategy.md`, `docs/validation-logs.md`).
@@ -47,17 +53,17 @@ Runtime claims become stale until revalidated when these change:
 ## Platform Scope
 
 Platform overview:
-- MedForge provisions PUBLIC GPU-backed browser development sessions (`code-server`) and permanent PUBLIC competitions on a single host.
+- MedForge provisions EXTERNAL and INTERNAL GPU-backed browser development sessions (`code-server`) and permanent competitions on a single host.
 
 Primary goals:
-- Stable PUBLIC session lifecycle (create, run, stop, recover) with one physical GPU per active session.
-- Permanent PUBLIC competitions with deterministic scoring/leaderboard behavior.
+- Stable exposure-scoped session lifecycle (create, run, stop, recover) with one physical GPU per active session.
+- Permanent EXTERNAL competitions with deterministic scoring/leaderboard behavior.
 - Wildcard owner-bound session routing and isolated per-session workspaces with stop snapshots.
 
 Constraints:
 - Single-host deployment target.
 - Stack: Next.js (`apps/web`), FastAPI + SQLModel (`apps/api`), MariaDB, Caddy, Docker, ZFS.
-- PRIVATE tier remains modeled in policy/data surfaces; runtime create for `tier=private` returns `501`.
+- INTERNAL exposure is runtime-enabled behind explicit user entitlement (`can_use_internal`).
 
 Non-goals:
 - Multi-node scheduling/orchestration.
@@ -78,7 +84,7 @@ Non-goals:
 ### Data Plane
 - Runtime containers: `mf-session-<slug>` (one per active session).
 - Runtime IDE: `code-server --auth none`.
-- Allocation model: one physical GPU per active PUBLIC session.
+- Allocation model: one physical GPU per active session.
 - Workspace model: one per-session ZFS dataset mounted into each runtime.
 
 Source manifests: `deploy/compose/docker-compose.yml`, `deploy/caddy/Caddyfile`, `deploy/packs/default/Dockerfile`, `deploy/compose/.env.example`.
@@ -88,36 +94,41 @@ Source manifests: `deploy/compose/docker-compose.yml`, `deploy/caddy/Caddyfile`,
 | Network | Purpose |
 | --- | --- |
 | `medforge-control` | Control-plane traffic (`web <-> api <-> db <-> caddy`) |
-| `medforge-public-sessions` | PUBLIC runtime session containers |
-| `medforge-private-sessions` | PRIVATE-tier placeholder only |
+| `medforge-external-sessions` | EXTERNAL runtime session containers |
+| `medforge-internal-sessions` | INTERNAL runtime session containers (no internet egress) |
 
-Fixed IP contract on `medforge-public-sessions`: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
+Fixed IP contract on `medforge-external-sessions`: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
 
 | Hostname | Routed Service |
 | --- | --- |
 | `medforge.<domain>` | `medforge-web` |
+| `external.medforge.<domain>` | `medforge-web` (EXTERNAL surface) |
+| `internal.medforge.<domain>` | `medforge-web` (INTERNAL surface) |
 | `api.medforge.<domain>` | `medforge-api` |
-| `s-<slug>.medforge.<domain>` | `mf-session-<slug>:8080` via API-authorized upstream |
+| `s-<slug>.external.medforge.<domain>` | EXTERNAL session upstream |
+| `s-<slug>.internal.medforge.<domain>` | INTERNAL session upstream |
 
 Routing invariants:
 - Caddy strips client `X-Upstream`; client hints cannot select session upstreams.
-- Upstream selection comes only from API `GET /api/v1/auth/session-proxy`.
+- Upstream selection comes only from API `GET /api/v2/auth/session-proxy`.
 - Missing API-supplied upstream fails closed (`502`).
-- External wildcard `.../api/v1/auth/session-proxy` is blocked (`403`).
+- External wildcard `.../api/v2/auth/session-proxy` is blocked (`403`).
 - Wildcard root matrix: `401` unauthenticated, `403` non-owner, `200` owner/admin for running session; after async stop finalization -> `404`.
 
 Reality gate for public claims:
 - `DOMAIN` must be consistent across Compose/API/web config.
-- Public DNS must resolve `medforge.<domain>`, `api.medforge.<domain>`, `s-<slug>.medforge.<domain>`.
+- Public DNS must resolve `medforge.<domain>`, `external.medforge.<domain>`, `internal.medforge.<domain>`, `api.medforge.<domain>`.
 - TLS hostname validation must pass for `medforge.<domain>` and `api.medforge.<domain>`.
 
 ## Session Runtime Contract
 
-API prefix: `/api/v1`.
+API prefix: `/api/v2`.
 
 Endpoint set:
-- Session control: `GET /api/v1/sessions/current`, `POST /api/v1/sessions`, `POST /api/v1/sessions/{id}/stop`.
-- Routing auth: `GET /api/v1/auth/session-proxy`.
+- Session control:
+  - `GET /api/v2/external/sessions/current`, `POST /api/v2/external/sessions`, `POST /api/v2/external/sessions/{id}/stop`
+  - `GET /api/v2/internal/sessions/current`, `POST /api/v2/internal/sessions`, `POST /api/v2/internal/sessions/{id}/stop`
+- Routing auth: `GET /api/v2/auth/session-proxy`.
 - Health: `GET /healthz`.
 
 State model: active = `starting|running|stopping`; terminal = `stopped|error`.
@@ -128,7 +139,7 @@ Runtime invariants:
 - Stop requests are intent-based (`202`); stop/snapshot finalization is asynchronous in recovery.
 - Recovery runs on startup and poll loop, using exponential backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`.
 - Health contract: `200` + `ok` when recovery is healthy; `503` + `degraded` when enabled recovery is unavailable.
-- `POST /api/v1/sessions` with `tier=private` returns `501` (`NOT_IMPLEMENTED`).
+- INTERNAL routes require authenticated users with `can_use_internal=true`.
 
 API response contract:
 - Success: envelope `{data, meta}`.
@@ -164,13 +175,13 @@ Operational detail references: `docs/runbook.md`, `ops/storage/zfs-setup.sh`, `o
 
 ## Competition Architecture
 
-Seeded permanent PUBLIC competitions: `titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`.
+Seeded permanent EXTERNAL competitions: `titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`.
 
 Competition posture: `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, no alpha-finals stage.
 
 Competition endpoints:
-- Read: `GET /api/v1/competitions`, `GET /api/v1/competitions/{slug}`, `GET /api/v1/competitions/{slug}/leaderboard`, `GET /api/v1/datasets`, `GET /api/v1/datasets/{slug}`.
-- Write/admin: `POST /api/v1/competitions/{slug}/submissions`, `GET /api/v1/competitions/{slug}/submissions/me`, `POST /api/v1/admin/submissions/{submission_id}/score`.
+- Read: `GET /api/v2/competitions`, `GET /api/v2/competitions/{slug}`, `GET /api/v2/competitions/{slug}/leaderboard`, `GET /api/v2/datasets`, `GET /api/v2/datasets/{slug}`.
+- Write/admin: `POST /api/v2/competitions/{slug}/submissions`, `GET /api/v2/competitions/{slug}/submissions/me`, `POST /api/v2/admin/submissions/{submission_id}/score`.
 
 Competition invariants:
 - Valid submissions can produce non-null official `primary_score`.
@@ -181,7 +192,7 @@ Competition invariants:
 
 | Claim | Status | Notes |
 | --- | --- | --- |
-| PRIVATE tier runtime create path (`tier=private`) | `NOT_IMPLEMENTED` | Runtime returns `501` by design. |
+| INTERNAL exposure runtime create path (`exposure=internal`) | `NOT_IMPLEMENTED` | Runtime returns `501` by design. |
 | Private-network session runtime enforcement | `NOT_IMPLEMENTED` | Model exists structurally; no active private runtime path. |
 | Multi-host scheduling/orchestration claims | `UNVERIFIED` | Canonical evidence scope is single-host. |
 | Automated snapshot retention workflows | `NOT_IMPLEMENTED` | Not part of current runtime behavior. |

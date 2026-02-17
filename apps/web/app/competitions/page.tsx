@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { apiGet, type CompetitionSummary } from "@/lib/api";
+import { inferServerSurface } from "@/lib/server-surface";
+import { apiPathForSurface } from "@/lib/surface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,13 +10,14 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function CompetitionsPage(): Promise<React.JSX.Element> {
-  const competitions = await apiGet<CompetitionSummary[]>("/api/v1/competitions");
+  const surface = await inferServerSurface();
+  const competitions = await apiGet<CompetitionSummary[]>(apiPathForSurface(surface, "/competitions"));
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Competitions</h1>
-        <p className="text-muted-foreground">All alpha competitions are permanent and PUBLIC tier.</p>
+        <p className="text-muted-foreground">Active {surface.toUpperCase()} competitions.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -23,7 +26,7 @@ export default async function CompetitionsPage(): Promise<React.JSX.Element> {
             <CardHeader>
               <CardTitle>{competition.title}</CardTitle>
               <CardDescription className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{competition.competition_tier}</Badge>
+                <Badge variant="secondary">{competition.competition_exposure}</Badge>
                 <Badge variant="outline" className="font-mono text-xs">
                   {competition.metric}
                 </Badge>

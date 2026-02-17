@@ -11,6 +11,7 @@ import {
   type SessionCurrentResponse,
   type SessionRead,
 } from "@/lib/api";
+import { apiPathForSurface, inferClientSurface } from "@/lib/surface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,13 +34,14 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 }
 
 export default function SessionsPage(): React.JSX.Element {
+  const surface = inferClientSurface();
   const [status, setStatus] = useState<string>("No session action yet.");
   const [error, setError] = useState<string>("");
   const [currentSession, setCurrentSession] = useState<SessionRead | null>(null);
 
   const rehydrateCurrentSession = useCallback(async (announce: boolean): Promise<void> => {
     try {
-      const response = await apiGet<SessionCurrentResponse>("/api/v1/sessions/current");
+      const response = await apiGet<SessionCurrentResponse>(apiPathForSurface(surface, "/sessions/current"));
       setCurrentSession(response.session);
       if (!announce) {
         return;
@@ -66,8 +68,10 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleWhoAmI(): Promise<void> {
     setError("");
     try {
-      const me = await apiGet<MeResponse>("/api/v1/me");
-      setStatus(`Signed in as ${me.email ?? me.user_id} (${me.role}).`);
+      const me = await apiGet<MeResponse>("/api/v2/me");
+      setStatus(
+        `Signed in as ${me.email ?? me.user_id} (${me.role}). Internal access: ${me.can_use_internal ? "yes" : "no"}.`
+      );
       await rehydrateCurrentSession(false);
     } catch (requestError) {
       setStatus("Not authenticated.");
@@ -78,7 +82,7 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleCreateSession(): Promise<void> {
     setError("");
     try {
-      const response = await apiPostJson<SessionCreateResponse>("/api/v1/sessions", { tier: "public" });
+      const response = await apiPostJson<SessionCreateResponse>(apiPathForSurface(surface, "/sessions"), {});
       setStatus(
         `${response.message} Slug: ${response.session.slug}, GPU: ${response.session.gpu_id}, status: ${response.session.status}.`
       );
@@ -96,7 +100,10 @@ export default function SessionsPage(): React.JSX.Element {
     }
 
     try {
-      const response = await apiPostJson<SessionActionResponse>(`/api/v1/sessions/${currentSession.id}/stop`, {});
+      const response = await apiPostJson<SessionActionResponse>(
+        apiPathForSurface(surface, `/sessions/${currentSession.id}/stop`),
+        {}
+      );
       setStatus(response.message);
       await rehydrateCurrentSession(false);
     } catch (requestError) {
@@ -107,7 +114,7 @@ export default function SessionsPage(): React.JSX.Element {
   async function handleLogout(): Promise<void> {
     setError("");
     try {
-      await apiPostJson<SessionActionResponse>("/api/v1/auth/logout", {});
+      await apiPostJson<SessionActionResponse>("/api/v2/auth/logout", {});
       setStatus("Signed out.");
       setCurrentSession(null);
     } catch (requestError) {
@@ -120,7 +127,8 @@ export default function SessionsPage(): React.JSX.Element {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Sessions</h1>
         <p className="text-muted-foreground">
-          Create a PUBLIC session, then request stop. Stop is asynchronous and final state arrives via recovery.
+          Create an {surface.toUpperCase()} session, then request stop. Stop is asynchronous and final state arrives
+          via recovery.
         </p>
       </div>
 
@@ -132,7 +140,7 @@ export default function SessionsPage(): React.JSX.Element {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <Button onClick={handleCreateSession} data-testid="session-create">
-              Create PUBLIC Session
+              Create {surface.toUpperCase()} Session
             </Button>
             <Button
               variant="outline"
@@ -143,7 +151,7 @@ export default function SessionsPage(): React.JSX.Element {
               Stop Current Session
             </Button>
             <Button variant="secondary" onClick={handleWhoAmI} data-testid="session-whoami">
-              Check /api/v1/me
+              Check /api/v2/me
             </Button>
             <Button variant="ghost" onClick={handleLogout} data-testid="session-logout">
               Sign out

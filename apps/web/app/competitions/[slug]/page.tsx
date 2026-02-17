@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { apiGet, type CompetitionDetail } from "@/lib/api";
+import { inferServerSurface } from "@/lib/server-surface";
+import { apiPathForSurface } from "@/lib/surface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,10 @@ export default async function CompetitionDetailPage({
   params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
   const resolvedParams = await params;
-  const competition = await apiGet<CompetitionDetail>(`/api/v1/competitions/${resolvedParams.slug}`);
+  const surface = await inferServerSurface();
+  const competition = await apiGet<CompetitionDetail>(
+    apiPathForSurface(surface, `/competitions/${resolvedParams.slug}`)
+  );
 
   return (
     <div className="space-y-6">
@@ -22,7 +27,7 @@ export default async function CompetitionDetailPage({
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle className="text-2xl">{competition.title}</CardTitle>
-            <Badge variant="secondary">{competition.competition_tier}</Badge>
+            <Badge variant="secondary">{competition.competition_exposure}</Badge>
           </div>
           <CardDescription>{competition.description}</CardDescription>
         </CardHeader>

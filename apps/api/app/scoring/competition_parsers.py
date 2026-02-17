@@ -92,3 +92,46 @@ def _parse_detection_submission(rows: list[dict[str, str]]) -> dict[str, list[Bo
                 )
             )
     return result
+
+
+def _decode_rle_mask(rle_mask: str, *, field: str) -> set[int]:
+    value = rle_mask.strip()
+    if not value:
+        return set()
+
+    tokens = value.split()
+    if len(tokens) % 2 != 0:
+        raise ValueError(f"{field} must contain an even number of start/length tokens.")
+
+    pixels: set[int] = set()
+    for i in range(0, len(tokens), 2):
+        try:
+            start = int(tokens[i])
+            length = int(tokens[i + 1])
+        except ValueError as exc:
+            raise ValueError(f"{field} must contain integer start/length tokens.") from exc
+        if start < 1:
+            raise ValueError(f"{field} run start must be >= 1.")
+        if length < 1:
+            raise ValueError(f"{field} run length must be >= 1.")
+        run_start = start - 1
+        run_end = run_start + length
+        pixels.update(range(run_start, run_end))
+    return pixels
+
+
+def _validate_segmentation_row(row: dict[str, str]) -> None:
+    image_id = row.get("image_id", "").strip()
+    if not image_id:
+        raise ValueError("image_id is required.")
+    _decode_rle_mask(row.get("rle_mask", ""), field="rle_mask")
+
+
+def _parse_segmentation_rows(rows: list[dict[str, str]]) -> dict[str, set[int]]:
+    parsed: dict[str, set[int]] = {}
+    for row in rows:
+        image_id = row["image_id"].strip()
+        if image_id in parsed:
+            raise ValueError(f"Duplicate image_id in submission: {image_id}")
+        parsed[image_id] = _decode_rle_mask(row.get("rle_mask", ""), field="rle_mask")
+    return parsed

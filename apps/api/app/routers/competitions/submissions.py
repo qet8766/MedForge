@@ -9,6 +9,7 @@ from sqlmodel import Session
 from app.api_contract import ApiEnvelope, envelope
 from app.config import Settings, get_settings
 from app.database import get_session
+from app.models import Exposure
 from app.pagination import decode_offset_cursor, encode_offset_cursor, validate_limit
 from app.schemas import SubmissionCreateResponse, SubmissionRead
 from app.scoring import validate_submission_schema
@@ -16,6 +17,7 @@ from app.services import enforce_submission_cap, process_submission_by_id
 from app.storage import SubmissionUploadTooLargeError, store_submission_file
 
 from .dependencies import get_current_user_id_checked, require_allowed_origin_checked
+from .dependencies import get_bound_exposure
 from .errors import (
     from_http_exception,
     submission_processing_failed,
@@ -45,10 +47,11 @@ async def create_submission(
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
+    exposure: Exposure = Depends(get_bound_exposure),
     _origin_guard: None = Depends(require_allowed_origin_checked),
     user_id: UUID = Depends(get_current_user_id_checked),
 ) -> ApiEnvelope[SubmissionCreateResponse]:
-    competition = competition_or_404(session, slug, for_update=True)
+    competition = competition_or_404(session, slug, exposure=exposure, for_update=True)
 
     try:
         remaining_before = enforce_submission_cap(session, competition=competition, user_id=user_id)
@@ -113,13 +116,14 @@ def list_my_submissions(
     request: Request,
     slug: str,
     session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
     user_id: UUID = Depends(get_current_user_id_checked),
     limit: int = 50,
     cursor: str | None = None,
 ) -> ApiEnvelope[list[SubmissionRead]]:
     limit = validate_limit(limit)
     offset = decode_offset_cursor(cursor)
-    competition = competition_or_404(session, slug)
+    competition = competition_or_404(session, slug, exposure=exposure)
     submissions = list_submissions_for_user(
         session,
         competition_id=competition.id,

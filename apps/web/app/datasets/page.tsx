@@ -1,13 +1,16 @@
 import Link from "next/link";
 
 import { apiGet, type DatasetSummary } from "@/lib/api";
+import { inferServerSurface } from "@/lib/server-surface";
+import { apiPathForSurface } from "@/lib/surface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default async function DatasetsPage(): Promise<React.JSX.Element> {
-  const datasets = await apiGet<DatasetSummary[]>("/api/v1/datasets");
+  const surface = await inferServerSurface();
+  const datasets = await apiGet<DatasetSummary[]>(apiPathForSurface(surface, "/datasets"));
 
   return (
     <div className="space-y-6">
@@ -20,7 +23,9 @@ export default async function DatasetsPage(): Promise<React.JSX.Element> {
           <Card key={dataset.slug} className="transition-colors hover:border-primary/40">
             <CardHeader>
               <CardTitle>{dataset.title}</CardTitle>
-              <CardDescription>Source: {dataset.source}</CardDescription>
+              <CardDescription>
+                Source: {dataset.source} | exposure: {dataset.exposure}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Button variant="link" className="h-auto p-0" asChild>

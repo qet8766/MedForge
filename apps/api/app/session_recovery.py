@@ -50,7 +50,7 @@ def _log_session_stop(row: SessionRecord, *, reason: str) -> None:
         "session.stop",
         session_id=str(row.id),
         user_id=str(row.user_id),
-        tier=row.tier.value,
+        exposure=row.exposure.value,
         gpu_id=row.gpu_id,
         pack_id=str(row.pack_id),
         slug=row.slug,

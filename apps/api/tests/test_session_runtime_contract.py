@@ -67,12 +67,12 @@ def test_service_start_builds_container_name_and_uses_workspace_mountpoint() -> 
         SessionStartRequest(
             session_id=uuid4(),
             user_id=uuid4(),
-            tier="PUBLIC",
+            exposure="EXTERNAL",
             slug="abc123de",
             gpu_id=0,
             workspace_zfs="tank/medforge/workspaces/u/s",
             pack_image_ref="image@sha256:123",
-            public_sessions_network="medforge-public-sessions",
+            sessions_network="medforge-external-sessions",
             start_timeout_seconds=5,
             resource_limits=SessionResourceLimits(cpu_shares=1024),
         )

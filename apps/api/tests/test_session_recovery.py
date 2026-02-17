@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlmodel import Session, select
 
 from app.config import Settings
-from app.models import Pack, SessionRecord, SessionStatus, Tier, User
+from app.models import Pack, SessionRecord, SessionStatus, Exposure, User
 from app.session_recovery import UNKNOWN_STATE_MAX_RETRIES, poll_active_sessions_once, reconcile_on_startup
 from app.session_runtime import (
     MockSessionRuntime,
@@ -89,7 +89,7 @@ def _insert_session_row(
 ) -> SessionRecord:
     session_row = SessionRecord(
         user_id=user_id,
-        tier=Tier.PUBLIC,
+        exposure=Exposure.EXTERNAL,
         pack_id=pack_id,
         status=status,
         container_id=container_id,

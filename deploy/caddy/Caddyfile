@@ -15,21 +15,28 @@ medforge.{$DOMAIN} {
 	reverse_proxy medforge-web:3000
 }
 
+external.medforge.{$DOMAIN} {
+	import tls_dns
+	reverse_proxy medforge-web:3000
+}
+
+internal.medforge.{$DOMAIN} {
+	import tls_dns
+	reverse_proxy medforge-web:3000
+}
+
 # ── API ───────────────────────────────────────────────────
 api.medforge.{$DOMAIN} {
 	import tls_dns
 	reverse_proxy medforge-api:8000
 }
 
-# ── Session wildcard ──────────────────────────────────────
-# Catches all *.medforge.<domain> not matched above.
-# Only s-<slug> subdomains are expected; forward_auth returns
-# 404 for anything else.
-*.medforge.{$DOMAIN} {
+# ── Session wildcard (EXTERNAL) ───────────────────────────
+*.external.medforge.{$DOMAIN} {
 	import tls_dns
 
 	# Internal auth endpoint must never be user-facing on wildcard hosts.
-	@blocked_internal_auth path /api/v1/auth/session-proxy
+	@blocked_internal_auth path /api/v2/auth/session-proxy
 	handle @blocked_internal_auth {
 		respond "Forbidden" 403
 	}
@@ -39,7 +46,7 @@ api.medforge.{$DOMAIN} {
 		request_header -X-Upstream
 
 		forward_auth medforge-api:8000 {
-			uri /api/v1/auth/session-proxy
+			uri /api/v2/auth/session-proxy
 			header_up Host {host}
 			header_up X-Forwarded-For {remote}
 			header_up -Connection
@@ -48,6 +55,39 @@ api.medforge.{$DOMAIN} {
 		}
 
 		# Fail closed if the auth endpoint did not set an upstream.
+		@missing not header X-Medforge-Upstream *
+		handle @missing {
+			respond "Session upstream missing" 502
+		}
+
+		reverse_proxy {http.request.header.X-Medforge-Upstream} {
+			header_up Host {host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+}
+
+# ── Session wildcard (INTERNAL) ───────────────────────────
+*.internal.medforge.{$DOMAIN} {
+	import tls_dns
+
+	@blocked_internal_auth path /api/v2/auth/session-proxy
+	handle @blocked_internal_auth {
+		respond "Forbidden" 403
+	}
+
+	handle {
+		request_header -X-Upstream
+
+		forward_auth medforge-api:8000 {
+			uri /api/v2/auth/session-proxy
+			header_up Host {host}
+			header_up X-Forwarded-For {remote}
+			header_up -Connection
+			header_up -Upgrade
+			copy_headers X-Upstream>X-Medforge-Upstream
+		}
+
 		@missing not header X-Medforge-Upstream *
 		handle @missing {
 			respond "Session upstream missing" 502

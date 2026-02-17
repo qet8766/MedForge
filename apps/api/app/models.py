@@ -16,9 +16,9 @@ from app.competition_policy import (
 from app.util import utcnow
 
 
-class Tier(StrEnum):
-    PUBLIC = "PUBLIC"
-    PRIVATE = "PRIVATE"
+class Exposure(StrEnum):
+    EXTERNAL = "EXTERNAL"
+    INTERNAL = "INTERNAL"
 
 
 class Role(StrEnum):
@@ -34,15 +34,15 @@ class SessionStatus(StrEnum):
     ERROR = "error"
 
 
-class PackTier(StrEnum):
-    PUBLIC = "PUBLIC"
-    PRIVATE = "PRIVATE"
+class PackExposure(StrEnum):
+    EXTERNAL = "EXTERNAL"
+    INTERNAL = "INTERNAL"
     BOTH = "BOTH"
 
 
-class CompetitionTier(StrEnum):
-    PUBLIC = "PUBLIC"
-    PRIVATE = "PRIVATE"
+class CompetitionExposure(StrEnum):
+    EXTERNAL = "EXTERNAL"
+    INTERNAL = "INTERNAL"
 
 
 class CompetitionStatus(StrEnum):
@@ -64,6 +64,7 @@ class User(SQLModel, table=True):
     email: str = Field(index=True, unique=True, max_length=320)
     password_hash: str = Field(max_length=255)
     role: Role = Field(default=Role.USER, sa_column=Column(SAEnum(Role, name="role"), nullable=False))
+    can_use_internal: bool = Field(default=False)
     max_concurrent_sessions: int = Field(default=1)
     created_at: datetime = Field(default_factory=utcnow)
 
@@ -87,7 +88,7 @@ class Pack(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=120)
-    tier: PackTier = Field(sa_column=Column(SAEnum(PackTier, name="pack_tier"), nullable=False))
+    exposure: PackExposure = Field(sa_column=Column(SAEnum(PackExposure, name="pack_exposure"), nullable=False))
     image_ref: str = Field(max_length=255)
     image_digest: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=utcnow)
@@ -109,7 +110,7 @@ class SessionRecord(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
-    tier: Tier = Field(sa_column=Column(SAEnum(Tier, name="tier"), nullable=False))
+    exposure: Exposure = Field(sa_column=Column(SAEnum(Exposure, name="exposure"), nullable=False))
     pack_id: uuid.UUID = Field(foreign_key="packs.id", index=True)
     status: SessionStatus = Field(sa_column=Column(SAEnum(SessionStatus, name="session_status"), nullable=False))
     container_id: str | None = Field(default=None, max_length=128)
@@ -130,6 +131,7 @@ class Dataset(SQLModel, table=True):
     slug: str = Field(index=True, unique=True, max_length=120)
     title: str = Field(max_length=255)
     source: str = Field(max_length=120)
+    exposure: Exposure = Field(sa_column=Column(SAEnum(Exposure, name="dataset_exposure"), nullable=False))
     license: str = Field(max_length=255)
     storage_path: str = Field(max_length=512)
     bytes: int = Field(default=0)
@@ -147,8 +149,8 @@ class Competition(SQLModel, table=True):
     slug: str = Field(index=True, unique=True, max_length=120)
     title: str = Field(max_length=255)
     description: str = Field(default="", max_length=4000)
-    competition_tier: CompetitionTier = Field(
-        sa_column=Column(SAEnum(CompetitionTier, name="competition_tier"), nullable=False)
+    competition_exposure: CompetitionExposure = Field(
+        sa_column=Column(SAEnum(CompetitionExposure, name="competition_exposure"), nullable=False)
     )
     status: CompetitionStatus = Field(
         default=CompetitionStatus.ACTIVE,

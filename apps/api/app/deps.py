@@ -20,6 +20,7 @@ class AuthPrincipal:
     user_id: UUID
     role: Role
     email: str | None
+    can_use_internal: bool
     source: str
 
 
@@ -106,6 +107,7 @@ def _principal_from_cookie(
         user_id=user.id,
         role=user.role,
         email=user.email,
+        can_use_internal=user.can_use_internal,
         source="cookie",
     )
 
@@ -136,4 +138,15 @@ def require_admin_access(
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Admin access required.",
+    )
+
+
+def require_internal_access(
+    principal: AuthPrincipal = Depends(get_current_user),
+) -> AuthPrincipal:
+    if principal.can_use_internal:
+        return principal
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Internal access required.",
     )

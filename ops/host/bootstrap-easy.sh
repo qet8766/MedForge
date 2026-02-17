@@ -199,9 +199,9 @@ ensure_docker_data_root() {
 }
 
 ensure_networks_and_firewall() {
-  if ! run_docker network inspect medforge-public-sessions >/dev/null 2>&1; then
-    run_docker network create --subnet=172.30.0.0/24 medforge-public-sessions >/dev/null
-    echo "Created Docker network medforge-public-sessions."
+  if ! run_docker network inspect medforge-external-sessions >/dev/null 2>&1; then
+    run_docker network create --subnet=172.30.0.0/24 medforge-external-sessions >/dev/null
+    echo "Created Docker network medforge-external-sessions."
   fi
   run_sudo bash "${ROOT_DIR}/ops/network/firewall-setup.sh"
 }

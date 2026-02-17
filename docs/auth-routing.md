@@ -1,5 +1,11 @@
 ## Authentication & Routing
 
+> V2 Update (2026-02-17): API/auth contract is now `/api/v2/*` with exposure split.
+> - Shared auth: `/api/v2/auth/*`, `/api/v2/me`
+> - Guarded state-changing endpoints are under `/api/v2/external/*` and `/api/v2/internal/*`
+> - Session wildcard hosts are exposure-qualified (`*.external.medforge.<domain>`, `*.internal.medforge.<domain>`).
+> Any remaining non-split route examples below are legacy and superseded by the v2 exposure contract.
+
 Implementation status note (2026-02-17):
 
 - Canonical remote-public validation is `PASS` through Phase 5 (`@docs/phase-checking-strategy.md`, `@docs/validation-logs.md`).
@@ -43,8 +49,8 @@ Authentication and wildcard routing contract for public MedForge hosts.
   - `Domain` from `COOKIE_DOMAIN` (default `.medforge.<domain>` when `DOMAIN` is set)
   - `Path=/`
 - Cookie stores a random session token; database stores only its hash.
-- `GET /api/v1/me` authenticates using the cookie principal.
-- `POST /api/v1/auth/logout` revokes the active token hash and clears the cookie.
+- `GET /api/v2/me` authenticates using the cookie principal.
+- `POST /api/v2/auth/logout` revokes the active token hash and clears the cookie.
 - Session validity enforces both idle and max TTL (`AUTH_IDLE_TTL_SECONDS`, `AUTH_MAX_TTL_SECONDS`).
 
 ### Origin Allowlist Contract
@@ -56,13 +62,17 @@ Authentication and wildcard routing contract for public MedForge hosts.
   - `*.medforge.<domain>`
 - No `Origin` header is accepted by this guard.
 - Guarded state-changing endpoints:
-  - `POST /api/v1/auth/signup`
-  - `POST /api/v1/auth/login`
-  - `POST /api/v1/auth/logout`
-  - `POST /api/v1/sessions`
-  - `POST /api/v1/sessions/{id}/stop`
-  - `POST /api/v1/competitions/{slug}/submissions`
-  - `POST /api/v1/admin/submissions/{submission_id}/score`
+  - `POST /api/v2/auth/signup`
+  - `POST /api/v2/auth/login`
+  - `POST /api/v2/auth/logout`
+  - `POST /api/v2/external/sessions`
+  - `POST /api/v2/internal/sessions`
+  - `POST /api/v2/external/sessions/{id}/stop`
+  - `POST /api/v2/internal/sessions/{id}/stop`
+  - `POST /api/v2/external/competitions/{slug}/submissions`
+  - `POST /api/v2/internal/competitions/{slug}/submissions`
+  - `POST /api/v2/external/admin/submissions/{submission_id}/score`
+  - `POST /api/v2/internal/admin/submissions/{submission_id}/score`
 
 ### Wildcard Routing Contract (Caddy + forward_auth)
 
@@ -70,11 +80,12 @@ Full config: `@deploy/caddy/Caddyfile`
 
 Internal authorization endpoint:
 
-- `GET /api/v1/auth/session-proxy` (API host path used by Caddy `forward_auth`)
+- `GET /api/v2/auth/session-proxy` (API host path used by Caddy `forward_auth`)
 
 Wildcard host protections:
 
-- External callers to `https://s-<slug>.medforge.<domain>/api/v1/auth/session-proxy` are blocked with `403` by Caddy.
+- External callers to `https://s-<slug>.external.medforge.<domain>/api/v2/auth/session-proxy` and
+  `https://s-<slug>.internal.medforge.<domain>/api/v2/auth/session-proxy` are blocked with `403` by Caddy.
 - Client-supplied `X-Upstream` is stripped before auth.
 
 `session-proxy` authorization matrix:

@@ -80,7 +80,7 @@ def _default_cors_origins() -> tuple[str, ...]:
         sorted(
             f"{scheme}://{prefix}medforge.{domain}"
             for scheme in ("http", "https")
-            for prefix in ("", "api.")
+            for prefix in ("", "api.", "external.", "internal.")
         )
     )
 
@@ -112,7 +112,14 @@ class Settings:
     cookie_secure: bool = _env_bool("COOKIE_SECURE", "true")
     cookie_samesite: str = _env("COOKIE_SAMESITE", "lax", lower=True)
     cors_origins: tuple[str, ...] = field(default_factory=_default_cors_origins)
-    public_sessions_network: str = _env("PUBLIC_SESSIONS_NETWORK", "medforge-public-sessions")
+    external_sessions_network: str = field(
+        default_factory=lambda: (
+            os.getenv("EXTERNAL_SESSIONS_NETWORK")
+            or os.getenv("PUBLIC_SESSIONS_NETWORK")
+            or "medforge-external-sessions"
+        ).strip()
+    )
+    internal_sessions_network: str = _env("INTERNAL_SESSIONS_NETWORK", "medforge-internal-sessions")
     workspace_zfs_root: str = _env("WORKSPACE_ZFS_ROOT", "tank/medforge/workspaces")
     session_allocation_max_retries: int = _env_int("SESSION_ALLOCATION_MAX_RETRIES", 3, min=1)
     session_container_start_timeout_seconds: int = _env_int("SESSION_CONTAINER_START_TIMEOUT_SECONDS", 30, min=1)

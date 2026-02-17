@@ -76,7 +76,7 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
     env = {
         "MEDFORGE_SESSION_ID": str(request.session_id),
         "MEDFORGE_USER_ID": str(request.user_id),
-        "MEDFORGE_TIER": request.tier,
+        "MEDFORGE_EXPOSURE": request.exposure,
         "MEDFORGE_GPU_ID": str(request.gpu_id),
         "NVIDIA_VISIBLE_DEVICES": str(request.gpu_id),
         "CUDA_VISIBLE_DEVICES": "0",
@@ -90,7 +90,7 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
         request.image_ref,
         name=request.container_name,
         detach=True,
-        network=request.public_sessions_network,
+        network=request.sessions_network,
         user="1000:1000",
         cap_drop=["ALL"],
         privileged=False,

@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from app.config import Settings
 from app.deps import AuthPrincipal
-from app.models import Role, SessionRecord, SessionStatus, Tier
+from app.models import Exposure, Role, SessionRecord, SessionStatus
 from app.schemas import SessionActionResponse, SessionCreateRequest, SessionCreateResponse, SessionRead
 from app.session_repo import (
     allocate_starting_session,
@@ -32,24 +32,18 @@ logger = structlog.get_logger(__name__)
 def create_session_for_principal(
     *,
     payload: SessionCreateRequest,
+    exposure: Exposure,
     principal: AuthPrincipal,
     session: Session,
     settings: Settings,
 ) -> SessionCreateResponse:
-    if payload.tier == "private":
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="private tier is not available yet.",
-        )
-
-    tier = Tier(payload.tier.upper())
     user = get_or_create_principal_user(session, principal)
-    pack = resolve_pack(session, pack_id=payload.pack_id, tier=tier)
+    pack = resolve_pack(session, pack_id=payload.pack_id, exposure=exposure)
 
     row = allocate_starting_session(
         session,
         user_id=user.id,
-        tier=tier,
+        exposure=exposure,
         pack_id=pack.id,
         workspace_zfs_root=settings.workspace_zfs_root,
         max_retries=settings.session_allocation_max_retries,
@@ -69,12 +63,16 @@ def create_session_for_principal(
             SessionStartRequest(
                 session_id=row.id,
                 user_id=row.user_id,
-                tier=row.tier.value,
+                exposure=row.exposure.value,
                 slug=row.slug,
                 gpu_id=row.gpu_id,
                 workspace_zfs=row.workspace_zfs,
                 pack_image_ref=pack.image_ref,
-                public_sessions_network=settings.public_sessions_network,
+                sessions_network=(
+                    settings.internal_sessions_network
+                    if row.exposure == Exposure.INTERNAL
+                    else settings.external_sessions_network
+                ),
                 start_timeout_seconds=settings.session_container_start_timeout_seconds,
                 resource_limits=SessionResourceLimits(
                     cpu_shares=settings.session_cpu_shares,
@@ -105,7 +103,7 @@ def create_session_for_principal(
         "session.start",
         session_id=str(row.id),
         user_id=str(row.user_id),
-        tier=row.tier.value,
+        exposure=row.exposure.value,
         gpu_id=row.gpu_id,
         pack_id=str(row.pack_id),
         slug=row.slug,
@@ -132,8 +130,11 @@ def stop_session_for_principal(
     session_id: UUID,
     principal: AuthPrincipal,
     session: Session,
+    exposure: Exposure | None = None,
 ) -> SessionActionResponse:
     row = _get_owned_or_admin_session(session=session, session_id=session_id, principal=principal)
+    if exposure is not None and row.exposure != exposure:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
     if row.status in {SessionStatus.STOPPED, SessionStatus.ERROR}:
         return SessionActionResponse(message="Session already terminal.")
 

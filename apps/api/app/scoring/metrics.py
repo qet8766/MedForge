@@ -89,3 +89,20 @@ def _compute_map_iou(
         image_scores.append(_score_single_image(gt_boxes, pred_boxes, _MAP_IOU_THRESHOLDS))
 
     return sum(image_scores) / len(image_scores) if image_scores else 0.0
+
+
+def _compute_mean_iou(labels: dict[str, set[int]], preds: dict[str, set[int]]) -> float:
+    if set(labels.keys()) != set(preds.keys()):
+        raise ValueError("Submission IDs do not match expected evaluation IDs.")
+
+    image_scores: list[float] = []
+    for image_id, label_pixels in labels.items():
+        pred_pixels = preds[image_id]
+        intersection = len(label_pixels & pred_pixels)
+        union = len(label_pixels | pred_pixels)
+        if union == 0:
+            image_scores.append(1.0)
+            continue
+        image_scores.append(intersection / union)
+
+    return sum(image_scores) / len(image_scores) if image_scores else 0.0

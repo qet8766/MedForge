@@ -94,7 +94,7 @@ run_runtime_core_witness() {
   signup_code="$(curl -sS -o "${signup_out}" -w '%{http_code}' \
     -c "${cookie_jar}" \
     -H 'content-type: application/json' \
-    -X POST "${api_base}/api/v1/auth/signup" \
+    -X POST "${api_base}/api/v2/auth/signup" \
     --data "{\"email\":\"${email}\",\"password\":\"Password123!\"}")"
   if [ "${signup_code}" != "201" ] && [ "${signup_code}" != "409" ]; then
     echo "ERROR: phase3 runtime signup failed (code=${signup_code})"
@@ -106,7 +106,7 @@ run_runtime_core_witness() {
     login_code="$(curl -sS -o "${login_out}" -w '%{http_code}' \
       -c "${cookie_jar}" -b "${cookie_jar}" \
       -H 'content-type: application/json' \
-      -X POST "${api_base}/api/v1/auth/login" \
+      -X POST "${api_base}/api/v2/auth/login" \
       --data "{\"email\":\"${email}\",\"password\":\"Password123!\"}")"
     if [ "${login_code}" != "200" ]; then
       echo "ERROR: phase3 runtime login failed (code=${login_code})"
@@ -119,8 +119,8 @@ run_runtime_core_witness() {
   create_code="$(curl -sS -o "${create_json}" -w '%{http_code}' \
     -b "${cookie_jar}" \
     -H 'content-type: application/json' \
-    -X POST "${api_base}/api/v1/sessions" \
-    --data '{"tier":"public"}')"
+    -X POST "${api_base}/api/v2/external/sessions" \
+    --data '{}')"
   if [ "${create_code}" != "201" ]; then
     echo "ERROR: phase3 runtime create failed (code=${create_code})"
     cat "${create_json}" || true
@@ -166,7 +166,7 @@ PY
 
   stop_code="$(curl -sS -o /tmp/phase3-runtime-stop.out -w '%{http_code}' \
     -b "${cookie_jar}" \
-    -X POST "${api_base}/api/v1/sessions/${session_id}/stop")"
+    -X POST "${api_base}/api/v2/external/sessions/${session_id}/stop")"
   if [ "${stop_code}" != "202" ]; then
     echo "ERROR: phase3 runtime stop failed (code=${stop_code})"
     rm -f "${cookie_jar}" "${create_json}" "${signup_out}" "${login_out}"
@@ -205,10 +205,11 @@ run_lifecycle_recovery_tests() {
   . .venv/bin/activate
 
   pytest -q \
-    tests/test_api.py::test_session_create_private_returns_501 \
-    tests/test_api.py::test_session_create_uppercase_tier_rejected \
+    tests/test_api.py::test_session_create_rejects_legacy_tier_field \
+    tests/test_api.py::test_internal_session_create_requires_entitlement \
+    tests/test_api.py::test_internal_session_create_with_entitlement_returns_running \
     tests/test_api.py::test_session_create_requires_auth \
-    tests/test_api.py::test_session_create_public_returns_running \
+    tests/test_api.py::test_session_create_external_returns_running \
     tests/test_api.py::test_session_create_enforces_user_limit \
     tests/test_api.py::test_session_create_exhausts_gpu_capacity \
     tests/test_api.py::test_session_stop_owner_marks_stopping_and_is_idempotent \

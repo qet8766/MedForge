@@ -171,7 +171,6 @@ Phase-specific reruns:
 
 ### Code Hygiene
 - File splitting: when a file exceeds ~150 lines, split it into focused files and add `@filename` references where code moved.
-- TODO tracking: use `TODO(MF-###)` format.
 - Dead code: delete it; do not comment it out.
 - No wildcard imports (`from x import *`, `import *`).
 - Type annotations: require hints on all Python function signatures and TypeScript `strict` mode.

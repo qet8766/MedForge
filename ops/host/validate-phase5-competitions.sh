@@ -129,14 +129,14 @@ run_remote_competitions_smoke() {
   list_json="$(mktemp /tmp/phase5-remote-list.XXXXXX)"
 
   signup_code="$(curl -sS -o /tmp/phase5-remote-signup.out -w '%{http_code}' \
-    -X POST "${api_base}/api/v1/auth/signup" \
+    -X POST "${api_base}/api/v2/auth/signup" \
     -H 'content-type: application/json' \
     -H "Origin: ${web_base}" \
     -c "${cookie_jar}" -b "${cookie_jar}" \
     -d "{\"email\":\"${email}\",\"password\":\"Password123!\"}")"
   if [ "${signup_code}" = "409" ]; then
     login_code="$(curl -sS -o /tmp/phase5-remote-login.out -w '%{http_code}' \
-      -X POST "${api_base}/api/v1/auth/login" \
+      -X POST "${api_base}/api/v2/auth/login" \
       -H 'content-type: application/json' \
       -H "Origin: ${web_base}" \
       -c "${cookie_jar}" -b "${cookie_jar}" \
@@ -152,7 +152,7 @@ run_remote_competitions_smoke() {
     return 1
   fi
 
-  list_code="$(curl -sS -o "${list_json}" -w '%{http_code}' "${api_base}/api/v1/competitions")"
+  list_code="$(curl -sS -o "${list_json}" -w '%{http_code}' "${api_base}/api/v2/external/competitions")"
   if [ "${list_code}" != "200" ]; then
     echo "ERROR: phase5 remote competitions list failed (code=${list_code})"
     rm -f "${cookie_jar}" "${list_json}"
@@ -179,14 +179,14 @@ PY
     return 1
   fi
 
-  detail_code="$(curl -sS -o /tmp/phase5-remote-detail.out -w '%{http_code}' "${api_base}/api/v1/competitions/${slug}")"
+  detail_code="$(curl -sS -o /tmp/phase5-remote-detail.out -w '%{http_code}' "${api_base}/api/v2/external/competitions/${slug}")"
   if [ "${detail_code}" != "200" ]; then
     echo "ERROR: phase5 remote competition detail failed (code=${detail_code})"
     rm -f "${cookie_jar}" "${list_json}"
     return 1
   fi
 
-  leaderboard_code="$(curl -sS -o /tmp/phase5-remote-leaderboard.out -w '%{http_code}' "${api_base}/api/v1/competitions/${slug}/leaderboard")"
+  leaderboard_code="$(curl -sS -o /tmp/phase5-remote-leaderboard.out -w '%{http_code}' "${api_base}/api/v2/external/competitions/${slug}/leaderboard")"
   if [ "${leaderboard_code}" != "200" ]; then
     echo "ERROR: phase5 remote leaderboard failed (code=${leaderboard_code})"
     rm -f "${cookie_jar}" "${list_json}"

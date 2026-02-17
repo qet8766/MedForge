@@ -1,0 +1,120 @@
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-api    | 2026-02-17 11:03:36 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=18e6bbba-8bf7-483a-9f14-a8142a41d677 recovery_mode=startup session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:03:36 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=44a785f6-d3a9-4970-a4b3-8852686ae1f5 recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:04:05 [info     ] session.start                  exposure=EXTERNAL gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 request_id=78c40322-6f02-4943-88ce-05c4ef093841 session_id=dbc258f5-053c-4a25-a5d3-4944ebef2272 slug=lo5lp36f user_id=04aab01d-dae9-43d8-b3d6-74871f217edf
+medforge-api    | 2026-02-17 11:04:06 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=39d7a3e0-1422-4630-8734-72821b48c466 recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:04:06 [info     ] session.recovery.decision      container_id=27da6dd68ecc372d8db4811cf1edf2169d4cf6cbf8f67f406770590772362ba4 correlation_id=39d7a3e0-1422-4630-8734-72821b48c466 recovery_mode=poll session_id=dbc258f5-053c-4a25-a5d3-4944ebef2272 slug=lo5lp36f state=running user_id=04aab01d-dae9-43d8-b3d6-74871f217edf
+medforge-api    | 2026-02-17 11:04:36 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=12669a69-b220-4cc4-85dd-9b18b6f6d11e recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:04:36 [info     ] session.stop                   correlation_id=12669a69-b220-4cc4-85dd-9b18b6f6d11e exposure=EXTERNAL gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=dbc258f5-053c-4a25-a5d3-4944ebef2272 slug=lo5lp36f user_id=04aab01d-dae9-43d8-b3d6-74871f217edf
+medforge-api    | 2026-02-17 11:04:36 [info     ] session.poll.updated           correlation_id=12669a69-b220-4cc4-85dd-9b18b6f6d11e recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 11:04:42 [info     ] session.start                  exposure=EXTERNAL gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 request_id=e8cfc0cd-8b9c-42f0-81f2-53e9a498c3b1 session_id=5f021154-4691-46e9-bdba-ddef77d6213d slug=e4lvlljp user_id=b1415639-5ce1-4ef7-8eb5-434aa653cf07
+medforge-api    | 2026-02-17 11:04:42 [info     ] session.start                  exposure=EXTERNAL gpu_id=2 pack_id=00000000-0000-0000-0000-000000000100 request_id=f700e699-cfbb-4925-8a18-7591d6b0bb4d session_id=9ecf69e0-d803-421b-949c-7020e48ffc00 slug=52dt2k7k user_id=d13596fe-a2b4-44d4-99ef-da45c6d31a35
+medforge-api    | 2026-02-17 11:05:06 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=0dcf25b3-f1b5-4f8f-8cb1-e37a4daea9f8 recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:05:07 [info     ] session.stop                   correlation_id=0dcf25b3-f1b5-4f8f-8cb1-e37a4daea9f8 exposure=EXTERNAL gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=5f021154-4691-46e9-bdba-ddef77d6213d slug=e4lvlljp user_id=b1415639-5ce1-4ef7-8eb5-434aa653cf07
+medforge-api    | 2026-02-17 11:05:07 [info     ] session.recovery.decision      container_id=2f9a9f108737527ca138fe13ba48f5dd349625b42eaf8ea726c9e992a4882761 correlation_id=0dcf25b3-f1b5-4f8f-8cb1-e37a4daea9f8 recovery_mode=poll session_id=9ecf69e0-d803-421b-949c-7020e48ffc00 slug=52dt2k7k state=running user_id=d13596fe-a2b4-44d4-99ef-da45c6d31a35
+medforge-api    | 2026-02-17 11:05:07 [info     ] session.poll.updated           correlation_id=0dcf25b3-f1b5-4f8f-8cb1-e37a4daea9f8 recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 11:05:37 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=8776c929-9923-4b5a-9cde-b88129c9f3fe recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:05:37 [info     ] session.stop                   correlation_id=8776c929-9923-4b5a-9cde-b88129c9f3fe exposure=EXTERNAL gpu_id=2 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=9ecf69e0-d803-421b-949c-7020e48ffc00 slug=52dt2k7k user_id=d13596fe-a2b4-44d4-99ef-da45c6d31a35
+medforge-api    | 2026-02-17 11:05:37 [info     ] session.poll.updated           correlation_id=8776c929-9923-4b5a-9cde-b88129c9f3fe recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 11:05:50 [info     ] session.start                  exposure=EXTERNAL gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 request_id=27ae17b6-0917-4af0-b1fb-d5f4cb71e756 session_id=30a93330-8d85-430b-b2e1-f7d54b0a98f7 slug=t6nex53s user_id=0fab5592-8b33-4d2d-b188-f393e6c56c90
+medforge-api    | 2026-02-17 11:06:07 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=efdf0ef8-09e4-4b50-a3de-29d747f54d97 recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:06:07 [info     ] session.recovery.decision      container_id=f973d415cc1c95e22f357193d1868ffa9b747491c640d557ca7bbaf94d57948b correlation_id=efdf0ef8-09e4-4b50-a3de-29d747f54d97 recovery_mode=poll session_id=30a93330-8d85-430b-b2e1-f7d54b0a98f7 slug=t6nex53s state=running user_id=0fab5592-8b33-4d2d-b188-f393e6c56c90
+medforge-api    | 2026-02-17 11:06:08 [info     ] session.start                  exposure=EXTERNAL gpu_id=2 pack_id=00000000-0000-0000-0000-000000000100 request_id=e2930c32-d92e-414e-b1e5-33c7727a6155 session_id=87dff394-535c-4809-8bd5-6be9c986c181 slug=v723ej52 user_id=b1415639-5ce1-4ef7-8eb5-434aa653cf07
+medforge-api    | 2026-02-17 11:06:09 [info     ] session.start                  exposure=EXTERNAL gpu_id=3 pack_id=00000000-0000-0000-0000-000000000100 request_id=e73f94a9-8799-478f-9225-81bcecb1b2ae session_id=2a3c2a17-df9a-4b12-87b6-865354b8d17e slug=z34ax3wm user_id=d13596fe-a2b4-44d4-99ef-da45c6d31a35
+medforge-api    | 2026-02-17 11:06:37 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=7c03c06b-8900-4933-a520-4b4891cbd0dc recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:06:37 [info     ] session.recovery.decision      container_id=f973d415cc1c95e22f357193d1868ffa9b747491c640d557ca7bbaf94d57948b correlation_id=7c03c06b-8900-4933-a520-4b4891cbd0dc recovery_mode=poll session_id=30a93330-8d85-430b-b2e1-f7d54b0a98f7 slug=t6nex53s state=running user_id=0fab5592-8b33-4d2d-b188-f393e6c56c90
+medforge-api    | 2026-02-17 11:06:38 [info     ] session.stop                   correlation_id=7c03c06b-8900-4933-a520-4b4891cbd0dc exposure=EXTERNAL gpu_id=2 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=87dff394-535c-4809-8bd5-6be9c986c181 slug=v723ej52 user_id=b1415639-5ce1-4ef7-8eb5-434aa653cf07
+medforge-api    | 2026-02-17 11:06:38 [info     ] session.recovery.decision      container_id=8b4bc8bd4062d0f991a9945e21b24d45982283addf2d5158cd1b1af45793473a correlation_id=7c03c06b-8900-4933-a520-4b4891cbd0dc recovery_mode=poll session_id=2a3c2a17-df9a-4b12-87b6-865354b8d17e slug=z34ax3wm state=running user_id=d13596fe-a2b4-44d4-99ef-da45c6d31a35
+medforge-caddy  | {"level":"info","ts":1771326213.1870415,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+medforge-caddy  | {"level":"info","ts":1771326213.1872127,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+medforge-caddy  | {"level":"info","ts":1771326213.187241,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+medforge-caddy  | {"level":"warn","ts":1771326213.1883297,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771326213.1884205,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771326213.18872,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771326213.1887872,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"info","ts":1771326213.1900148,"msg":"adapted config to JSON","adapter":"caddyfile"}
+medforge-caddy  | {"level":"info","ts":1771326213.1973844,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+medforge-caddy  | {"level":"info","ts":1771326213.1983871,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+medforge-caddy  | {"level":"info","ts":1771326213.1984289,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+medforge-caddy  | {"level":"info","ts":1771326213.1984222,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x119d20494200"}
+medforge-caddy  | {"level":"info","ts":1771326213.203034,"logger":"http","msg":"enabling HTTP/3 listener","addr":":443"}
+medforge-caddy  | {"level":"info","ts":1771326213.2032135,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"warn","ts":1771326213.2032573,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-api    | 2026-02-17 11:06:38 [info     ] session.poll.updated           correlation_id=7c03c06b-8900-4933-a520-4b4891cbd0dc recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 11:07:08 [info     ] session.recovery.decision      container_id=6e0d05ff3558065fcf6eb11f56499205afafcee7d59feb7437f9ee11882c33dc correlation_id=9e234619-d2e1-4cb9-8fc7-74b124d093e8 recovery_mode=poll session_id=ad5c315e-e9c3-4b9e-bcee-e807ad6056fe slug=asuioev4 state=running user_id=d218a7d3-0e58-4c8c-9d98-5b063332e8d9
+medforge-api    | 2026-02-17 11:07:08 [info     ] session.recovery.decision      container_id=f973d415cc1c95e22f357193d1868ffa9b747491c640d557ca7bbaf94d57948b correlation_id=9e234619-d2e1-4cb9-8fc7-74b124d093e8 recovery_mode=poll session_id=30a93330-8d85-430b-b2e1-f7d54b0a98f7 slug=t6nex53s state=running user_id=0fab5592-8b33-4d2d-b188-f393e6c56c90
+medforge-api    | 2026-02-17 11:07:08 [info     ] session.stop                   correlation_id=9e234619-d2e1-4cb9-8fc7-74b124d093e8 exposure=EXTERNAL gpu_id=3 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=2a3c2a17-df9a-4b12-87b6-865354b8d17e slug=z34ax3wm user_id=d13596fe-a2b4-44d4-99ef-da45c6d31a35
+medforge-api    | 2026-02-17 11:07:08 [info     ] session.poll.updated           correlation_id=9e234619-d2e1-4cb9-8fc7-74b124d093e8 recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 11:07:22 [info     ] session.start                  exposure=EXTERNAL gpu_id=2 pack_id=00000000-0000-0000-0000-000000000100 request_id=872aa4ac-17f6-497f-9ad8-92b760e7655b session_id=c5eb64a0-8808-41ab-a9a8-93f8b595f846 slug=git7i5sy user_id=22ff693d-3703-49e2-9e6c-e8b03e5d88cc
+medforge-caddy  | {"level":"warn","ts":1771326213.2032597,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"info","ts":1771326213.2032611,"logger":"http.log","msg":"server running","name":"remaining_auto_https_redirects","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771326213.2032642,"logger":"http","msg":"enabling automatic TLS certificate management","domains":["medforge.medforge.xyz","*.external.medforge.medforge.xyz","*.internal.medforge.medforge.xyz","external.medforge.medforge.xyz","internal.medforge.medforge.xyz","api.medforge.medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771326213.2051315,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+medforge-caddy  | {"level":"info","ts":1771326213.205261,"msg":"serving initial configuration"}
+medforge-caddy  | {"level":"info","ts":1771326213.2082055,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"ee5e951a-3cd9-48f9-a27d-2b27b46567f3","try_again":1771412613.2082021,"try_again_in":86399.999999449}
+medforge-caddy  | {"level":"info","ts":1771326213.2083385,"logger":"tls","msg":"finished cleaning storage units"}
+medforge-caddy  | {"level":"error","ts":1771326214.0688715,"logger":"http.log.error","msg":"dial tcp 172.18.0.4:8000: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"51484","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"api.medforge.medforge.xyz","uri":"/healthz","headers":{"User-Agent":["curl/8.5.0"],"Accept":["*/*"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"api.medforge.medforge.xyz"}},"duration":0.000805247,"status":502,"err_id":"88px6t8m4","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-caddy  | {"level":"error","ts":1771326215.1129723,"logger":"http.log.error","msg":"dial tcp 172.18.0.4:8000: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"51486","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"api.medforge.medforge.xyz","uri":"/healthz","headers":{"User-Agent":["curl/8.5.0"],"Accept":["*/*"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"api.medforge.medforge.xyz"}},"duration":0.000979532,"status":502,"err_id":"m77d7xn1q","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-caddy  | {"level":"error","ts":1771326216.155481,"logger":"http.log.error","msg":"dial tcp 172.18.0.4:8000: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"51490","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"api.medforge.medforge.xyz","uri":"/healthz","headers":{"User-Agent":["curl/8.5.0"],"Accept":["*/*"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"api.medforge.medforge.xyz"}},"duration":0.000986603,"status":502,"err_id":"v12w2b0bv","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-caddy  | {"level":"error","ts":1771326245.937473,"logger":"http.log.error","msg":"dial tcp 172.30.0.5:8080: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"47370","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"s-lo5lp36f.external.medforge.medforge.xyz","uri":"/","headers":{"User-Agent":["curl/8.5.0"],"Accept":["*/*"],"Cookie":["REDACTED"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"s-lo5lp36f.external.medforge.medforge.xyz"}},"duration":0.028256466,"status":502,"err_id":"y1wngm86d","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-caddy  | {"level":"error","ts":1771326350.8765903,"logger":"http.log.error","msg":"dial tcp 172.30.0.5:8080: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"39538","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"s-t6nex53s.external.medforge.medforge.xyz","uri":"/","headers":{"Sec-Fetch-Dest":["document"],"Accept-Encoding":["gzip, deflate, br, zstd"],"Sec-Fetch-Mode":["navigate"],"Sec-Fetch-User":["?1"],"Cookie":["REDACTED"],"Priority":["u=0, i"],"Sec-Ch-Ua":["\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"HeadlessChrome\";v=\"134\""],"Sec-Ch-Ua-Platform":["\"Windows\""],"Upgrade-Insecure-Requests":["1"],"User-Agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.35 Safari/537.36"],"Accept-Language":["en-US"],"Accept":["text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"],"Sec-Fetch-Site":["none"],"Sec-Ch-Ua-Mobile":["?0"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"s-t6nex53s.external.medforge.medforge.xyz"}},"duration":0.025088294,"status":502,"err_id":"hfihnhskk","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-caddy  | {"level":"error","ts":1771326442.5297205,"logger":"http.log.error","msg":"dial tcp 172.30.0.6:8080: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"55730","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"s-git7i5sy.external.medforge.medforge.xyz","uri":"/","headers":{"Sec-Ch-Ua-Platform":["\"Windows\""],"User-Agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.35 Safari/537.36"],"Sec-Fetch-Site":["none"],"Sec-Fetch-Mode":["navigate"],"Accept":["text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"],"Sec-Fetch-Dest":["document"],"Accept-Encoding":["gzip, deflate, br, zstd"],"Priority":["u=0, i"],"Upgrade-Insecure-Requests":["1"],"Accept-Language":["en-US"],"Sec-Ch-Ua-Mobile":["?0"],"Sec-Fetch-User":["?1"],"Cookie":["REDACTED"],"Sec-Ch-Ua":["\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"HeadlessChrome\";v=\"134\""]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"s-git7i5sy.external.medforge.medforge.xyz"}},"duration":0.024859889,"status":502,"err_id":"expsc6dhh","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-web    | ▲ Next.js 16.1.6
+medforge-web    | - Local:         http://localhost:3000
+medforge-web    | - Network:       http://0.0.0.0:3000
+medforge-web    | 
+medforge-web    | ✓ Starting...
+medforge-web    | ✓ Ready in 74ms
+medforge-web    | ⨯ Error [ApiRequestError]: Authentication required.
+medforge-web    |     at j (.next/server/chunks/ssr/_f1e96812._.js:4:23860)
+medforge-web    |     at async j (.next/server/chunks/ssr/_b5e6fe96._.js:1:8330) {
+medforge-web    |   method: 'GET',
+medforge-web    |   path: '/api/v2/internal/competitions',
+medforge-web    |   status: 401,
+medforge-web    |   code: '401',
+medforge-web    |   requestId: '3d997313-9d20-4f7b-ac1c-49418d0477d7',
+medforge-web    |   errors: null,
+medforge-web    |   digest: '2324227362'
+medforge-web    | }
+medforge-web    | ⨯ Error [ApiRequestError]: Authentication required.
+medforge-web    |     at j (.next/server/chunks/ssr/_f1e96812._.js:4:23860)
+medforge-web    |     at async j (.next/server/chunks/ssr/_b5e6fe96._.js:1:8330) {
+medforge-web    |   method: 'GET',
+medforge-web    |   path: '/api/v2/internal/competitions',
+medforge-web    |   status: 401,
+medforge-web    |   code: '401',
+medforge-web    |   requestId: 'db0c0ad9-dcb5-40e7-beff-59317080e4f2',
+medforge-web    |   errors: null,
+medforge-web    |   digest: '2324227362'
+medforge-web    | }
+medforge-web    | ⨯ Error [ApiRequestError]: Authentication required.
+medforge-web    |     at j (.next/server/chunks/ssr/_f1e96812._.js:4:23860)
+medforge-web    |     at async j (.next/server/chunks/ssr/_b5e6fe96._.js:1:8330) {
+medforge-web    |   method: 'GET',
+medforge-web    |   path: '/api/v2/internal/competitions',
+medforge-web    |   status: 401,
+medforge-web    |   code: '401',
+medforge-web    |   requestId: '93368a9a-f345-4d30-b1ed-250e4491cb85',
+medforge-web    |   errors: null,
+medforge-web    |   digest: '2324227362'
+medforge-web    | }
+medforge-web    | ⨯ Error [ApiRequestError]: Authentication required.
+medforge-web    |     at j (.next/server/chunks/ssr/_f1e96812._.js:4:23860)
+medforge-web    |     at async j (.next/server/chunks/ssr/_b5e6fe96._.js:1:8330) {
+medforge-web    |   method: 'GET',
+medforge-web    |   path: '/api/v2/internal/competitions',
+medforge-web    |   status: 401,
+medforge-web    |   code: '401',
+medforge-web    |   requestId: '135b72c6-002d-4d17-90e6-3e8435b576ed',
+medforge-web    |   errors: null,
+medforge-web    |   digest: '2324227362'
+medforge-web    | }

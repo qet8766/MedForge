@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 
 import { apiSubmitFile } from "@/lib/api";
+import { apiPathForSurface, inferClientSurface } from "@/lib/surface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export default function CompetitionSubmitPage(): React.JSX.Element {
   const [result, setResult] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const surface = inferClientSurface();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -32,7 +34,7 @@ export default function CompetitionSubmitPage(): React.JSX.Element {
 
     setIsSubmitting(true);
     try {
-      const payload = await apiSubmitFile(`/api/v1/competitions/${slug}/submissions`, file);
+      const payload = await apiSubmitFile(apiPathForSurface(surface, `/competitions/${slug}/submissions`), file);
       setResult(JSON.stringify(payload, null, 2));
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Submission failed");

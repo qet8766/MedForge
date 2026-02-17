@@ -58,6 +58,7 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
     (competitions_dir / "titanic-survival").mkdir(parents=True, exist_ok=True)
     (competitions_dir / "rsna-pneumonia-detection").mkdir(parents=True, exist_ok=True)
     (competitions_dir / "cifar-100-classification").mkdir(parents=True, exist_ok=True)
+    (competitions_dir / "oxford-pet-segmentation").mkdir(parents=True, exist_ok=True)
 
     (competitions_dir / "titanic-survival" / "manifest.json").write_text(
         (
@@ -105,6 +106,20 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         encoding="utf-8",
     )
 
+    (competitions_dir / "oxford-pet-segmentation" / "manifest.json").write_text(
+        (
+            '{"evaluation_split_version":"pet-seg-test","scoring_mode":"single_realtime_hidden",'
+            '"leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first",'
+            '"id_column":"image_id","target_columns":["rle_mask"],'
+            '"expected_row_count":3}'
+        ),
+        encoding="utf-8",
+    )
+    (competitions_dir / "oxford-pet-segmentation" / "holdout_labels.csv").write_text(
+        'image_id,rle_mask\npet-0001,"1 3 10 2"\npet-0002,""\npet-0003,"5 2 20 3"\n',
+        encoding="utf-8",
+    )
+
     return Settings(
         database_url=mariadb_url,
         competitions_data_dir=competitions_dir,
@@ -114,7 +129,8 @@ def test_settings(tmp_path: Path, mariadb_url: str) -> Settings:
         session_secret="test-session-secret",
         cookie_secure=False,
         cookie_domain="",
-        public_sessions_network="medforge-public-sessions",
+        external_sessions_network="medforge-external-sessions",
+        internal_sessions_network="medforge-internal-sessions",
         workspace_zfs_root="tank/medforge/workspaces",
         session_allocation_max_retries=3,
         session_container_start_timeout_seconds=5,
@@ -152,14 +168,14 @@ def db_engine(test_settings: Settings):
 @pytest.fixture()
 def auth_tokens(db_engine, test_settings: Settings) -> dict[str, str]:
     user_defs = {
-        "00000000-0000-0000-0000-000000000011": ("user-a@example.com", Role.USER),
-        "00000000-0000-0000-0000-000000000012": ("user-b@example.com", Role.USER),
-        "00000000-0000-0000-0000-000000000013": ("admin@example.com", Role.ADMIN),
+        "00000000-0000-0000-0000-000000000011": ("user-a@example.com", Role.USER, True),
+        "00000000-0000-0000-0000-000000000012": ("user-b@example.com", Role.USER, False),
+        "00000000-0000-0000-0000-000000000013": ("admin@example.com", Role.ADMIN, True),
     }
     now = datetime.now(UTC)
     tokens: dict[str, str] = {}
     with Session(db_engine) as session:
-        for user_id, (email, role) in user_defs.items():
+        for user_id, (email, role, can_use_internal) in user_defs.items():
             uid = UUID(user_id)
             existing = session.get(User, uid)
             if existing is None:
@@ -169,6 +185,7 @@ def auth_tokens(db_engine, test_settings: Settings) -> dict[str, str]:
                         email=email,
                         password_hash=hash_password("sufficiently-strong"),
                         role=role,
+                        can_use_internal=can_use_internal,
                     )
                 )
         session.commit()

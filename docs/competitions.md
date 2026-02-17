@@ -1,5 +1,11 @@
 ## Competitions
 
+> V2 Update (2026-02-17): competition APIs are exposure-scoped.
+> - EXTERNAL: `/api/v2/external/competitions*`, `/api/v2/external/datasets*`
+> - INTERNAL: `/api/v2/internal/competitions*`, `/api/v2/internal/datasets*` (requires `can_use_internal`)
+> Field name is now `competition_exposure` (`external|internal`).
+> Any remaining unsplit `/api/v2/competitions` text below is legacy and superseded by this split.
+
 MedForge alpha includes permanent mock competitions with Kaggle-style submissions and leaderboards.
 
 ### Scope
@@ -31,7 +37,7 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 
 ### Terminology
 
-- `competition_tier` means platform policy (`public` or `private`) and is not related to label visibility.
+- `competition_exposure` means platform policy (`external` or `internal`) and is not related to label visibility.
 - `primary_score` is computed from hidden holdout labels.
 - `scoring_mode` is `single_realtime_hidden` for alpha competitions.
 - `leaderboard_rule` is `best_per_user` with deterministic ordering:
@@ -47,11 +53,11 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 - `rsna-pneumonia-detection` (metric: `map_iou`, cap: `10/day/user`)
 - `cifar-100-classification` (metric: `accuracy`, cap: `20/day/user`)
 
-All are `competition_tier=public`.
+Seed set includes EXTERNAL competitions and one INTERNAL competition (`oxford-pet-segmentation`).
 
 ### Submission and Scoring Flow
 
-1. User uploads CSV to `POST /api/v1/competitions/{slug}/submissions`.
+1. User uploads CSV to `POST /api/v2/competitions/{slug}/submissions`.
 2. API validates schema and daily cap.
 3. Submission is created as `score_status=queued`.
 4. If `AUTO_SCORE_ON_SUBMIT=true` (default), API scores immediately; otherwise the worker scores asynchronously.
@@ -62,13 +68,16 @@ All are `competition_tier=public`.
 ### Alpha API Surface
 
 Canonical versioned routes:
-- `GET /api/v1/competitions` (`limit`, `cursor`)
-- `GET /api/v1/competitions/{slug}`
-- `GET /api/v1/competitions/{slug}/leaderboard` (`limit`, `cursor`)
-- `POST /api/v1/competitions/{slug}/submissions` (returns `201`)
-- `GET /api/v1/competitions/{slug}/submissions/me` (`limit`, `cursor`)
-- `GET /api/v1/datasets` (`limit`, `cursor`)
-- `GET /api/v1/datasets/{slug}`
+- EXTERNAL surface:
+  - `GET /api/v2/external/competitions` (`limit`, `cursor`)
+  - `GET /api/v2/external/competitions/{slug}`
+  - `GET /api/v2/external/competitions/{slug}/leaderboard` (`limit`, `cursor`)
+  - `POST /api/v2/external/competitions/{slug}/submissions` (returns `201`)
+  - `GET /api/v2/external/competitions/{slug}/submissions/me` (`limit`, `cursor`)
+  - `GET /api/v2/external/datasets` (`limit`, `cursor`)
+  - `GET /api/v2/external/datasets/{slug}`
+- INTERNAL surface (requires `can_use_internal`):
+  - same route set under `/api/v2/internal/*`
 
 ### Router Module Structure
 
@@ -86,17 +95,18 @@ The competition API is implemented as a modular router package at `apps/api/app/
 
 ### Admin API
 
-- `POST /api/v1/admin/submissions/{submission_id}/score` — trigger scoring for a specific submission (requires authenticated admin principal cookie session)
+- `POST /api/v2/external/admin/submissions/{submission_id}/score`
+- `POST /api/v2/internal/admin/submissions/{submission_id}/score`
 
 ### Response Contract (Breaking)
 
 - Success responses use a universal envelope:
   - `{ "data": ..., "meta": { request_id, api_version, timestamp, ... } }`
-- `meta.api_version` is the schema version (`v1.0` in current implementation).
+- `meta.api_version` is the schema version (`v2.0` in current implementation).
 - Errors use RFC 7807-style payloads (`application/problem+json`) with:
   - `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`
   - optional `errors` array for validation-style failures
-- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api/v1`.
+- This contract applies to competition, dataset, leaderboard, submission, and admin score endpoints under `/api/v2`.
 
 ### Migration Notes
 

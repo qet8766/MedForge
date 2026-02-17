@@ -18,10 +18,10 @@ export function normalizeApiPath(path: string): string {
   if (!path.startsWith("/")) {
     throw new Error(`API path must start with '/': ${path}`);
   }
-  if (path === "/api/v1" || path.startsWith("/api/v1/")) {
+  if (path === "/api/v2" || path.startsWith("/api/v2/")) {
     return path;
   }
-  throw new Error(`API path must start with '/api/v1': ${path}`);
+  throw new Error(`API path must start with '/api/v2': ${path}`);
 }
 
 export function toApiUrl(path: string): string {

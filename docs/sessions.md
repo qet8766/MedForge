@@ -1,11 +1,17 @@
 ## Sessions
 
+> V2 Update (2026-02-17): Canonical session APIs are split by exposure:
+> - `POST /api/v2/external/sessions`, `GET /api/v2/external/sessions/current`, `POST /api/v2/external/sessions/{id}/stop`
+> - `POST /api/v2/internal/sessions`, `GET /api/v2/internal/sessions/current`, `POST /api/v2/internal/sessions/{id}/stop` (requires `can_use_internal`)
+> Runtime env now uses `MEDFORGE_EXPOSURE=EXTERNAL|INTERNAL`.
+> Any remaining `/api/v2/sessions` or `tier` wording below is legacy text and should be read as superseded by this v2 split.
+
 Implementation status note (2026-02-17):
 
-- Core Phase 3 flow is implemented for PUBLIC sessions:
-  - `POST /api/v1/sessions` performs allocation + launch and returns running/error terminalization.
-  - `POST /api/v1/sessions/{id}/stop` records an async stop request (`202 Accepted`) and is idempotent.
-  - `GET /api/v1/sessions/current` returns the caller's most recent active (`starting|running|stopping`) session, or `null`.
+- Core Phase 3 flow is implemented for EXTERNAL and INTERNAL exposure routes:
+  - `POST /api/v2/external/sessions` and `POST /api/v2/internal/sessions` perform allocation + launch.
+  - `POST /api/v2/external/sessions/{id}/stop` and `POST /api/v2/internal/sessions/{id}/stop` are idempotent async stop requests (`202`).
+  - `GET /api/v2/external/sessions/current` and `GET /api/v2/internal/sessions/current` return the caller's most recent active session.
   - `apps/web/app/sessions/page.tsx` rehydrates session state on load and after create/stop actions.
 - Phase 3 recovery paths are implemented:
   - boot-time reconciliation for `starting|running|stopping`
@@ -54,7 +60,7 @@ Runtime constraints (applied by the session manager when creating the container)
 - `cap-drop=ALL`, not privileged, no Docker socket.
 - `security_opt=["no-new-privileges:true"]`
 - Container name: `mf-session-<slug>`
-- Network: `medforge-public-sessions`
+- Network: `medforge-external-sessions`
 
 Mounts:
 
@@ -67,7 +73,7 @@ Environment variables injected at runtime:
 ```
 MEDFORGE_SESSION_ID=<uuid>
 MEDFORGE_USER_ID=<uuid>
-MEDFORGE_TIER=PUBLIC|PRIVATE
+MEDFORGE_EXPOSURE=EXTERNAL|INTERNAL
 MEDFORGE_GPU_ID=<gpu_id>
 NVIDIA_VISIBLE_DEVICES=<gpu_idx>
 CUDA_VISIBLE_DEVICES=0
@@ -80,11 +86,9 @@ Optional runtime toggle:
 
 ### Session Lifecycle
 
-#### Create -- `POST /api/v1/sessions`
+#### Create -- `POST /api/v2/external/sessions` or `POST /api/v2/internal/sessions`
 
-Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pack).
-
-- `tier=private` returns **501**.
+Inputs: optional `pack_id` (defaults to seeded pack).
 - Every session allocates exactly one GPU.
 - If an `Origin` header is present, it must match an allowed MedForge remote-public origin or the API returns **403**.
 
@@ -102,13 +106,13 @@ Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pa
 
 - Ensure session workspace dataset exists at `workspace_zfs`, set owner to UID/GID 1000:1000, and apply optional quota.
 - Name: `mf-session-<slug>`
-- Network: `medforge-public-sessions`
+- Network: `medforge-external-sessions`
 - Mount: `/workspace` from session dataset (`workspace_zfs`)
 - GPU: Docker runtime device binding to one physical GPU (`--gpus "device=<gpu_idx>"`) plus env vars above for in-container visibility
 
 Update session: set `container_id`, `status='running'`, `started_at`. On failure (dataset create or container start): set `status='error'`, `stopped_at`, `error_message`. Leaving active status makes the GPU available for subsequent allocations because allocator selection excludes non-terminal active rows.
 
-#### Stop -- `POST /api/v1/sessions/{id}/stop`
+#### Stop -- `POST /api/v2/external/sessions/{id}/stop` or `POST /api/v2/internal/sessions/{id}/stop`
 
 If an `Origin` header is present, it must match an allowed MedForge remote-public origin or the API returns **403**.
 
@@ -120,20 +124,20 @@ If an `Origin` header is present, it must match an allowed MedForge remote-publi
    - stop + snapshot success -> `stopped`, set `stopped_at`.
    - stop success + snapshot failure -> `error`, set `stopped_at`, set `error_message`.
    - stop command failure -> remain `stopping` and retry on later recovery pass.
-6. Clients read session state from `GET /api/v1/sessions/current` after issuing stop.
+6. Clients read session state from the matching exposure route (`GET /api/v2/external/sessions/current` or `GET /api/v2/internal/sessions/current`) after issuing stop.
 
-#### Read Current -- `GET /api/v1/sessions/current`
+#### Read Current -- `GET /api/v2/external/sessions/current` or `GET /api/v2/internal/sessions/current`
 
-- Auth required (`/api/v1/me` auth model).
+- Auth required (`/api/v2/me` auth model).
 - Returns envelope payload:
   - `{ "data": { "session": SessionRead | null }, "meta": { ... } }`
 - Only the caller's own sessions are considered.
 - The selected row is the newest active session (`starting|running|stopping`) by `created_at DESC`.
 
-#### Session Proxy Contract -- `GET /api/v1/auth/session-proxy`
+#### Session Proxy Contract -- `GET /api/v2/auth/session-proxy`
 
 - This endpoint is internal control-plane plumbing for Caddy `forward_auth`.
-- External wildcard callers to `https://s-<slug>.medforge.<domain>/api/v1/auth/session-proxy` are blocked with **403**.
+- External wildcard callers to `https://s-<slug>.medforge.<domain>/api/v2/auth/session-proxy` are blocked with **403**.
 - Real owner-access validation should target wildcard session root (`https://s-<slug>.medforge.<domain>/`) rather than calling this internal path directly.
 
 #### Container State Poller (`SESSION_POLL_INTERVAL_SECONDS` base interval)

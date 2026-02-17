@@ -108,7 +108,15 @@ def signup(
     token = _issue_auth_session(user_id=user.id, request=request, session=session, settings=settings)
     _set_session_cookie(response, token, settings)
 
-    return envelope(request, AuthUserResponse(user_id=user.id, email=user.email, role=user.role))
+    return envelope(
+        request,
+        AuthUserResponse(
+            user_id=user.id,
+            email=user.email,
+            role=user.role,
+            can_use_internal=user.can_use_internal,
+        ),
+    )
 
 
 @router.post("/login", response_model=ApiEnvelope[AuthUserResponse])
@@ -130,7 +138,15 @@ def login(
     token = _issue_auth_session(user_id=user.id, request=request, session=session, settings=settings)
     _set_session_cookie(response, token, settings)
 
-    return envelope(request, AuthUserResponse(user_id=user.id, email=user.email, role=user.role))
+    return envelope(
+        request,
+        AuthUserResponse(
+            user_id=user.id,
+            email=user.email,
+            role=user.role,
+            can_use_internal=user.can_use_internal,
+        ),
+    )
 
 
 @router.post("/logout", response_model=ApiEnvelope[SessionActionResponse])

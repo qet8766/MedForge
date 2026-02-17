@@ -1,0 +1,1 @@
+{"evaluation_split_version":"v1-pet-seg-test","scoring_mode":"single_realtime_hidden","leaderboard_rule":"best_per_user","evaluation_policy":"canonical_test_first","id_column":"image_id","target_columns":["rle_mask"],"expected_row_count":3}

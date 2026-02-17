@@ -25,6 +25,12 @@ function resolveDomain(baseURL: string): string {
   }
 
   const hostname = new URL(baseURL).hostname;
+  if (hostname.startsWith("external.medforge.")) {
+    return hostname.slice("external.medforge.".length);
+  }
+  if (hostname.startsWith("internal.medforge.")) {
+    return hostname.slice("internal.medforge.".length);
+  }
   if (hostname.startsWith("medforge.")) {
     return hostname.slice("medforge.".length);
   }
@@ -77,16 +83,23 @@ async function ensureSignedIn(page: Page, email: string, password: string): Prom
 
 async function waitForSessionRouteReady(sessionPage: Page, sessionOrigin: string): Promise<void> {
   let lastStatus = 0;
+  let lastError = "";
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    const response = await sessionPage.goto(sessionOrigin, { waitUntil: "domcontentloaded" });
-    lastStatus = response?.status() ?? 0;
+    try {
+      const response = await sessionPage.goto(sessionOrigin, { waitUntil: "domcontentloaded" });
+      lastStatus = response?.status() ?? 0;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+      await sessionPage.waitForTimeout(1_000);
+      continue;
+    }
     const hasMissingUpstream = (await sessionPage.getByText("Session upstream missing").count()) > 0;
     if (lastStatus === 200 && !hasMissingUpstream) {
       return;
     }
     await sessionPage.waitForTimeout(1_000);
   }
-  throw new Error(`Session wildcard route not ready (last_status=${lastStatus}).`);
+  throw new Error(`Session wildcard route not ready (last_status=${lastStatus}, last_error=${lastError}).`);
 }
 
 test("login -> create session -> open wildcard host -> websocket -> stop", async ({ page }) => {
@@ -105,7 +118,7 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
   expect(slug).toMatch(/^[a-z0-9]{8}$/);
 
   const base = new URL(baseURL);
-  const sessionOrigin = `${base.protocol}//s-${slug}.medforge.${domain}${base.port ? `:${base.port}` : ""}`;
+  const sessionOrigin = `${base.protocol}//s-${slug}.external.medforge.${domain}${base.port ? `:${base.port}` : ""}`;
 
   const sessionPage = await page.context().newPage();
   const websocketState = {

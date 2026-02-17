@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.models import Competition, CompetitionStatus, CompetitionTier
+from app.models import Competition, CompetitionStatus, CompetitionExposure
 from app.scoring import (
     _MAP_IOU_THRESHOLDS,
     Box,
@@ -45,7 +45,7 @@ def _rsna_competition() -> Competition:
         slug="rsna-pneumonia-detection",
         title="RSNA",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="map_iou",
@@ -74,7 +74,7 @@ def test_titanic_scoring_deterministic(tmp_path: Path) -> None:
         slug="titanic-survival",
         title="Titanic",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="accuracy",
@@ -274,7 +274,7 @@ def _cifar100_competition() -> Competition:
         slug="cifar-100-classification",
         title="CIFAR-100 Classification",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="accuracy",
@@ -376,7 +376,7 @@ def test_titanic_duplicate_passenger_id_rejected(tmp_path: Path) -> None:
         slug="titanic-survival",
         title="Titanic",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="accuracy",
@@ -413,7 +413,7 @@ def test_manifest_expected_row_count_mismatch_rejected(tmp_path: Path) -> None:
         slug="titanic-survival",
         title="Titanic",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="accuracy",
@@ -444,7 +444,7 @@ def test_manifest_missing_required_fields_rejected(tmp_path: Path) -> None:
         slug="titanic-survival",
         title="Titanic",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="accuracy",
@@ -483,7 +483,7 @@ def test_manifest_extra_fields_rejected(tmp_path: Path) -> None:
         slug="titanic-survival",
         title="Titanic",
         description="",
-        competition_tier=CompetitionTier.PUBLIC,
+        competition_exposure=CompetitionExposure.EXTERNAL,
         status=CompetitionStatus.ACTIVE,
         is_permanent=True,
         metric="accuracy",

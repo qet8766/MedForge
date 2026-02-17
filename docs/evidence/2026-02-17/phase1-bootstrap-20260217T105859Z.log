@@ -1,0 +1,220 @@
+ Image compose-medforge-web Building 
+ Image compose-medforge-caddy Building 
+ Image compose-medforge-api Building 
+ Image compose-medforge-api-worker Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.20kB done
+#1 DONE 0.0s
+
+#2 [medforge-api internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.05kB done
+#2 DONE 0.0s
+
+#3 [medforge-caddy internal] load build definition from Dockerfile
+#3 transferring dockerfile: 450B done
+#3 DONE 0.1s
+
+#4 [medforge-web internal] load build definition from Dockerfile
+#4 transferring dockerfile: 1.29kB done
+#4 DONE 0.1s
+
+#5 [medforge-api-worker internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 0.1s
+
+#6 [medforge-caddy internal] load metadata for docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#6 DONE 0.1s
+
+#7 [medforge-caddy internal] load metadata for docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#7 DONE 0.1s
+
+#8 [medforge-api-worker internal] load .dockerignore
+#8 transferring context: 125B done
+#8 DONE 0.0s
+
+#9 [medforge-api-worker internal] load build context
+#9 DONE 0.0s
+
+#10 [medforge-caddy internal] load .dockerignore
+#10 transferring context: 2B done
+#10 DONE 0.0s
+
+#11 [medforge-api-worker 1/5] FROM docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab
+#11 resolve docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab 0.1s done
+#11 resolve docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab 0.1s done
+#11 DONE 0.1s
+
+#12 [medforge-caddy builder 1/2] FROM docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#12 resolve docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc 0.1s done
+#12 DONE 0.1s
+
+#13 [medforge-caddy stage-1 1/2] FROM docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#13 resolve docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb 0.1s done
+#13 DONE 0.1s
+
+#14 [medforge-caddy builder 2/2] RUN xcaddy build --with github.com/caddy-dns/cloudflare
+#14 CACHED
+
+#15 [medforge-caddy stage-1 2/2] COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+#15 CACHED
+
+#9 [medforge-api internal] load build context
+#9 transferring context: 9.45kB done
+#9 DONE 0.0s
+
+#16 [medforge-api-worker 4/5] RUN apt-get update     && sed -i 's/^Components: .*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources     && apt-get update     && apt-get install -y --no-install-recommends curl ca-certificates kmod zfsutils-linux     && curl -LsSf https://astral.sh/uv/0.8.22/install.sh | sh     && ln -s /root/.local/bin/uv /usr/local/bin/uv     && uv pip install --system --no-cache-dir .     && apt-get clean && rm -rf /var/lib/apt/lists/*
+#16 CACHED
+
+#17 [medforge-api-worker 3/5] COPY . .
+#17 CACHED
+
+#18 [medforge-api-worker 2/5] WORKDIR /app
+#18 CACHED
+
+#19 [medforge-api 5/5] RUN groupadd -g 995 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#19 CACHED
+
+#20 [medforge-api-worker 5/5] RUN groupadd -g 999 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#20 CACHED
+
+#21 [medforge-api] exporting to image
+#21 exporting layers done
+#21 exporting manifest sha256:c0964927adada73385aa896422176ad1b1bef56e91125c688f8063bbd36488ce 0.0s done
+#21 exporting config sha256:784d0b8baeb9991c9295374bb67ee8b3e3033db8a4357f8a2d4f2d3fc94643af 0.0s done
+#21 exporting attestation manifest sha256:24fb7a8a570a0d070939918c22d7ae78adfaa0f1a36cccf7fa648f184cfb949c
+#21 ...
+
+#22 [medforge-caddy] exporting to image
+#22 exporting layers done
+#22 exporting manifest sha256:b463700f506373c916c63869919fdbd5abee2f47b37cc7989f27f84e7229a2ae done
+#22 exporting config sha256:6b334487a46eb84c770484b68651c5f4ea0121c5d5e4a3788c2d622ea095c9fd done
+#22 exporting attestation manifest sha256:6e3fc00959e4c55d0e3b16c7b1a4bd5c6bee991ef8b5586e2b62fb52a51dcce9 0.1s done
+#22 exporting manifest list sha256:586aaf8a6909e719c2e46be0914b4e8f477f51b74d4019ec1fb343d7b20d3f5f 0.1s done
+#22 naming to docker.io/library/compose-medforge-caddy:latest 0.0s done
+#22 unpacking to docker.io/library/compose-medforge-caddy:latest 0.0s done
+#22 DONE 0.3s
+
+#21 [medforge-api] exporting to image
+#21 exporting attestation manifest sha256:24fb7a8a570a0d070939918c22d7ae78adfaa0f1a36cccf7fa648f184cfb949c 0.1s done
+#21 exporting manifest list sha256:a92e253e8624523a3652948bd2d2e562faec35e4cfbe6a8d5145d1ac9491f56c 0.0s done
+#21 naming to docker.io/library/compose-medforge-api:latest
+#21 naming to docker.io/library/compose-medforge-api:latest 0.0s done
+#21 unpacking to docker.io/library/compose-medforge-api:latest 0.1s done
+#21 DONE 0.4s
+
+#23 [medforge-api-worker] exporting to image
+#23 exporting layers done
+#23 exporting manifest sha256:46905dfe57eb11929ee15b69f128f8d25a518c6be9c34a18394c313bf5ff0aa3 0.0s done
+#23 exporting config sha256:d9f83cb7fed3697981242fde92261ed2e17ed7f7e77470d2b53ad344946c93c9 0.0s done
+#23 exporting attestation manifest sha256:5f1e6a181f1af58feaf8ce0c13a5a04f38293133e0776abe4d6732bed90a2b11 0.1s done
+#23 exporting manifest list sha256:c9e9ef6672d12c476c2a9e211e6ed131ab214688fa6a369510db8082974fa0a7 0.0s done
+#23 naming to docker.io/library/compose-medforge-api-worker:latest 0.0s done
+#23 unpacking to docker.io/library/compose-medforge-api-worker:latest 0.1s done
+#23 DONE 0.4s
+
+#24 [medforge-web internal] load metadata for docker.io/library/node:20-alpine
+#24 DONE 0.8s
+
+#25 [medforge-web internal] load .dockerignore
+#25 transferring context: 110B done
+#25 DONE 0.0s
+
+#26 [medforge-web internal] load build context
+#26 DONE 0.0s
+
+#27 [medforge-web builder 1/6] FROM docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#27 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 0.1s done
+#27 DONE 0.1s
+
+#26 [medforge-web internal] load build context
+#26 transferring context: 2.88kB done
+#26 DONE 0.0s
+
+#28 [medforge-web builder 3/6] COPY package.json package-lock.json* ./
+#28 CACHED
+
+#29 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#29 CACHED
+
+#30 [medforge-web builder 6/6] RUN npm run build
+#30 CACHED
+
+#31 [medforge-web runner 4/6] COPY --from=builder /app/public ./public
+#31 CACHED
+
+#32 [medforge-web builder 5/6] COPY . .
+#32 CACHED
+
+#33 [medforge-web runner 3/6] RUN addgroup --system --gid 1001 nextjs     && adduser --system --uid 1001 nextjs
+#33 CACHED
+
+#34 [medforge-web builder 2/6] WORKDIR /app
+#34 CACHED
+
+#35 [medforge-web runner 5/6] COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
+#35 CACHED
+
+#36 [medforge-web runner 6/6] COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+#36 CACHED
+
+#37 [medforge-caddy] resolving provenance for metadata file
+#37 DONE 0.1s
+
+#38 [medforge-web] exporting to image
+#38 exporting layers done
+#38 exporting manifest sha256:20cfd99bbbcb41d25919c8b1d28c32f72abac5e173b8f6c14ed25214c8a0165e done
+#38 exporting config sha256:29fceccbd89e7815f319cc491adee044e9046283790b0199d1dcb11c74f04bf3 done
+#38 exporting attestation manifest sha256:81cb3b91de31f4bb72a4cc236ae4f9a99bdca1e981fd98f8af699550eaa492d6
+#38 exporting attestation manifest sha256:81cb3b91de31f4bb72a4cc236ae4f9a99bdca1e981fd98f8af699550eaa492d6 0.1s done
+#38 exporting manifest list sha256:d14795f280825b718c2d06cf206773ee6edf94931ab82c74d0001647ecb38e7d 0.0s done
+#38 naming to docker.io/library/compose-medforge-web:latest done
+#38 unpacking to docker.io/library/compose-medforge-web:latest 0.0s done
+#38 DONE 0.2s
+
+#39 [medforge-api-worker] resolving provenance for metadata file
+#39 DONE 0.1s
+
+#40 [medforge-api] resolving provenance for metadata file
+#40 DONE 0.0s
+
+#41 [medforge-web] resolving provenance for metadata file
+#41 DONE 0.0s
+ Image compose-medforge-api Built 
+ Image compose-medforge-web Built 
+ Image compose-medforge-api-worker Built 
+ Image compose-medforge-caddy Built 
+ Container medforge-caddy Recreate 
+ Container medforge-db Running 
+ Container medforge-api-worker Recreate 
+ Container medforge-api Recreate 
+ Container medforge-caddy Recreated 
+ Container medforge-api Recreated 
+ Container medforge-web Recreate 
+ Container medforge-web Recreated 
+ Container medforge-api-worker Recreated 
+ Container medforge-caddy Starting 
+ Container medforge-api-worker Starting 
+ Container medforge-api Starting 
+ Container medforge-api-worker Started 
+ Container medforge-caddy Started 
+ Container medforge-api Started 
+ Container medforge-web Starting 
+ Container medforge-web Started 
+NAME                  IMAGE                                                                                COMMAND                  SERVICE               CREATED              STATUS                  PORTS
+medforge-api          compose-medforge-api                                                                 "uvicorn app.main:ap…"   medforge-api          12 seconds ago       Up 1 second             8000/tcp
+medforge-api-worker   compose-medforge-api-worker                                                          "python -m app.worke…"   medforge-api-worker   12 seconds ago       Up 1 second             8000/tcp
+medforge-caddy        compose-medforge-caddy                                                               "caddy run --config …"   medforge-caddy        12 seconds ago       Up 1 second             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 0.0.0.0:443->443/udp, [::]:443->443/udp, 2019/tcp
+medforge-db           mariadb:11@sha256:7fcb6109db2ba31b22a5709c1eaf9e84f76c9f1b9b9031ef09f24092f7f207cc   "docker-entrypoint.s…"   medforge-db           About a minute ago   Up About a minute       3306/tcp
+medforge-web          compose-medforge-web                                                                 "docker-entrypoint.s…"   medforge-web          11 seconds ago       Up Less than a second   3000/tcp
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+api ready on attempt 4/60
+web ready on attempt 1/60
+gpu_count=7
+pack_count=1

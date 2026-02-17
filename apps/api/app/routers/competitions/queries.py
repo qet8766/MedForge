@@ -7,16 +7,17 @@ from uuid import UUID
 from sqlalchemy import desc
 from sqlmodel import Session, select
 
-from app.models import Competition, CompetitionStatus, Dataset, Submission, SubmissionScore
+from app.models import Competition, CompetitionExposure, CompetitionStatus, Dataset, Exposure, Submission, SubmissionScore
 
 from .errors import competition_not_found, dataset_not_found
 
 
-def list_active_competitions(session: Session, *, limit: int, offset: int) -> list[Competition]:
+def list_active_competitions(session: Session, *, exposure: Exposure, limit: int, offset: int) -> list[Competition]:
     return list(
         session.exec(
             select(Competition)
             .where(Competition.status == CompetitionStatus.ACTIVE)
+            .where(Competition.competition_exposure == CompetitionExposure(exposure.value))
             .order_by(Competition.slug)
             .offset(offset)
             .limit(limit)
@@ -24,8 +25,12 @@ def list_active_competitions(session: Session, *, limit: int, offset: int) -> li
     )
 
 
-def competition_or_404(session: Session, slug: str, *, for_update: bool = False) -> Competition:
-    statement = select(Competition).where(Competition.slug == slug)
+def competition_or_404(session: Session, slug: str, *, exposure: Exposure, for_update: bool = False) -> Competition:
+    statement = (
+        select(Competition)
+        .where(Competition.slug == slug)
+        .where(Competition.competition_exposure == CompetitionExposure(exposure.value))
+    )
     if for_update:
         statement = statement.with_for_update()
 
@@ -42,10 +47,11 @@ def dataset_or_404(session: Session, dataset_id: UUID, *, for_competition_slug: 
     return dataset
 
 
-def list_datasets_ordered(session: Session, *, limit: int, offset: int) -> list[Dataset]:
+def list_datasets_ordered(session: Session, *, exposure: Exposure, limit: int, offset: int) -> list[Dataset]:
     return list(
         session.exec(
             select(Dataset)
+            .where(Dataset.exposure == exposure)
             .order_by(Dataset.slug)
             .offset(offset)
             .limit(limit)
@@ -53,8 +59,10 @@ def list_datasets_ordered(session: Session, *, limit: int, offset: int) -> list[
     )
 
 
-def dataset_by_slug_or_404(session: Session, slug: str) -> Dataset:
-    dataset = session.exec(select(Dataset).where(Dataset.slug == slug)).first()
+def dataset_by_slug_or_404(session: Session, slug: str, *, exposure: Exposure) -> Dataset:
+    dataset = session.exec(
+        select(Dataset).where(Dataset.slug == slug).where(Dataset.exposure == exposure)
+    ).first()
     if dataset is None:
         raise dataset_not_found(slug)
     return dataset

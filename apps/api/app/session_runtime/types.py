@@ -82,12 +82,12 @@ class WorkspaceSnapshotResult:
 class SessionStartRequest:
     session_id: UUID
     user_id: UUID
-    tier: str
+    exposure: str
     slug: str
     gpu_id: int
     workspace_zfs: str
     pack_image_ref: str
-    public_sessions_network: str
+    sessions_network: str
     start_timeout_seconds: int
     resource_limits: SessionResourceLimits
 
@@ -121,9 +121,9 @@ class ContainerStartRequest:
     container_name: str
     session_id: UUID
     user_id: UUID
-    tier: str
+    exposure: str
     gpu_id: int
-    public_sessions_network: str
+    sessions_network: str
     workspace_mount: str
     start_timeout_seconds: int
     resource_limits: SessionResourceLimits

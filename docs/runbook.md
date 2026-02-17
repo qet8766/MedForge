@@ -39,7 +39,7 @@ Key services in `deploy/compose/docker-compose.yml`:
 
 Host mount prerequisite:
 - `medforge-api` must mount `/tank:/tank` so runtime workspace ownership/quota commands affect host ZFS mountpoints.
-- On `medforge-public-sessions`, reserve fixed IPs to avoid startup races: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
+- On `medforge-external-sessions`, reserve fixed IPs to avoid startup races: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
 
 Routing operation note:
 - Validate session reachability against wildcard root (`https://s-<slug>.medforge.<domain>/`).

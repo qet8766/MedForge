@@ -10,13 +10,15 @@ from .competition_parsers import (
     _parse_cifar_rows,
     _parse_detection_labels,
     _parse_detection_submission,
+    _parse_segmentation_rows,
     _parse_titanic_rows,
     _validate_cifar_row,
     _validate_detection_row,
+    _validate_segmentation_row,
     _validate_titanic_row,
 )
 from .csv_io import _validate_required_columns
-from .metrics import _compute_accuracy, _compute_map_iou
+from .metrics import _compute_accuracy, _compute_map_iou, _compute_mean_iou
 
 ParsedPayload = Any
 RowValidator = Callable[[dict[str, str]], None]
@@ -86,6 +88,19 @@ _COMPETITION_SPECS: dict[str, CompetitionSpec] = {
         parse_labels=_parse_cifar_rows,
         parse_submission=_parse_cifar_rows,
         score_fn=_compute_accuracy,
+    ),
+    "oxford-pet-segmentation": CompetitionSpec(
+        slug="oxford-pet-segmentation",
+        metric="mean_iou",
+        metric_version="mean_iou-v1",
+        submission_required_columns=("image_id", "rle_mask"),
+        label_required_columns=("image_id", "rle_mask"),
+        manifest_id_column="image_id",
+        manifest_target_columns=("rle_mask",),
+        validate_submission_row=_validate_segmentation_row,
+        parse_labels=_parse_segmentation_rows,
+        parse_submission=_parse_segmentation_rows,
+        score_fn=_compute_mean_iou,
     ),
 }
 

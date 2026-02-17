@@ -116,7 +116,7 @@ run_remote_auth_smoke() {
   cookie_jar="$(mktemp /tmp/phase2-remote-cookie.XXXXXX)"
 
   signup_code="$(curl -sS -o /tmp/phase2-remote-signup.out -w '%{http_code}' \
-    -X POST "${api_base}/api/v1/auth/signup" \
+    -X POST "${api_base}/api/v2/auth/signup" \
     -H 'content-type: application/json' \
     -H "Origin: ${web_base}" \
     -c "${cookie_jar}" -b "${cookie_jar}" \
@@ -124,7 +124,7 @@ run_remote_auth_smoke() {
 
   if [ "${signup_code}" = "409" ]; then
     login_code="$(curl -sS -o /tmp/phase2-remote-login.out -w '%{http_code}' \
-      -X POST "${api_base}/api/v1/auth/login" \
+      -X POST "${api_base}/api/v2/auth/login" \
       -H 'content-type: application/json' \
       -H "Origin: ${web_base}" \
       -c "${cookie_jar}" -b "${cookie_jar}" \
@@ -144,15 +144,15 @@ run_remote_auth_smoke() {
 
   me_code="$(curl -sS -o /tmp/phase2-remote-me.out -w '%{http_code}' \
     -b "${cookie_jar}" \
-    "${api_base}/api/v1/me")"
+    "${api_base}/api/v2/me")"
   if [ "${me_code}" != "200" ]; then
-    echo "ERROR: phase2 remote /api/v1/me failed (code=${me_code})"
+    echo "ERROR: phase2 remote /api/v2/me failed (code=${me_code})"
     rm -f "${cookie_jar}"
     return 1
   fi
 
   logout_code="$(curl -sS -o /tmp/phase2-remote-logout.out -w '%{http_code}' \
-    -X POST "${api_base}/api/v1/auth/logout" \
+    -X POST "${api_base}/api/v2/auth/logout" \
     -H "Origin: ${web_base}" \
     -b "${cookie_jar}" -c "${cookie_jar}")"
   if [ "${logout_code}" != "200" ]; then
@@ -163,7 +163,7 @@ run_remote_auth_smoke() {
 
   me_after_logout_code="$(curl -sS -o /tmp/phase2-remote-me2.out -w '%{http_code}' \
     -b "${cookie_jar}" \
-    "${api_base}/api/v1/me")"
+    "${api_base}/api/v2/me")"
   if [ "${me_after_logout_code}" != "401" ]; then
     echo "ERROR: phase2 remote auth invalidation failed (code=${me_after_logout_code})"
     rm -f "${cookie_jar}"

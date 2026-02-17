@@ -23,12 +23,12 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
 
 
 def test_sessions_current_requires_auth(client) -> None:
-    response = client.get("/api/v1/sessions/current")
+    response = client.get("/api/v2/external/sessions/current")
     assert response.status_code == 401
 
 
 def test_sessions_current_returns_null_without_active_session(client, auth_tokens) -> None:
-    response = client.get("/api/v1/sessions/current", headers=_auth_headers(auth_tokens, USER_A))
+    response = client.get("/api/v2/external/sessions/current", headers=_auth_headers(auth_tokens, USER_A))
     assert response.status_code == 200
     payload, _ = _assert_success(response, status_code=200)
     assert payload == {"session": None}
@@ -36,20 +36,20 @@ def test_sessions_current_returns_null_without_active_session(client, auth_token
 
 def test_sessions_current_returns_requester_session_only(client, auth_tokens) -> None:
     created_a = client.post(
-        "/api/v1/sessions",
-        json={"tier": "public"},
+        "/api/v2/external/sessions",
+        json={},
         headers=_auth_headers(auth_tokens, USER_A),
     )
     assert created_a.status_code == 201
 
     created_b = client.post(
-        "/api/v1/sessions",
-        json={"tier": "public"},
+        "/api/v2/external/sessions",
+        json={},
         headers=_auth_headers(auth_tokens, USER_B),
     )
     assert created_b.status_code == 201
 
-    response = client.get("/api/v1/sessions/current", headers=_auth_headers(auth_tokens, USER_A))
+    response = client.get("/api/v2/external/sessions/current", headers=_auth_headers(auth_tokens, USER_A))
     payload, _ = _assert_success(response, status_code=200)
 
     assert payload["session"] is not None
@@ -61,8 +61,8 @@ def test_sessions_current_returns_requester_session_only(client, auth_tokens) ->
 
 def test_session_create_rejects_disallowed_origin(client, auth_tokens) -> None:
     response = client.post(
-        "/api/v1/sessions",
-        json={"tier": "public"},
+        "/api/v2/external/sessions",
+        json={},
         headers=_auth_headers(auth_tokens, USER_A, {"Origin": "https://evil.example.net"}),
     )
     _assert_problem(
@@ -74,8 +74,8 @@ def test_session_create_rejects_disallowed_origin(client, auth_tokens) -> None:
 
 def test_session_stop_rejects_disallowed_origin(client, db_engine, auth_tokens) -> None:
     created = client.post(
-        "/api/v1/sessions",
-        json={"tier": "public"},
+        "/api/v2/external/sessions",
+        json={},
         headers=_auth_headers(auth_tokens, USER_A),
     )
     assert created.status_code == 201
@@ -83,7 +83,7 @@ def test_session_stop_rejects_disallowed_origin(client, db_engine, auth_tokens) 
     session_id = created_data["session"]["id"]
 
     denied = client.post(
-        f"/api/v1/sessions/{session_id}/stop",
+        f"/api/v2/external/sessions/{session_id}/stop",
         headers=_auth_headers(auth_tokens, USER_A, {"Origin": "https://evil.example.net"}),
     )
     _assert_problem(

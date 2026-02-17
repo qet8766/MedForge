@@ -1,4 +1,6 @@
 import { apiGet, type DatasetDetail } from "@/lib/api";
+import { inferServerSurface } from "@/lib/server-surface";
+import { apiPathForSurface } from "@/lib/surface";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +23,8 @@ export default async function DatasetDetailPage({
   params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
   const resolvedParams = await params;
-  const dataset = await apiGet<DatasetDetail>(`/api/v1/datasets/${resolvedParams.slug}`);
+  const surface = await inferServerSurface();
+  const dataset = await apiGet<DatasetDetail>(apiPathForSurface(surface, `/datasets/${resolvedParams.slug}`));
 
   return (
     <div className="max-w-3xl space-y-6">

@@ -6,14 +6,16 @@ Current alpha scope:
 
 - Competition endpoints are implemented.
 - Phase 2 auth foundations are implemented:
-  - `POST /api/v1/auth/signup`
-  - `POST /api/v1/auth/login`
-  - `POST /api/v1/auth/logout`
-  - `GET /api/v1/me` (cookie auth)
-  - `GET /api/v1/auth/session-proxy` (owner/admin + running-session check)
-- Phase 3 lifecycle routes are implemented for PUBLIC sessions:
-  - `POST /api/v1/sessions` (`tier=public` create, `tier=private` returns `501`)
-  - `POST /api/v1/sessions/{id}/stop` (idempotent async stop request; reconciliation performs stop + snapshot terminalization)
+- `POST /api/v2/auth/signup`
+- `POST /api/v2/auth/login`
+- `POST /api/v2/auth/logout`
+- `GET /api/v2/me` (cookie auth + `can_use_internal`)
+- `GET /api/v2/auth/session-proxy` (owner/admin + running-session check)
+- Session lifecycle routes are exposure-split in v2:
+  - `POST /api/v2/external/sessions`
+  - `POST /api/v2/internal/sessions` (requires `can_use_internal`)
+  - `POST /api/v2/external/sessions/{id}/stop`
+  - `POST /api/v2/internal/sessions/{id}/stop`
 - Phase 3 recovery paths are implemented in API:
   - startup reconciliation for `starting|running|stopping`
   - periodic poller for active session container-death detection

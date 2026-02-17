@@ -128,7 +128,7 @@ tls_probe() {
   curl -fsS "https://${api_host}/healthz" >/dev/null
 
   status="$(curl -sS -o /tmp/${PHASE_ID}-session-proxy.out -w '%{http_code}' \
-    "https://${api_host}/api/v1/auth/session-proxy" \
+    "https://${api_host}/api/v2/auth/session-proxy" \
     -H "Host: $(remote_public_session_host "phase0check" "${DOMAIN}")")"
 
   case "${status}" in

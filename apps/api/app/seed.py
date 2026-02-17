@@ -12,13 +12,14 @@ from app.competition_policy import (
     DEFAULT_SCORING_MODE,
 )
 from app.config import get_settings
-from app.models import Competition, CompetitionStatus, CompetitionTier, Dataset, GpuDevice, Pack, PackTier
+from app.models import Competition, CompetitionExposure, CompetitionStatus, Dataset, Exposure, GpuDevice, Pack, PackExposure
 
 
 class DatasetSeed(TypedDict):
     slug: str
     title: str
     source: str
+    exposure: Exposure
     license: str
     dataset_dir: str
     bytes: int
@@ -29,6 +30,7 @@ class DatasetSeedResolved(TypedDict):
     slug: str
     title: str
     source: str
+    exposure: Exposure
     license: str
     storage_path: str
     bytes: int
@@ -46,6 +48,7 @@ class CompetitionSeed(TypedDict):
     leaderboard_rule: str
     evaluation_policy: str
     competition_spec_version: str
+    competition_exposure: CompetitionExposure
     submission_cap_per_day: int
 
 
@@ -56,6 +59,7 @@ SEED_DATASETS: list[DatasetSeed] = [
         "slug": "titanic-kaggle",
         "title": "Titanic - Machine Learning from Disaster",
         "source": "kaggle",
+        "exposure": Exposure.EXTERNAL,
         "license": "Kaggle Competition Terms (internal/private mirror)",
         "dataset_dir": "titanic-kaggle",
         "bytes": 0,
@@ -65,6 +69,7 @@ SEED_DATASETS: list[DatasetSeed] = [
         "slug": "rsna-pneumonia-detection-challenge",
         "title": "RSNA Pneumonia Detection Challenge",
         "source": "kaggle",
+        "exposure": Exposure.EXTERNAL,
         "license": "Kaggle Competition Terms (internal/private mirror)",
         "dataset_dir": "rsna-pneumonia-detection",
         "bytes": 0,
@@ -74,8 +79,19 @@ SEED_DATASETS: list[DatasetSeed] = [
         "slug": "cifar-100",
         "title": "CIFAR-100",
         "source": "toronto-cs",
+        "exposure": Exposure.EXTERNAL,
         "license": "MIT-like (Alex Krizhevsky, internal mirror)",
         "dataset_dir": "cifar-100",
+        "bytes": 0,
+        "checksum": "pending",
+    },
+    {
+        "slug": "oxford-iiit-pet",
+        "title": "Oxford-IIIT Pet",
+        "source": "kaggle",
+        "exposure": Exposure.INTERNAL,
+        "license": "Dataset terms per source mirror",
+        "dataset_dir": "oxford-iiit-pet",
         "bytes": 0,
         "checksum": "pending",
     },
@@ -93,6 +109,7 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
         "evaluation_policy": DEFAULT_EVALUATION_POLICY,
         "competition_spec_version": "v1",
+        "competition_exposure": CompetitionExposure.EXTERNAL,
         "submission_cap_per_day": 20,
     },
     {
@@ -106,6 +123,7 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
         "evaluation_policy": DEFAULT_EVALUATION_POLICY,
         "competition_spec_version": "v1",
+        "competition_exposure": CompetitionExposure.EXTERNAL,
         "submission_cap_per_day": 10,
     },
     {
@@ -119,6 +137,21 @@ SEED_COMPETITIONS: list[CompetitionSeed] = [
         "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
         "evaluation_policy": DEFAULT_EVALUATION_POLICY,
         "competition_spec_version": "v1",
+        "competition_exposure": CompetitionExposure.EXTERNAL,
+        "submission_cap_per_day": 20,
+    },
+    {
+        "slug": "oxford-pet-segmentation",
+        "title": "Oxford-IIIT Pet Segmentation",
+        "description": "INTERNAL semantic segmentation benchmark with Kaggle-style RLE submissions.",
+        "dataset_slug": "oxford-iiit-pet",
+        "metric": "mean_iou",
+        "metric_version": "mean_iou-v1",
+        "scoring_mode": DEFAULT_SCORING_MODE,
+        "leaderboard_rule": DEFAULT_LEADERBOARD_RULE,
+        "evaluation_policy": DEFAULT_EVALUATION_POLICY,
+        "competition_spec_version": "v1",
+        "competition_exposure": CompetitionExposure.INTERNAL,
         "submission_cap_per_day": 20,
     },
 ]
@@ -138,6 +171,7 @@ def _dataset_payload_with_storage_path(dataset_payload: DatasetSeed, datasets_ro
         "slug": dataset_payload["slug"],
         "title": dataset_payload["title"],
         "source": dataset_payload["source"],
+        "exposure": dataset_payload["exposure"],
         "license": dataset_payload["license"],
         "storage_path": str(datasets_root / dataset_payload["dataset_dir"]),
         "bytes": dataset_payload["bytes"],
@@ -155,12 +189,13 @@ def seed_defaults(session: Session) -> None:
         default_pack = Pack(
             id=DEFAULT_PACK_ID,
             name="default-pack",
-            tier=PackTier.BOTH,
+            exposure=PackExposure.BOTH,
             image_ref=image_ref,
             image_digest=image_digest,
         )
         session.add(default_pack)
     else:
+        default_pack.exposure = PackExposure.BOTH
         default_pack.image_ref = image_ref
         default_pack.image_digest = image_digest
         session.add(default_pack)
@@ -186,6 +221,7 @@ def seed_defaults(session: Session) -> None:
             session.flush()
         else:
             existing_dataset.storage_path = str(resolved_dataset_payload["storage_path"])
+            existing_dataset.exposure = resolved_dataset_payload["exposure"]
             session.add(existing_dataset)
         dataset_by_slug[existing_dataset.slug] = existing_dataset
 
@@ -201,7 +237,7 @@ def seed_defaults(session: Session) -> None:
             slug=competition_payload["slug"],
             title=competition_payload["title"],
             description=competition_payload["description"],
-            competition_tier=CompetitionTier.PUBLIC,
+            competition_exposure=competition_payload["competition_exposure"],
             status=CompetitionStatus.ACTIVE,
             is_permanent=True,
             metric=competition_payload["metric"],

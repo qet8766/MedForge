@@ -1,10 +1,11 @@
 networks:
   medforge-control:
     driver: bridge
-  medforge-public-sessions:
+  medforge-external-sessions:
     external: true                        # Created by bootstrap-easy.sh with 172.30.0.0/24.
-  medforge-private-sessions:
-    driver: bridge                        # Placeholder — unused until PRIVATE tier.
+  medforge-internal-sessions:
+    driver: bridge
+    internal: true                        # Internal sessions: no outbound internet egress.
 
 volumes:
   caddy_data:
@@ -42,7 +43,8 @@ services:
       DATABASE_URL: mysql+aiomysql://${DB_USER}:${DB_PASSWORD}@medforge-db:3306/medforge
       DOMAIN: ${DOMAIN}
       SESSION_SECRET: ${SESSION_SECRET}
-      PUBLIC_SESSIONS_NETWORK: ${PUBLIC_SESSIONS_NETWORK}
+      EXTERNAL_SESSIONS_NETWORK: ${EXTERNAL_SESSIONS_NETWORK}
+      INTERNAL_SESSIONS_NETWORK: ${INTERNAL_SESSIONS_NETWORK}
       WORKSPACE_ZFS_ROOT: ${WORKSPACE_ZFS_ROOT}
       SESSION_ALLOCATION_MAX_RETRIES: ${SESSION_ALLOCATION_MAX_RETRIES}
       SESSION_CONTAINER_START_TIMEOUT_SECONDS: ${SESSION_CONTAINER_START_TIMEOUT_SECONDS}
@@ -84,8 +86,9 @@ services:
       - SYS_ADMIN                                  # Required for ZFS ioctls.
     networks:
       medforge-control: {}
-      medforge-public-sessions:
+      medforge-external-sessions:
         ipv4_address: 172.30.0.3
+      medforge-internal-sessions: {}
 
   # ── Scoring worker ───────────────────────────────────────
   medforge-api-worker:
@@ -139,5 +142,6 @@ services:
       - caddy_config:/config
     networks:
       medforge-control: {}
-      medforge-public-sessions:
+      medforge-external-sessions:
         ipv4_address: 172.30.0.2                   # Fixed IP for firewall rules.
+      medforge-internal-sessions: {}

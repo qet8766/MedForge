@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.api_contract import ApiEnvelope, envelope
 from app.database import get_session
+from app.models import Exposure
 from app.pagination import decode_offset_cursor, encode_offset_cursor, validate_limit
 from app.schemas import (
     CompetitionDetail,
@@ -16,6 +17,7 @@ from app.schemas import (
 )
 
 from .leaderboard import fetch_leaderboard_rows
+from .dependencies import get_bound_exposure
 from .queries import (
     competition_or_404,
     dataset_by_slug_or_404,
@@ -31,12 +33,13 @@ router = APIRouter()
 def list_competitions(
     request: Request,
     session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
     limit: int = 50,
     cursor: str | None = None,
 ) -> ApiEnvelope[list[CompetitionSummary]]:
     limit = validate_limit(limit)
     offset = decode_offset_cursor(cursor)
-    competitions = list_active_competitions(session, limit=limit + 1, offset=offset)
+    competitions = list_active_competitions(session, exposure=exposure, limit=limit + 1, offset=offset)
     has_more = len(competitions) > limit
     page = competitions[:limit]
     next_cursor = encode_offset_cursor(offset + limit) if has_more else None
@@ -54,8 +57,9 @@ def get_competition(
     request: Request,
     slug: str,
     session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
 ) -> ApiEnvelope[CompetitionDetail]:
-    competition = competition_or_404(session, slug)
+    competition = competition_or_404(session, slug, exposure=exposure)
     dataset = dataset_or_404(session, competition.dataset_id, for_competition_slug=competition.slug)
     return envelope(
         request,
@@ -74,13 +78,14 @@ def get_leaderboard(
     request: Request,
     slug: str,
     session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
     limit: int = 50,
     cursor: str | None = None,
 ) -> ApiEnvelope[LeaderboardResponse]:
     limit = validate_limit(limit)
     offset = decode_offset_cursor(cursor)
 
-    competition = competition_or_404(session, slug)
+    competition = competition_or_404(session, slug, exposure=exposure)
     rows = fetch_leaderboard_rows(
         session,
         competition=competition,
@@ -117,12 +122,13 @@ def get_leaderboard(
 def list_datasets(
     request: Request,
     session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
     limit: int = 50,
     cursor: str | None = None,
 ) -> ApiEnvelope[list[DatasetSummary]]:
     limit = validate_limit(limit)
     offset = decode_offset_cursor(cursor)
-    datasets = list_datasets_ordered(session, limit=limit + 1, offset=offset)
+    datasets = list_datasets_ordered(session, exposure=exposure, limit=limit + 1, offset=offset)
     has_more = len(datasets) > limit
     page = datasets[:limit]
     next_cursor = encode_offset_cursor(offset + limit) if has_more else None
@@ -140,6 +146,7 @@ def get_dataset(
     request: Request,
     slug: str,
     session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
 ) -> ApiEnvelope[DatasetDetail]:
-    dataset = dataset_by_slug_or_404(session, slug)
+    dataset = dataset_by_slug_or_404(session, slug, exposure=exposure)
     return envelope(request, DatasetDetail.model_validate(dataset))

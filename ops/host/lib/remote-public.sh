@@ -2,9 +2,9 @@
 #
 # Shared helpers for remote-public validation checks.
 # Canonical public hosts are derived from deploy/compose/.env DOMAIN:
-#   web: medforge.<DOMAIN>
+#   web: external.medforge.<DOMAIN>
 #   api: api.medforge.<DOMAIN>
-#   wildcard probe: s-<slug>.medforge.<DOMAIN>
+#   wildcard probe: s-<slug>.external.medforge.<DOMAIN>
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ remote_read_env_value() {
 
 remote_public_web_host() {
   local domain="$1"
-  printf "medforge.%s\n" "${domain}"
+  printf "external.medforge.%s\n" "${domain}"
 }
 
 remote_public_api_host() {
@@ -30,7 +30,7 @@ remote_public_api_host() {
 remote_public_session_host() {
   local slug="$1"
   local domain="$2"
-  printf "s-%s.medforge.%s\n" "${slug}" "${domain}"
+  printf "s-%s.external.medforge.%s\n" "${slug}" "${domain}"
 }
 
 remote_require_domain() {

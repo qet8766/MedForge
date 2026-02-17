@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.deps import AuthPrincipal
-from app.models import GpuDevice, Pack, PackTier, Role, SessionRecord, SessionStatus, Tier, User
+from app.models import Exposure, GpuDevice, Pack, PackExposure, Role, SessionRecord, SessionStatus, User
 from app.seed import DEFAULT_PACK_ID
 
 ACTIVE_SESSION_STATUSES: tuple[SessionStatus, ...] = (
@@ -57,6 +57,7 @@ def get_or_create_principal_user(session: Session, principal: AuthPrincipal) -> 
         email=legacy_email,
         password_hash="legacy-header-auth",
         role=Role.ADMIN if principal.role == Role.ADMIN else Role.USER,
+        can_use_internal=principal.role == Role.ADMIN,
     )
     session.add(user)
     session.commit()
@@ -64,7 +65,7 @@ def get_or_create_principal_user(session: Session, principal: AuthPrincipal) -> 
     return user
 
 
-def resolve_pack(session: Session, *, pack_id: UUID | None, tier: Tier) -> Pack:
+def resolve_pack(session: Session, *, pack_id: UUID | None, exposure: Exposure) -> Pack:
     selected_pack_id = pack_id or DEFAULT_PACK_ID
     pack = session.get(Pack, selected_pack_id)
     if pack is None:
@@ -72,15 +73,15 @@ def resolve_pack(session: Session, *, pack_id: UUID | None, tier: Tier) -> Pack:
     if pack.deprecated_at is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Selected pack is deprecated.")
 
-    if tier == Tier.PUBLIC and pack.tier == PackTier.PRIVATE:
+    if exposure == Exposure.EXTERNAL and pack.exposure == PackExposure.INTERNAL:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Selected pack does not support PUBLIC tier.",
+            detail="Selected pack does not support EXTERNAL exposure.",
         )
-    if tier == Tier.PRIVATE and pack.tier == PackTier.PUBLIC:
+    if exposure == Exposure.INTERNAL and pack.exposure == PackExposure.EXTERNAL:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Selected pack does not support PRIVATE tier.",
+            detail="Selected pack does not support INTERNAL exposure.",
         )
     return pack
 
@@ -120,7 +121,7 @@ def allocate_starting_session(
     session: Session,
     *,
     user_id: UUID,
-    tier: Tier,
+    exposure: Exposure,
     pack_id: UUID,
     workspace_zfs_root: str,
     max_retries: int,
@@ -151,7 +152,7 @@ def allocate_starting_session(
             row = SessionRecord(
                 id=session_id,
                 user_id=user.id,
-                tier=tier,
+                exposure=exposure,
                 pack_id=pack_id,
                 status=SessionStatus.STARTING,
                 gpu_id=gpu_id,
@@ -226,10 +227,13 @@ def list_sessions_for_user(
     *,
     user_id: UUID,
     statuses: Iterable[SessionStatus] | None = None,
+    exposure: Exposure | None = None,
 ) -> list[SessionRecord]:
     statement = select(SessionRecord).where(SessionRecord.user_id == user_id)
     if statuses is not None:
         status_col = cast(Any, SessionRecord.status)
         statement = statement.where(status_col.in_(tuple(statuses)))
+    if exposure is not None:
+        statement = statement.where(SessionRecord.exposure == exposure)
     created_col = cast(Any, SessionRecord.created_at)
     return list(session.exec(statement.order_by(created_col.desc())).all())

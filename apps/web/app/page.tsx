@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-import { apiGet, type CompetitionSummary } from "@/lib/api";
+import { apiGet, type CompetitionSummary, type MeResponse } from "@/lib/api";
+import { inferServerSurface } from "@/lib/server-surface";
+import { apiPathForSurface, surfaceHost } from "@/lib/surface";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +10,19 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const competitions = await apiGet<CompetitionSummary[]>("/api/v1/competitions");
+  const surface = await inferServerSurface();
+  const competitions = await apiGet<CompetitionSummary[]>(apiPathForSurface(surface, "/competitions"));
+
+  let me: MeResponse | null = null;
+  try {
+    me = await apiGet<MeResponse>("/api/v2/me");
+  } catch {
+    me = null;
+  }
+
+  const domain = process.env.NEXT_PUBLIC_DOMAIN?.trim() || process.env.DOMAIN?.trim() || "";
+  const externalUrl = domain ? `https://${surfaceHost("external", domain)}` : "/competitions";
+  const internalUrl = domain ? `https://${surfaceHost("internal", domain)}` : "/competitions";
 
   return (
     <div className="space-y-8">
@@ -16,12 +30,20 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         <CardHeader>
           <CardTitle className="text-2xl">MedForge Competitions</CardTitle>
           <CardDescription>
-            Permanent Kaggle-style competitions with code-server workflows and GPU-backed development sessions.
+            Exposure-separated competitions with GPU-backed development sessions.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/competitions">Browse competitions</Link>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button size="lg" asChild>
+            <a href={externalUrl}>EXTERNAL</a>
+          </Button>
+          {me?.can_use_internal ? (
+            <Button size="lg" variant="secondary" asChild>
+              <a href={internalUrl}>INTERNAL</a>
+            </Button>
+          ) : null}
+          <Button variant="outline" asChild>
+            <Link href="/competitions">Browse {surface.toUpperCase()} competitions</Link>
           </Button>
         </CardContent>
       </Card>
@@ -32,6 +54,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             <CardHeader>
               <CardTitle>{competition.title}</CardTitle>
               <CardDescription className="flex items-center gap-2">
+                <Badge variant="secondary">{competition.competition_exposure}</Badge>
                 <Badge variant="outline" className="font-mono text-xs">
                   {competition.metric}
                 </Badge>

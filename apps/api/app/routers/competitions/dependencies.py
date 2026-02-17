@@ -9,6 +9,7 @@ from sqlmodel import Session
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.deps import AuthPrincipal, get_current_user, require_admin_access, require_allowed_origin
+from app.models import Exposure
 
 from .errors import from_http_exception
 
@@ -51,3 +52,17 @@ def require_admin_access_checked(
         )
     except HTTPException as exc:
         raise from_http_exception(exc, type_slug="admin-access-denied") from exc
+
+
+def bind_exposure(exposure: Exposure):
+    def _bind(request: Request) -> None:
+        request.state.competition_exposure = exposure
+
+    return _bind
+
+
+def get_bound_exposure(request: Request) -> Exposure:
+    exposure = getattr(request.state, "competition_exposure", None)
+    if isinstance(exposure, Exposure):
+        return exposure
+    raise HTTPException(status_code=500, detail="Competition exposure context missing.")

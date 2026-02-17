@@ -41,8 +41,8 @@ def _run_create_stop_cycle(client, auth_tokens: dict[str, str]) -> CycleResult:
     """Create a session, then stop it. Returns timing and status codes."""
     t0 = time.monotonic()
     create_resp = client.post(
-        "/api/v1/sessions",
-        json={"tier": "public"},
+        "/api/v2/external/sessions",
+        json={},
         headers=_auth_headers(auth_tokens, USER_A),
     )
     create_latency = (time.monotonic() - t0) * 1000
@@ -61,7 +61,7 @@ def _run_create_stop_cycle(client, auth_tokens: dict[str, str]) -> CycleResult:
 
     t1 = time.monotonic()
     stop_resp = client.post(
-        f"/api/v1/sessions/{session_id}/stop",
+        f"/api/v2/external/sessions/{session_id}/stop",
         headers=_auth_headers(auth_tokens, USER_A),
     )
     stop_latency = (time.monotonic() - t1) * 1000

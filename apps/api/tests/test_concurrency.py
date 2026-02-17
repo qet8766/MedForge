@@ -36,8 +36,8 @@ def test_8way_parallel_session_create_respects_gpu_capacity(
 
     def _create() -> int:
         resp = client.post(
-            "/api/v1/sessions",
-            json={"tier": "public"},
+            "/api/v2/external/sessions",
+            json={},
             headers=_auth_headers(auth_tokens, USER_A),
         )
         return resp.status_code
@@ -76,8 +76,8 @@ def test_sequential_session_create_exhausts_gpus(
     statuses = []
     for _ in range(8):
         resp = client.post(
-            "/api/v1/sessions",
-            json={"tier": "public"},
+            "/api/v2/external/sessions",
+            json={},
             headers=_auth_headers(auth_tokens, USER_A),
         )
         statuses.append(resp.status_code)

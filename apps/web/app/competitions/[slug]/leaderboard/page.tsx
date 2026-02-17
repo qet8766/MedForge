@@ -1,4 +1,6 @@
 import { apiGet, type LeaderboardEntry } from "@/lib/api";
+import { inferServerSurface } from "@/lib/server-surface";
+import { apiPathForSurface } from "@/lib/surface";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -22,8 +24,9 @@ export default async function CompetitionLeaderboardPage({
   params: { slug: string } | Promise<{ slug: string }>;
 }): Promise<React.JSX.Element> {
   const resolvedParams = await params;
+  const surface = await inferServerSurface();
   const leaderboard = await apiGet<LeaderboardResponse>(
-    `/api/v1/competitions/${resolvedParams.slug}/leaderboard`
+    apiPathForSurface(surface, `/competitions/${resolvedParams.slug}/leaderboard`)
   );
 
   return (

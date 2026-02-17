@@ -50,14 +50,14 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
 
 def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens) -> None:
     """Owner request with spoofed X-Upstream header → overwritten by server."""
-    from app.models import Pack, SessionRecord, SessionStatus, Tier
+    from app.models import Pack, SessionRecord, SessionStatus, Exposure
 
     with Session(db_engine) as session:
         pack = session.exec(select(Pack)).first()
         assert pack is not None
         row = SessionRecord(
             user_id=UUID(USER_A),
-            tier=Tier.PUBLIC,
+            exposure=Exposure.EXTERNAL,
             pack_id=pack.id,
             status=SessionStatus.RUNNING,
             gpu_id=0,
@@ -68,12 +68,12 @@ def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens)
         session.commit()
 
     response = client.get(
-        "/api/v1/auth/session-proxy",
+        "/api/v2/auth/session-proxy",
         headers=_auth_headers(
             auth_tokens,
             USER_A,
             {
-                "Host": "s-spoof123.medforge.example.com",
+                "Host": "s-spoof123.external.medforge.example.com",
                 "X-Upstream": "evil-target:9999",
             },
         ),
@@ -91,11 +91,11 @@ def test_origin_matrix_allowed_origins(client, auth_tokens) -> None:
     good_origins = [
         ALLOWED_ORIGIN,
         ALLOWED_API_ORIGIN,
-        "https://s-origintest.medforge.example.com",
+        "https://s-origintest.external.medforge.example.com",
     ]
     for origin in good_origins:
         resp = client.post(
-            "/api/v1/auth/signup",
+            "/api/v2/auth/signup",
             json={"email": f"origin-test-{origin.replace(':', '-').replace('/', '-')}@example.com", "password": "sufficiently-strong"},
             headers={"Origin": origin},
         )
@@ -111,8 +111,8 @@ def test_origin_matrix_rejected_origins(client, auth_tokens) -> None:
     ]
     for origin in bad_origins:
         resp = client.post(
-            "/api/v1/sessions",
-            json={"tier": "public"},
+            "/api/v2/external/sessions",
+            json={},
             headers=_auth_headers(auth_tokens, USER_A, {"Origin": origin}),
         )
         assert resp.status_code == 403, f"Origin {origin} not rejected: {resp.status_code}"
@@ -125,13 +125,13 @@ def test_auth_signup_rate_limit_429(client) -> None:
     """Rapid signup requests → 429 after exceeding rate limit."""
     for i in range(10):
         client.post(
-            "/api/v1/auth/signup",
+            "/api/v2/auth/signup",
             json={"email": f"ratelimit-{i}@example.com", "password": "sufficiently-strong"},
             headers={"Origin": ALLOWED_ORIGIN},
         )
 
     response = client.post(
-        "/api/v1/auth/signup",
+        "/api/v2/auth/signup",
         json={"email": "ratelimit-overflow@example.com", "password": "sufficiently-strong"},
         headers={"Origin": ALLOWED_ORIGIN},
     )
@@ -148,13 +148,13 @@ def test_auth_login_rate_limit_429(client) -> None:
     """Rapid login requests → 429 after exceeding rate limit."""
     for i in range(10):
         client.post(
-            "/api/v1/auth/login",
+            "/api/v2/auth/login",
             json={"email": f"ratelimit-login-{i}@example.com", "password": "wrong"},
             headers={"Origin": ALLOWED_ORIGIN},
         )
 
     response = client.post(
-        "/api/v1/auth/login",
+        "/api/v2/auth/login",
         json={"email": "ratelimit-login-overflow@example.com", "password": "wrong"},
         headers={"Origin": ALLOWED_ORIGIN},
     )
@@ -172,7 +172,7 @@ def test_auth_login_rate_limit_429(client) -> None:
 def test_logout_invalidates_token(client) -> None:
     """After logout, the old token must return 401."""
     signup = client.post(
-        "/api/v1/auth/signup",
+        "/api/v2/auth/signup",
         json={"email": "fixation-test@example.com", "password": "sufficiently-strong"},
         headers={"Origin": ALLOWED_ORIGIN},
     )
@@ -187,10 +187,10 @@ def test_logout_invalidates_token(client) -> None:
             break
     assert token is not None
 
-    logout = client.post("/api/v1/auth/logout", headers={"Origin": ALLOWED_ORIGIN})
+    logout = client.post("/api/v2/auth/logout", headers={"Origin": ALLOWED_ORIGIN})
     assert logout.status_code == 200
 
-    me = client.get("/api/v1/me", headers={"Cookie": f"medforge_session={token}"})
+    me = client.get("/api/v2/me", headers={"Cookie": f"medforge_session={token}"})
     assert me.status_code == 401
 
 
@@ -219,7 +219,7 @@ def test_idle_ttl_expires_session(client, db_engine, test_settings, auth_tokens)
         session.add(auth_session)
         session.commit()
 
-    me = client.get("/api/v1/me", headers=_auth_headers(auth_tokens, USER_A))
+    me = client.get("/api/v2/me", headers=_auth_headers(auth_tokens, USER_A))
     assert me.status_code == 401
 
 
@@ -250,5 +250,5 @@ def test_max_ttl_expires_session(client, db_engine, test_settings, auth_tokens) 
         session.add(auth_session)
         session.commit()
 
-    me = client.get("/api/v1/me", headers=_auth_headers(auth_tokens, USER_A))
+    me = client.get("/api/v2/me", headers=_auth_headers(auth_tokens, USER_A))
     assert me.status_code == 401

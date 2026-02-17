@@ -2,7 +2,7 @@
 #
 # East–west isolation for MedForge session containers.
 #
-# Allows only Caddy (CADDY_IP) to reach port 8080 on the public-sessions
+# Allows only Caddy (CADDY_IP) to reach port 8080 on the external-sessions
 # bridge.  All other inter-container traffic to 8080 is dropped, preventing
 # one session from reaching another session's code-server directly.
 #
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 CADDY_IP="${CADDY_IP:-172.30.0.2}"
-SESSIONS_BRIDGE="${SESSIONS_BRIDGE:-br-$(docker network inspect medforge-public-sessions -f '{{.Id}}' | head -c 12)}"
+SESSIONS_BRIDGE="${SESSIONS_BRIDGE:-br-$(docker network inspect medforge-external-sessions -f '{{.Id}}' | head -c 12)}"
 
 # Ensure bridged container traffic is evaluated by iptables.
 modprobe br_netfilter

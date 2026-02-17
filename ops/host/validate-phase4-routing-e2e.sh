@@ -102,7 +102,7 @@ cookie_token_from_jar() {
 }
 
 resolve_caddy_ip() {
-  docker inspect -f '{{with index .NetworkSettings.Networks "medforge-public-sessions"}}{{.IPAddress}}{{end}}' medforge-caddy 2>/dev/null || true
+  docker inspect -f '{{with index .NetworkSettings.Networks "medforge-external-sessions"}}{{.IPAddress}}{{end}}' medforge-caddy 2>/dev/null || true
 }
 
 wait_for_session_host_not_routing() {
@@ -153,7 +153,7 @@ ensure_cookie_session() {
   local login_code
 
   signup_code="$(curl -sS -o /tmp/${PHASE_ID}-signup-"${label}".out -w '%{http_code}' \
-    -X POST "${PUBLIC_API_BASE_URL}/api/v1/auth/signup" \
+    -X POST "${PUBLIC_API_BASE_URL}/api/v2/auth/signup" \
     -H 'content-type: application/json' \
     -H "Origin: ${PUBLIC_WEB_BASE_URL}" \
     -c "${jar}" -b "${jar}" \
@@ -170,7 +170,7 @@ ensure_cookie_session() {
   fi
 
   login_code="$(curl -sS -o /tmp/${PHASE_ID}-login-"${label}".out -w '%{http_code}' \
-    -X POST "${PUBLIC_API_BASE_URL}/api/v1/auth/login" \
+    -X POST "${PUBLIC_API_BASE_URL}/api/v2/auth/login" \
     -H 'content-type: application/json' \
     -H "Origin: ${PUBLIC_WEB_BASE_URL}" \
     -c "${jar}" -b "${jar}" \
@@ -233,10 +233,10 @@ cleanup() {
   local exit_code=$?
 
   if [ -n "${SESSION_ID_A}" ] && [ -n "${COOKIE_JAR_A}" ] && [ -f "${COOKIE_JAR_A}" ]; then
-    curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v1/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}" >/dev/null 2>&1 || true
+    curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}" >/dev/null 2>&1 || true
   fi
   if [ -n "${SESSION_ID_B}" ] && [ -n "${COOKIE_JAR_B}" ] && [ -f "${COOKIE_JAR_B}" ]; then
-    curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v1/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}" >/dev/null 2>&1 || true
+    curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}" >/dev/null 2>&1 || true
   fi
 
   if [ -n "${SLUG_A}" ]; then
@@ -289,8 +289,8 @@ main() {
     echo "ERROR: this script requires passwordless sudo (sudo -n)."
     exit 1
   fi
-  if ! docker network inspect medforge-public-sessions >/dev/null 2>&1; then
-    echo "ERROR: docker network 'medforge-public-sessions' not found."
+  if ! docker network inspect medforge-external-sessions >/dev/null 2>&1; then
+    echo "ERROR: docker network 'medforge-external-sessions' not found."
     echo "Run: sudo bash ops/host/bootstrap-easy.sh"
     exit 1
   fi
@@ -348,14 +348,14 @@ main() {
   fi
 
   section "Create Sessions"
-  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${PUBLIC_API_BASE_URL}/api/v1/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_A}" -d '{"tier":"public"}')"
+  resp_a_code="$(curl -sS -o /tmp/g6_create_a.out -w '%{http_code}' -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_A}" -d '{}')"
   assert_eq "${resp_a_code}" "201" "create session A"
   resp_a="$(cat /tmp/g6_create_a.out)"
   record "- create A: \`${resp_a}\`"
   SESSION_ID_A="$(json_field "${resp_a}" "data['data']['session']['id']")"
   SLUG_A="$(json_field "${resp_a}" "data['data']['session']['slug']")"
 
-  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${PUBLIC_API_BASE_URL}/api/v1/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_B}" -d '{"tier":"public"}')"
+  resp_b_code="$(curl -sS -o /tmp/g6_create_b.out -w '%{http_code}' -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions" -H 'content-type: application/json' -b "${COOKIE_JAR_B}" -d '{}')"
   assert_eq "${resp_b_code}" "201" "create session B"
   resp_b="$(cat /tmp/g6_create_b.out)"
   record "- create B: \`${resp_b}\`"
@@ -364,7 +364,7 @@ main() {
 
   host_a="$(remote_public_session_host "${SLUG_A}" "${DOMAIN}")"
   session_url_a="https://${host_a}/"
-  blocked_proxy_url_a="${session_url_a}api/v1/auth/session-proxy"
+  blocked_proxy_url_a="${session_url_a}api/v2/auth/session-proxy"
 
   section "Routing Authorization Matrix"
   code="$(curl -sS -o /tmp/g5_root_unauth.out -w '%{http_code}' "${session_url_a}")"
@@ -388,7 +388,7 @@ main() {
   record "- blocked wildcard internal path owner: \`${code}\` body=\`$(cat /tmp/g5_blocked_owner.out)\`"
 
   headers="$(docker exec medforge-api curl -sS -D - -o /dev/null \
-    "http://medforge-api:8000/api/v1/auth/session-proxy" \
+    "http://medforge-api:8000/api/v2/auth/session-proxy" \
     -H "Host: ${host_a}" \
     -H 'X-Upstream: evil-target:8080' \
     -H "Cookie: medforge_session=${AUTH_COOKIE_A}")"
@@ -405,7 +405,7 @@ main() {
   section "East-West Isolation"
   caddy_ip="$(resolve_caddy_ip)"
   if [ -z "${caddy_ip}" ]; then
-    echo "ERROR: could not resolve Caddy IP on medforge-public-sessions."
+    echo "ERROR: could not resolve Caddy IP on medforge-external-sessions."
     exit 1
   fi
   firewall_out="$(sudo CADDY_IP="${caddy_ip}" bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
@@ -433,7 +433,7 @@ main() {
   assert_eq "${ws_line}" "alpha" "workspace write/read"
   record "- workspace write/read: \`${ws_line}\`"
 
-  stop_a="$(curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v1/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}")"
+  stop_a="$(curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_A}/stop" -b "${COOKIE_JAR_A}")"
   assert_eq "$(json_field "${stop_a}" "data['data']['message']")" "Session stop requested." "stop A message"
   record "- stop A: \`${stop_a}\`"
 
@@ -443,7 +443,7 @@ main() {
   snapshot="$(wait_for_stop_snapshot "${SESSION_ID_A}")"
   record "- snapshot: \`${snapshot}\`"
 
-  stop_b="$(curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v1/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}")"
+  stop_b="$(curl -sS -X POST "${PUBLIC_API_BASE_URL}/api/v2/external/sessions/${SESSION_ID_B}/stop" -b "${COOKIE_JAR_B}")"
   assert_eq "$(json_field "${stop_b}" "data['data']['message']")" "Session stop requested." "stop B message"
   wait_for_stop_snapshot "${SESSION_ID_B}" >/dev/null
   record "- stop B: \`${stop_b}\`"
