@@ -8,6 +8,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck disable=SC1091
 source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
+source "${ROOT_DIR}/ops/host/lib/phase-runner.sh"
 PHASE_ID="phase5-competitions"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -15,6 +16,9 @@ EVIDENCE_FILE="${EVIDENCE_FILE:-${EVIDENCE_DIR}/${PHASE_ID}-${RUN_ID}.md}"
 LOG_FILE="${LOG_FILE:-${EVIDENCE_DIR}/${PHASE_ID}-${RUN_ID}.log}"
 ENV_FILE="${ENV_FILE:-${ROOT_DIR}/deploy/compose/.env}"
 DOMAIN="${DOMAIN:-}"
+VALIDATE_PARALLEL="${VALIDATE_PARALLEL:-1}"
+PYTEST_WORKERS="${PYTEST_WORKERS:-2}"
+PYTEST_DIST_MODE="${PYTEST_DIST_MODE:-loadscope}"
 
 PHASE_STATUS="INCONCLUSIVE"
 
@@ -25,6 +29,9 @@ Usage: bash ops/host/validate-phase5-competitions.sh
 Optional env:
   ENV_FILE=deploy/compose/.env
   DOMAIN=<override>
+  VALIDATE_PARALLEL=1  # set to 0 to force sequential checks
+  PYTEST_WORKERS=2
+  PYTEST_DIST_MODE=loadscope
   EVIDENCE_DIR=docs/evidence/<date>
   EVIDENCE_FILE=<explicit markdown path>
   LOG_FILE=<explicit log path>
@@ -44,26 +51,6 @@ record() {
   printf "%s\n" "${line}" >>"${EVIDENCE_FILE}"
 }
 
-run_check() {
-  local name="$1"
-  local cmd="$2"
-
-  record "### ${name}"
-  record ""
-  record '```bash'
-  record "${cmd}"
-  record '```'
-
-  if eval "${cmd}" >>"${LOG_FILE}" 2>&1; then
-    record "- status: PASS"
-  else
-    record "- status: FAIL"
-    record "- log: \`${LOG_FILE}\`"
-    exit 1
-  fi
-  record ""
-}
-
 cleanup() {
   local exit_code=$?
   if [ "${PHASE_STATUS}" != "PASS" ] && [ -f "${EVIDENCE_FILE}" ]; then
@@ -76,6 +63,40 @@ cleanup() {
 }
 trap cleanup EXIT
 
+validate_parallel_env() {
+  case "${VALIDATE_PARALLEL}" in
+    0|1)
+      ;;
+    *)
+      echo "ERROR: VALIDATE_PARALLEL must be 0 or 1 (got '${VALIDATE_PARALLEL}')."
+      exit 1
+      ;;
+  esac
+
+  if [ "${VALIDATE_PARALLEL}" = "1" ]; then
+    if ! [[ "${PYTEST_WORKERS}" =~ ^[0-9]+$ ]] || [ "${PYTEST_WORKERS}" -lt 1 ]; then
+      echo "ERROR: PYTEST_WORKERS must be a positive integer (got '${PYTEST_WORKERS}')."
+      exit 1
+    fi
+  fi
+}
+
+run_pytest_with_optional_parallel() {
+  local -a test_paths=("$@")
+  local -a pytest_args
+
+  if [ "${VALIDATE_PARALLEL}" = "1" ] && python3 -c 'import xdist' >/dev/null 2>&1; then
+    pytest_args=(-q -n "${PYTEST_WORKERS}" --dist "${PYTEST_DIST_MODE}")
+  else
+    if [ "${VALIDATE_PARALLEL}" = "1" ]; then
+      echo "WARN: pytest-xdist unavailable in active venv; running pytest sequentially." >&2
+    fi
+    pytest_args=(-q)
+  fi
+
+  pytest "${pytest_args[@]}" "${test_paths[@]}"
+}
+
 run_competition_api_tests() {
   cd "${ROOT_DIR}/apps/api"
 
@@ -87,7 +108,7 @@ run_competition_api_tests() {
   # shellcheck source=/dev/null
   . .venv/bin/activate
 
-  pytest -q \
+  run_pytest_with_optional_parallel \
     tests/test_api.py::test_list_competitions \
     tests/test_api.py::test_competition_detail_status \
     tests/test_api.py::test_competition_detail_missing_returns_problem_404 \
@@ -229,6 +250,7 @@ main() {
     DOMAIN="$(remote_read_env_value "${ENV_FILE}" DOMAIN)"
   fi
   remote_require_domain "${DOMAIN}"
+  validate_parallel_env
   require_cmd curl
   require_cmd python3
   require_cmd rg
@@ -244,13 +266,26 @@ main() {
     echo "Runtime:"
     echo "- run id: \`${RUN_ID}\`"
     echo "- external domain: \`${DOMAIN}\`"
+    echo "- validate parallel: \`${VALIDATE_PARALLEL}\`"
+    if [ "${VALIDATE_PARALLEL}" = "1" ]; then
+      echo "- pytest workers: \`${PYTEST_WORKERS}\`"
+      echo "- pytest dist mode: \`${PYTEST_DIST_MODE}\`"
+    fi
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  run_check "Remote-External Competition Smoke" "run_remote_competitions_smoke"
-  run_check "Dataset Isolation Policy Checks" "run_dataset_isolation_contract_checks"
-  run_check "Competition API Contract Lanes" "run_competition_api_tests"
-  run_check "Competition Scoring Determinism Lanes" "run_scoring_tests"
+  run_check_timed "Remote-External Competition Smoke" "run_remote_competitions_smoke"
+
+  if [ "${VALIDATE_PARALLEL}" = "1" ]; then
+    run_parallel_checks \
+      "Dataset Isolation Policy Checks" "run_dataset_isolation_contract_checks" \
+      "Competition API Contract Lanes" "run_competition_api_tests"
+  else
+    run_check_timed "Dataset Isolation Policy Checks" "run_dataset_isolation_contract_checks"
+    run_check_timed "Competition API Contract Lanes" "run_competition_api_tests"
+  fi
+
+  run_check_timed "Competition Scoring Determinism Lanes" "run_scoring_tests"
 
   PHASE_STATUS="PASS"
   record "## Verdict"

@@ -7,6 +7,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
+source "${ROOT_DIR}/ops/host/lib/phase-runner.sh"
 PHASE_ID="phase1-bootstrap"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -16,6 +17,7 @@ LOG_FILE="${LOG_FILE:-${EVIDENCE_DIR}/${PHASE_ID}-${RUN_ID}.log}"
 ENV_FILE="${ENV_FILE:-${ROOT_DIR}/deploy/compose/.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/deploy/compose/docker-compose.yml}"
 DOMAIN="${DOMAIN:-}"
+VALIDATE_PARALLEL="${VALIDATE_PARALLEL:-1}"
 
 PHASE_STATUS="INCONCLUSIVE"
 
@@ -27,6 +29,7 @@ Optional env:
   ENV_FILE=deploy/compose/.env
   COMPOSE_FILE=deploy/compose/docker-compose.yml
   DOMAIN=<override>
+  VALIDATE_PARALLEL=1  # set to 0 to force sequential checks
   EVIDENCE_DIR=docs/evidence/<date>
   EVIDENCE_FILE=<explicit markdown path>
   LOG_FILE=<explicit log path>
@@ -44,26 +47,6 @@ require_cmd() {
 record() {
   local line="$1"
   printf "%s\n" "${line}" >>"${EVIDENCE_FILE}"
-}
-
-run_check() {
-  local name="$1"
-  local cmd="$2"
-
-  record "### ${name}"
-  record ""
-  record '```bash'
-  record "${cmd}"
-  record '```'
-
-  if eval "${cmd}" >>"${LOG_FILE}" 2>&1; then
-    record "- status: PASS"
-  else
-    record "- status: FAIL"
-    record "- log: \`${LOG_FILE}\`"
-    exit 1
-  fi
-  record ""
 }
 
 wait_for_health() {
@@ -141,6 +124,17 @@ db_seed_invariants() {
   echo "pack_count=${pack_count}"
 }
 
+validate_parallel_env() {
+  case "${VALIDATE_PARALLEL}" in
+    0|1)
+      ;;
+    *)
+      echo "ERROR: VALIDATE_PARALLEL must be 0 or 1 (got '${VALIDATE_PARALLEL}')."
+      exit 1
+      ;;
+  esac
+}
+
 main() {
   if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
     usage
@@ -166,6 +160,7 @@ main() {
     DOMAIN="$(remote_read_env_value "${ENV_FILE}" DOMAIN)"
   fi
   remote_require_domain "${DOMAIN}"
+  validate_parallel_env
 
   mkdir -p "${EVIDENCE_DIR}"
   : >"${LOG_FILE}"
@@ -179,18 +174,27 @@ main() {
     echo "- env file: \`${ENV_FILE}\`"
     echo "- compose file: \`${COMPOSE_FILE}\`"
     echo "- domain: \`${DOMAIN:-unknown}\`"
+    echo "- validate parallel: \`${VALIDATE_PARALLEL}\`"
     echo "- run id: \`${RUN_ID}\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  run_check "Compose Up" "compose_up"
-  run_check "Compose Service Table" "compose_ps"
-  run_check "Core Services Running" "services_running"
-  run_check "External DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase1check'"
-  run_check "External TLS Validation" "remote_tls_verify_host \"$(remote_external_web_host "${DOMAIN}")\" && remote_tls_verify_host \"$(remote_external_api_host "${DOMAIN}")\""
-  run_check "External API Reachability" "wait_for_health api 60 1 api_health_remote"
-  run_check "External Web Reachability" "wait_for_health web 60 1 web_health_remote"
-  run_check "Database Seed Invariants" "db_seed_invariants"
+  run_check_timed "Compose Up" "compose_up"
+  run_check_timed "Compose Service Table" "compose_ps"
+  run_check_timed "Core Services Running" "services_running"
+  run_check_timed "External DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase1check'"
+  run_check_timed "External TLS Validation" "remote_tls_verify_host \"$(remote_external_web_host "${DOMAIN}")\" && remote_tls_verify_host \"$(remote_external_api_host "${DOMAIN}")\""
+
+  if [ "${VALIDATE_PARALLEL}" = "1" ]; then
+    run_parallel_checks \
+      "External API Reachability" "wait_for_health api 60 1 api_health_remote" \
+      "External Web Reachability" "wait_for_health web 60 1 web_health_remote"
+  else
+    run_check_timed "External API Reachability" "wait_for_health api 60 1 api_health_remote"
+    run_check_timed "External Web Reachability" "wait_for_health web 60 1 web_health_remote"
+  fi
+
+  run_check_timed "Database Seed Invariants" "db_seed_invariants"
 
   PHASE_STATUS="PASS"
   record "## Verdict"

@@ -46,12 +46,12 @@ Latest full progression run completed under the remote-external-only phase model
 
 | Phase | Name | Latest Evidence | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T122514Z.md` | `2026-02-17T12:25:14Z` | PASS |
-| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T122516Z.md` | `2026-02-17T12:25:16Z` | PASS |
-| 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T122607Z.md` | `2026-02-17T12:26:07Z` | PASS |
-| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T122636Z.md` | `2026-02-17T12:26:36Z` | PASS |
-| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T122712Z.md` | `2026-02-17T12:27:12Z` | PASS |
-| 5 | Competition Platform (Alpha) | `docs/evidence/2026-02-17/phase5-competitions-20260217T122824Z.md` | `2026-02-17T12:28:24Z` | PASS |
+| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T124352Z.md` | `2026-02-17T12:43:52Z` | PASS |
+| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T124354Z.md` | `2026-02-17T12:43:54Z` | PASS |
+| 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T124410Z.md` | `2026-02-17T12:44:10Z` | PASS |
+| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T124425Z.md` | `2026-02-17T12:44:25Z` | PASS |
+| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T124444Z.md` | `2026-02-17T12:44:44Z` | PASS |
+| 5 | Competition Platform (Alpha) | `docs/evidence/2026-02-17/phase5-competitions-20260217T124557Z.md` | `2026-02-17T12:45:57Z` | PASS |
 
 ## Evidence Policy
 
@@ -171,6 +171,15 @@ Run all phases in order:
 - `bash ops/host/validate-phases-all.sh`
 
 The progression runner must stop on first failure.
+
+Optional performance controls (defaults shown):
+
+- `VALIDATE_PARALLEL=1` enables safe in-phase parallel check groups in selected phases.
+- `PYTEST_WORKERS=2` sets xdist worker count for accelerated pytest lanes.
+- `PYTEST_DIST_MODE=loadscope` sets xdist distribution strategy for accelerated pytest lanes.
+- `PHASE4_ENFORCE_STOP_B_SNAPSHOT=0` keeps strict stop snapshot proof on session A and skips blocking wait on session B by default.
+- `PHASE4_PLAYWRIGHT_INSTALL_MODE=auto` installs Playwright Chromium only when missing (`always` forces install each run).
+- Set `VALIDATE_PARALLEL=0` to force sequential per-check execution.
 
 ## Definition of Done
 
