@@ -32,6 +32,8 @@ services:
       context: ../../apps/api
       args:
         DOCKER_GID: 995
+    user: "0:0"
+    privileged: true
     container_name: medforge-api
     restart: unless-stopped
     depends_on:
@@ -66,7 +68,14 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Manage session containers.
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock               # Manage session containers.
+      - type: bind
+        source: /tank
+        target: /tank                              # Workspace mountpoints for chown/quota operations.
+        bind:
+          propagation: rshared
     # ZFS snapshot commands require host-level access.
     # The API shells out to `zfs snapshot`; mount the binary + device.
     devices:
@@ -74,8 +83,9 @@ services:
     cap_add:
       - SYS_ADMIN                                  # Required for ZFS ioctls.
     networks:
-      - medforge-control
-      - medforge-public-sessions
+      medforge-control: {}
+      medforge-public-sessions:
+        ipv4_address: 172.30.0.3
 
   # ── Scoring worker ───────────────────────────────────────
   medforge-api-worker:
@@ -93,7 +103,12 @@ services:
 
   # ── Frontend ──────────────────────────────────────────────
   medforge-web:
-    build: ../../apps/web
+    build:
+      context: ../../apps/web
+      args:
+        NEXT_PUBLIC_API_URL: https://api.medforge.${DOMAIN}
+        NEXT_PUBLIC_DOMAIN: ${DOMAIN}
+        DOMAIN: ${DOMAIN}
     container_name: medforge-web
     restart: unless-stopped
     depends_on:

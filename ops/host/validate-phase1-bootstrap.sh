@@ -6,6 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
 PHASE_ID="phase1-bootstrap"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -30,14 +31,6 @@ Optional env:
   EVIDENCE_FILE=<explicit markdown path>
   LOG_FILE=<explicit log path>
 USAGE
-}
-
-read_env_value() {
-  local key="$1"
-  if [ ! -f "${ENV_FILE}" ]; then
-    return 0
-  fi
-  awk -F= -v k="${key}" '$1 == k {print substr($0, index($0, "=") + 1); exit}' "${ENV_FILE}"
 }
 
 require_cmd() {
@@ -120,29 +113,12 @@ services_running() {
   done
 }
 
-api_health_inside_container() {
-  docker exec medforge-api python - <<'PY'
-from urllib.request import urlopen
-
-with urlopen("http://127.0.0.1:8000/healthz", timeout=10) as response:
-    if response.status != 200:
-        raise SystemExit(f"unexpected status: {response.status}")
-print("api health ok")
-PY
+api_health_remote() {
+  curl -fsS "https://$(remote_public_api_host "${DOMAIN}")/healthz" >/dev/null
 }
 
-web_health_inside_container() {
-  docker exec medforge-web node -e '
-const http = require("http");
-const req = http.get("http://127.0.0.1:3000", (res) => {
-  if (res.statusCode >= 200 && res.statusCode < 500) {
-    process.exit(0);
-  }
-  process.exit(1);
-});
-req.on("error", () => process.exit(1));
-setTimeout(() => process.exit(1), 10000);
-'
+web_health_remote() {
+  curl -fsS "https://$(remote_public_web_host "${DOMAIN}")" >/dev/null
 }
 
 db_seed_invariants() {
@@ -172,6 +148,9 @@ main() {
   fi
 
   require_cmd docker
+  require_cmd curl
+  require_cmd dig
+  require_cmd openssl
   require_cmd rg
 
   if [ ! -f "${ENV_FILE}" ]; then
@@ -184,8 +163,9 @@ main() {
   fi
 
   if [ -z "${DOMAIN}" ]; then
-    DOMAIN="$(read_env_value DOMAIN)"
+    DOMAIN="$(remote_read_env_value "${ENV_FILE}" DOMAIN)"
   fi
+  remote_require_domain "${DOMAIN}"
 
   mkdir -p "${EVIDENCE_DIR}"
   : >"${LOG_FILE}"
@@ -206,8 +186,10 @@ main() {
   run_check "Compose Up" "compose_up"
   run_check "Compose Service Table" "compose_ps"
   run_check "Core Services Running" "services_running"
-  run_check "API Reachability" "wait_for_health api 30 1 api_health_inside_container"
-  run_check "Web Reachability" "wait_for_health web 60 1 web_health_inside_container"
+  run_check "Public DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase1check'"
+  run_check "Public TLS Validation" "remote_tls_verify_host \"$(remote_public_web_host "${DOMAIN}")\" && remote_tls_verify_host \"$(remote_public_api_host "${DOMAIN}")\""
+  run_check "Public API Reachability" "wait_for_health api 60 1 api_health_remote"
+  run_check "Public Web Reachability" "wait_for_health web 60 1 web_health_remote"
   run_check "Database Seed Invariants" "db_seed_invariants"
 
   PHASE_STATUS="PASS"

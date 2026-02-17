@@ -60,7 +60,7 @@ Inputs: `tier` (`public` | `private`), optional `pack_id` (defaults to seeded pa
 
 - `tier=private` returns **501**.
 - Every session allocates exactly one GPU.
-- If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
+- If an `Origin` header is present, it must match an allowed MedForge remote-public origin or the API returns **403**.
 
 **Race-safe allocation (single transaction):**
 
@@ -84,7 +84,7 @@ Update session: set `container_id`, `status='running'`, `started_at`. On failure
 
 #### Stop -- `POST /api/v1/sessions/{id}/stop`
 
-If an `Origin` header is present, it must match an allowed MedForge/localhost origin or the API returns **403**.
+If an `Origin` header is present, it must match an allowed MedForge remote-public origin or the API returns **403**.
 
 1. If row is `starting` or `running`, set `status='stopping'` and return **202** with `{message:"Session stop requested."}`.
 2. If row is already `stopping`, return **202** with the same message (idempotent intent).
@@ -103,6 +103,12 @@ If an `Origin` header is present, it must match an allowed MedForge/localhost or
   - `{ "data": { "session": SessionRead | null }, "meta": { ... } }`
 - Only the caller's own sessions are considered.
 - The selected row is the newest active session (`starting|running|stopping`) by `created_at DESC`.
+
+#### Session Proxy Contract -- `GET /api/v1/auth/session-proxy`
+
+- This endpoint is internal control-plane plumbing for Caddy `forward_auth`.
+- External wildcard callers to `https://s-<slug>.medforge.<domain>/api/v1/auth/session-proxy` are blocked with **403**.
+- Real owner-access validation should target wildcard session root (`https://s-<slug>.medforge.<domain>/`) rather than calling this internal path directly.
 
 #### Container State Poller (`SESSION_POLL_INTERVAL_SECONDS` base interval)
 

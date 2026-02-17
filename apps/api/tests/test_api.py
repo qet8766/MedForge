@@ -21,6 +21,7 @@ from .test_helpers import assert_success as _assert_success
 USER_A = "00000000-0000-0000-0000-000000000011"
 USER_B = "00000000-0000-0000-0000-000000000012"
 ADMIN_USER = "00000000-0000-0000-0000-000000000013"
+ALLOWED_ORIGIN = "https://medforge.example.com"
 
 
 def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, str] | None = None) -> dict[str, str]:
@@ -326,7 +327,7 @@ def test_admin_score_rejects_disallowed_origin(client, auth_tokens) -> None:
 
     allowed = client.post(
         f"/api/v1/admin/submissions/{submission_id}/score",
-        headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": "http://localhost:3000"}),
+        headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": ALLOWED_ORIGIN}),
     )
     data, _ = _assert_success(allowed, status_code=200)
     assert data["id"] == submission_id
@@ -336,7 +337,7 @@ def test_admin_score_missing_submission_returns_problem_404(client, auth_tokens)
     missing_submission_id = "00000000-0000-0000-0000-00000000aaaa"
     response = client.post(
         f"/api/v1/admin/submissions/{missing_submission_id}/score",
-        headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": "http://localhost:3000"}),
+        headers=_auth_headers(auth_tokens, ADMIN_USER, {"Origin": ALLOWED_ORIGIN}),
     )
     payload = _assert_problem(
         response,
@@ -350,7 +351,7 @@ def test_admin_score_requires_admin_role(client, auth_tokens) -> None:
     missing_submission_id = "00000000-0000-0000-0000-00000000aaaa"
     response = client.post(
         f"/api/v1/admin/submissions/{missing_submission_id}/score",
-        headers=_auth_headers(auth_tokens, USER_A, {"Origin": "http://localhost:3000"}),
+        headers=_auth_headers(auth_tokens, USER_A, {"Origin": ALLOWED_ORIGIN}),
     )
     _assert_problem(response, status_code=403, type_suffix="competitions/admin-access-denied")
 
@@ -388,7 +389,7 @@ def test_signup_login_logout_cookie_flow(client) -> None:
     signup = client.post(
         "/api/v1/auth/signup",
         json={"email": "dev@example.com", "password": "sufficiently-strong"},
-        headers={"Origin": "http://localhost:3000"},
+        headers={"Origin": ALLOWED_ORIGIN},
     )
     user, _ = _assert_success(signup, status_code=201)
     assert user["email"] == "dev@example.com"
@@ -398,7 +399,7 @@ def test_signup_login_logout_cookie_flow(client) -> None:
     me_data, _ = _assert_success(me, status_code=200)
     assert me_data["user_id"] == user["user_id"]
 
-    logout = client.post("/api/v1/auth/logout", headers={"Origin": "http://localhost:3000"})
+    logout = client.post("/api/v1/auth/logout", headers={"Origin": ALLOWED_ORIGIN})
     logout_data, _ = _assert_success(logout, status_code=200)
     assert logout_data["message"] == "Signed out."
 
@@ -408,7 +409,7 @@ def test_signup_login_logout_cookie_flow(client) -> None:
     login = client.post(
         "/api/v1/auth/login",
         json={"email": "dev@example.com", "password": "sufficiently-strong"},
-        headers={"Origin": "http://localhost:3000"},
+        headers={"Origin": ALLOWED_ORIGIN},
     )
     _assert_success(login, status_code=200)
 

@@ -28,27 +28,34 @@ api.medforge.{$DOMAIN} {
 *.medforge.{$DOMAIN} {
 	import tls_dns
 
-	# Strip any client-supplied X-Upstream to prevent spoofing.
-	request_header -X-Upstream
-
-	forward_auth medforge-api:8000 {
-		uri /api/v1/auth/session-proxy
-		header_up Host {host}
-		header_up X-Forwarded-For {remote}
-		header_up Cookie {http.request.header.Cookie}
-		header_up -Connection
-		header_up -Upgrade
-		copy_headers X-Upstream
+	# Internal auth endpoint must never be user-facing on wildcard hosts.
+	@blocked_internal_auth path /api/v1/auth/session-proxy
+	handle @blocked_internal_auth {
+		respond "Forbidden" 403
 	}
 
-	# Fail closed if the auth endpoint did not set an upstream.
-	@missing not header X-Upstream *
-	handle @missing {
-		respond "Session upstream missing" 502
-	}
+	handle {
+		# Strip any client-supplied X-Upstream to prevent spoofing.
+		request_header -X-Upstream
 
-	reverse_proxy {http.request.header.X-Upstream} {
-		header_up Host {host}
-		header_up X-Forwarded-Proto {scheme}
+		forward_auth medforge-api:8000 {
+			uri /api/v1/auth/session-proxy
+			header_up Host {host}
+			header_up X-Forwarded-For {remote}
+			header_up -Connection
+			header_up -Upgrade
+			copy_headers X-Upstream>X-Medforge-Upstream
+		}
+
+		# Fail closed if the auth endpoint did not set an upstream.
+		@missing not header X-Medforge-Upstream *
+		handle @missing {
+			respond "Session upstream missing" 502
+		}
+
+		reverse_proxy {http.request.header.X-Medforge-Upstream} {
+			header_up Host {host}
+			header_up X-Forwarded-Proto {scheme}
+		}
 	}
 }

@@ -1,0 +1,49 @@
+
+> medforge-web@0.1.0 test:e2e
+> playwright test e2e/session-smoke.spec.ts --reporter=line
+
+
+Running 1 test using 1 worker
+
+
+
+
+
+[1A[2K[1/1] [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop
+[1A[2K  1) [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop 
+
+    Error: page.goto: net::ERR_SSL_PROTOCOL_ERROR at https://medforge.xyz/auth/login
+    Call log:
+    [2m  - navigating to "https://medforge.xyz/auth/login", waiting until "load"[22m
+
+
+      32 |
+      33 | async function submitLogin(page: Page, email: string, password: string): Promise<"success" | "error"> {
+    > 34 |   await page.goto("/auth/login");
+         |              ^
+      35 |   await page.getByTestId("login-email").fill(email);
+      36 |   await page.getByTestId("login-password").fill(password);
+      37 |   await page.getByTestId("login-submit").click();
+        at submitLogin (/home/shk/projects/MedForge/apps/web/e2e/session-smoke.spec.ts:34:14)
+        at ensureSignedIn (/home/shk/projects/MedForge/apps/web/e2e/session-smoke.spec.ts:49:29)
+        at /home/shk/projects/MedForge/apps/web/e2e/session-smoke.spec.ts:73:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/session-smoke-login---crea-989cb-ard-host---websocket---stop-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/session-smoke.spec.ts:68:5 › login -> create session -> open wildcard host -> websocket -> stop 

@@ -5,7 +5,17 @@ import { expect, test, type Page } from "@playwright/test";
 const DEFAULT_PASSWORD = "Password123!";
 
 function resolveBaseURL(): string {
-  return process.env.E2E_BASE_URL?.trim() || "http://medforge.localtest.me:18080";
+  const explicit = process.env.E2E_BASE_URL?.trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const domain = process.env.E2E_DOMAIN?.trim() || process.env.DOMAIN?.trim() || "";
+  if (domain) {
+    return `https://medforge.${domain}`;
+  }
+
+  throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-public e2e.");
 }
 
 function resolveDomain(baseURL: string): string {
@@ -65,6 +75,20 @@ async function ensureSignedIn(page: Page, email: string, password: string): Prom
   expect(postSignupLogin).toBe("success");
 }
 
+async function waitForSessionRouteReady(sessionPage: Page, sessionOrigin: string): Promise<void> {
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const response = await sessionPage.goto(sessionOrigin, { waitUntil: "domcontentloaded" });
+    lastStatus = response?.status() ?? 0;
+    const hasMissingUpstream = (await sessionPage.getByText("Session upstream missing").count()) > 0;
+    if (lastStatus === 200 && !hasMissingUpstream) {
+      return;
+    }
+    await sessionPage.waitForTimeout(1_000);
+  }
+  throw new Error(`Session wildcard route not ready (last_status=${lastStatus}).`);
+}
+
 test("login -> create session -> open wildcard host -> websocket -> stop", async ({ page }) => {
   const baseURL = resolveBaseURL();
   const domain = resolveDomain(baseURL);
@@ -105,8 +129,7 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
     });
   });
 
-  await sessionPage.goto(sessionOrigin, { waitUntil: "domcontentloaded" });
-  await expect(sessionPage.getByText("Session upstream missing")).toHaveCount(0);
+  await waitForSessionRouteReady(sessionPage, sessionOrigin);
   await expect.poll(() => websocketState.withFrames, { timeout: 30_000 }).toBeGreaterThan(0);
   await sessionPage.close();
 

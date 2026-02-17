@@ -15,6 +15,15 @@ Key services in `deploy/compose/docker-compose.yml`:
 - `medforge-caddy` — TLS termination + wildcard session routing
 - `medforge-web` — Next.js frontend
 
+Host mount prerequisite:
+- `medforge-api` must mount `/tank:/tank` so runtime workspace ownership/quota commands affect host ZFS mountpoints.
+- On `medforge-public-sessions`, reserve fixed IPs to avoid startup races: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
+
+Wildcard routing contract:
+- `GET /api/v1/auth/session-proxy` is an internal Caddy -> API auth path.
+- Direct external calls to `https://s-<slug>.medforge.<domain>/api/v1/auth/session-proxy` are blocked with `403`.
+- Operator/user validation of session reachability should use wildcard root (`https://s-<slug>.medforge.<domain>/`).
+
 ## Common Operations
 
 ### Restart Services
@@ -76,6 +85,21 @@ docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.y
 docker logs mf-session-<slug>
 
 # API structured logs contain: session_id, user_id, slug, event name
+```
+
+### Canonical Validation
+
+Canonical phase validation is remote-public only.
+
+```bash
+# Policy guard (fails if repo code reintroduces local/split validation modes)
+bash ops/host/validate-policy-remote-public.sh
+
+# Full remote-public phase progression
+bash ops/host/validate-phases-all.sh
+
+# Phase 4 only (remote-public routing/isolation/browser/websocket)
+bash ops/host/validate-phase4-routing-e2e.sh
 ```
 
 ## Health Checks

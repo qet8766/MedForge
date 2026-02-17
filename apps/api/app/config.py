@@ -67,23 +67,22 @@ def _env_opt_str(name: str, default: str | None = None) -> str | None:
 
 def _default_cookie_domain() -> str:
     domain = os.getenv("DOMAIN", "").strip().lower()
-    if not domain or domain in {"localhost", "127.0.0.1"}:
+    if not domain:
         return ""
     return f".medforge.{domain}"
 
 
 def _default_cors_origins() -> tuple[str, ...]:
     domain = os.getenv("DOMAIN", "").strip().lower()
-    is_local = not domain or domain in {"localhost", "127.0.0.1"}
-    origins: set[str] = set()
-    if is_local:
-        origins.update({"http://localhost:3000", "http://127.0.0.1:3000"})
-    if domain:
-        origins.update(
-            f"{s}://{p}medforge.{domain}"
-            for s in ("http", "https") for p in ("", "api.")
+    if not domain:
+        return tuple()
+    return tuple(
+        sorted(
+            f"{scheme}://{prefix}medforge.{domain}"
+            for scheme in ("http", "https")
+            for prefix in ("", "api.")
         )
-    return tuple(sorted(origins))
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +92,7 @@ def _default_cors_origins() -> tuple[str, ...]:
 @dataclass(frozen=True)
 class Settings:
     app_name: str = _env("APP_NAME", "MedForge API")
-    database_url: str = _env("DATABASE_URL", "mysql+pymysql://medforge:medforge@localhost:3306/medforge")
+    database_url: str = _env("DATABASE_URL", "mysql+pymysql://medforge:medforge@medforge-db:3306/medforge")
     domain: str = _env("DOMAIN", "example.com", lower=True)
     pack_image: str = _env("PACK_IMAGE", "")
     session_secret: str = _env("SESSION_SECRET", "dev-session-secret")

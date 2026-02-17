@@ -8,6 +8,7 @@ This is the single source of truth for validation phase order, acceptance criter
 - Do not skip phases.
 - Do not advance when the current phase is `FAIL` or `INCONCLUSIVE`.
 - Runtime truth is required; tests are supporting evidence, not sufficient by themselves.
+- Canonical validation is remote-public only. Localhost/local proxy modes are not accepted for `PASS`.
 - Every accepted phase run must produce immutable timestamped evidence artifacts.
 
 ## Status Vocabulary
@@ -18,16 +19,16 @@ This is the single source of truth for validation phase order, acceptance criter
 
 ## Current Canonical Status (2026-02-17)
 
-Phase status is reset to `INCONCLUSIVE` until rerun under this phase model.
+Latest full progression run completed under the remote-public-only phase model with all phases `PASS`.
 
 | Phase | Name | Latest Evidence | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T051516Z.md` | `2026-02-17T05:15:16Z` | PASS |
-| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T051518Z.md` | `2026-02-17T05:15:18Z` | PASS |
-| 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T051557Z.md` | `2026-02-17T05:15:57Z` | PASS |
-| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T051623Z.md` | `2026-02-17T05:16:23Z` | PASS |
-| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T051112Z.md` | `2026-02-17T05:11:12Z` | PASS |
-| 5 | Competition Platform (Alpha) | `docs/evidence/2026-02-17/phase5-competitions-20260217T051741Z.md` | `2026-02-17T05:17:41Z` | PASS |
+| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T064618Z.md` | `2026-02-17T06:46:18Z` | PASS |
+| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T064621Z.md` | `2026-02-17T06:46:21Z` | PASS |
+| 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T064639Z.md` | `2026-02-17T06:46:39Z` | PASS |
+| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T064705Z.md` | `2026-02-17T06:47:05Z` | PASS |
+| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T064739Z.md` | `2026-02-17T06:47:39Z` | PASS |
+| 5 | Competition Platform (Alpha) | `docs/evidence/2026-02-17/phase5-competitions-20260217T064856Z.md` | `2026-02-17T06:48:56Z` | PASS |
 
 ## Evidence Policy
 
@@ -75,14 +76,14 @@ Runner:
 
 ### Phase 2: Auth + Session API Contracts
 
-Purpose: verify cookie auth behavior, protected-route denial paths, and session-proxy authorization contract.
+Purpose: verify cookie auth behavior, protected-route denial paths, and internal session-proxy authorization contract.
 
 Required checks:
 
 - Signup/login/logout cookie flow.
 - Authenticated `/api/v1/me` behavior and unauthenticated denial behavior.
 - Origin policy enforcement.
-- Session-proxy owner/admin authorization and spoof-resistance behavior.
+- Session-proxy owner/admin authorization and spoof-resistance behavior on API host.
 - Auth rate-limit and token lifecycle checks.
 
 Runner:
@@ -111,16 +112,17 @@ Purpose: verify wildcard routing authorization, east-west isolation, and browser
 
 Required checks:
 
-- Routing authorization matrix (`401` unauthenticated, `403` non-owner, `200` owner).
-- Client-supplied `X-Upstream` spoof attempt has no routing effect.
+- Wildcard root routing authorization matrix (`401` unauthenticated, `403` non-owner, `200` owner).
+- Wildcard `/api/v1/auth/session-proxy` path is blocked (`403`) for external callers.
+- Client-supplied `X-Upstream` spoof attempt has no routing effect when probing API-host session-proxy.
 - East-west isolation blocks direct session-to-session `:8080` access.
 - End-to-end runtime flow (GPU visibility, workspace write/read, stop finalization with snapshot).
-- Browser wildcard + websocket lane (when browser mode enabled).
+- Browser wildcard + websocket lane (always required).
+- Public DNS + TLS + health preflight for canonical web/api hosts.
 
 Runner:
 
 - `bash ops/host/validate-phase4-routing-e2e.sh`
-- `bash ops/host/validate-phase4-routing-e2e.sh --with-browser`
 
 ### Phase 5: Competition Platform (Alpha)
 
@@ -142,8 +144,8 @@ Runner:
 
 Run all phases in order:
 
+- `bash ops/host/validate-policy-remote-public.sh`
 - `bash ops/host/validate-phases-all.sh`
-- `bash ops/host/validate-phases-all.sh --with-browser`
 
 The progression runner must stop on first failure.
 

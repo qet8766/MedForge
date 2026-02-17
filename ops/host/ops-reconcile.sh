@@ -10,16 +10,37 @@
 #   bash ops/host/ops-reconcile.sh
 #
 # Optional env:
-#   API_URL=http://127.0.0.1:8000  — API base URL for health check
+#   API_URL=https://api.medforge.<DOMAIN> — API base URL for health check
+#   DOMAIN=<root-domain>
 #   COMPOSE_ENV=deploy/compose/.env — Path to compose env file
 #   COMPOSE_FILE=deploy/compose/docker-compose.yml
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-API_URL="${API_URL:-http://127.0.0.1:8000}"
+REMOTE_PUBLIC_LIB="${ROOT_DIR}/ops/host/lib/remote-public.sh"
+API_URL="${API_URL:-}"
 COMPOSE_ENV="${COMPOSE_ENV:-${ROOT_DIR}/deploy/compose/.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/deploy/compose/docker-compose.yml}"
+
+if [ ! -f "${REMOTE_PUBLIC_LIB}" ]; then
+  echo "ERROR: missing helper library: ${REMOTE_PUBLIC_LIB}"
+  exit 1
+fi
+# shellcheck disable=SC1091
+# shellcheck source=ops/host/lib/remote-public.sh
+source "${REMOTE_PUBLIC_LIB}"
+
+resolve_api_url() {
+  local domain="${DOMAIN:-}"
+  if [ -z "${domain}" ]; then
+    domain="$(remote_read_env_value "${COMPOSE_ENV}" DOMAIN | tr -d '[:space:]')"
+  fi
+  if [ -z "${domain}" ]; then
+    return 1
+  fi
+  printf "https://%s\n" "$(remote_public_api_host "${domain}")"
+}
 
 require_cmd() {
   local cmd="$1"
@@ -64,6 +85,14 @@ show_active_sessions() {
 main() {
   require_cmd curl
   require_cmd docker
+
+  if [ -z "${API_URL}" ]; then
+    if ! API_URL="$(resolve_api_url)"; then
+      echo "ERROR: API_URL is required when DOMAIN is unavailable."
+      echo "Set API_URL explicitly or configure DOMAIN in ${COMPOSE_ENV}."
+      exit 1
+    fi
+  fi
 
   echo "=== MedForge Reconciliation ==="
   echo "API URL: ${API_URL}"

@@ -10,7 +10,9 @@ WORKDIR /app
 COPY . .
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && sed -i 's/^Components: .*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates kmod zfsutils-linux \
     && curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh \
     && ln -s /root/.local/bin/uv /usr/local/bin/uv \
     && uv pip install --system --no-cache-dir . \

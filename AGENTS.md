@@ -20,8 +20,9 @@ Primary app code lives in `apps/web` and `apps/api`; supporting specs/docs live 
 - `cp deploy/compose/.env.example deploy/compose/.env`: create local environment file.
 - `sudo bash ops/host/bootstrap-easy.sh`: one-command host bootstrap (NVIDIA runtime, ZFS datasets, bridge firewall settings, local pack build).
 - `bash ops/host/quick-check.sh`: fast local lint/type/test/build pass.
-- `bash ops/host/validate-phase4-routing-e2e.sh --with-browser`: run host Phase 4 validation (routing + isolation + e2e + browser/websocket lane) and write evidence markdown.
-- `bash ops/host/validate-phases-all.sh --with-browser`: run full Phase 0-5 progression and write per-phase evidence artifacts.
+- `bash ops/host/validate-policy-remote-public.sh`: enforce repo-wide remote-public policy (no split/local validation modes).
+- `bash ops/host/validate-phase4-routing-e2e.sh`: run Phase 4 remote-public validation (routing + isolation + e2e + browser/websocket lane) and write evidence markdown.
+- `bash ops/host/validate-phases-all.sh`: run full Phase 0-5 progression under remote-public canonical checks and write per-phase evidence artifacts.
 - `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`: build and start control-plane services.
 - `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`: stream key service logs.
 - `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`: install API dependencies used by tests + `quick-check`.

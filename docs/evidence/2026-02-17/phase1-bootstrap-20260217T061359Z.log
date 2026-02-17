@@ -1,0 +1,635 @@
+ Image compose-medforge-web Building 
+ Image compose-medforge-caddy Building 
+ Image compose-medforge-api Building 
+ Image compose-medforge-api-worker Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.20kB done
+#1 DONE 0.0s
+
+#2 [medforge-api-worker internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.05kB done
+#2 DONE 0.1s
+
+#3 [medforge-web internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.29kB done
+#3 DONE 0.0s
+
+#4 [medforge-caddy internal] load build definition from Dockerfile
+#4 transferring dockerfile: 450B done
+#4 DONE 0.1s
+
+#5 [medforge-api-worker internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 0.0s
+
+#6 [medforge-api internal] load .dockerignore
+#6 transferring context: 125B done
+#6 DONE 0.0s
+
+#7 [medforge-api-worker 1/5] FROM docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab
+#7 resolve docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab 0.0s done
+#7 DONE 0.0s
+
+#8 [medforge-api internal] load build context
+#8 transferring context: 36.83kB done
+#8 DONE 0.0s
+
+#9 [medforge-api-worker 2/5] WORKDIR /app
+#9 CACHED
+
+#10 [medforge-api-worker 3/5] COPY . .
+#10 DONE 0.1s
+
+#11 [medforge-api-worker 4/5] RUN apt-get update     && sed -i 's/^Components: .*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources     && apt-get update     && apt-get install -y --no-install-recommends curl ca-certificates kmod zfsutils-linux     && curl -LsSf https://astral.sh/uv/0.8.22/install.sh | sh     && ln -s /root/.local/bin/uv /usr/local/bin/uv     && uv pip install --system --no-cache-dir .     && apt-get clean && rm -rf /var/lib/apt/lists/*
+#11 0.440 Hit:1 http://deb.debian.org/debian trixie InRelease
+#11 0.440 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+#11 0.440 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+#11 0.456 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9670 kB]
+#11 0.564 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [5412 B]
+#11 0.564 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [108 kB]
+#11 ...
+
+#12 [medforge-caddy internal] load metadata for docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#12 DONE 1.1s
+
+#13 [medforge-caddy internal] load metadata for docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#13 DONE 1.1s
+
+#14 [medforge-caddy internal] load .dockerignore
+#14 transferring context: 2B done
+#14 DONE 0.0s
+
+#15 [medforge-web internal] load metadata for docker.io/library/node:20-alpine
+#15 DONE 1.2s
+
+#16 [medforge-web internal] load .dockerignore
+#16 transferring context: 110B done
+#16 DONE 0.0s
+
+#17 [medforge-web internal] load build context
+#17 DONE 0.0s
+
+#18 [medforge-caddy stage-1 1/2] FROM docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#18 resolve docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb 0.1s done
+#18 DONE 0.1s
+
+#19 [medforge-web builder 1/6] FROM docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#19 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#19 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 0.1s done
+#19 DONE 0.1s
+
+#20 [medforge-caddy builder 1/2] FROM docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#20 resolve docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc 0.1s done
+#20 DONE 0.1s
+
+#21 [medforge-caddy builder 2/2] RUN xcaddy build --with github.com/caddy-dns/cloudflare
+#21 CACHED
+
+#22 [medforge-caddy stage-1 2/2] COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+#22 CACHED
+
+#17 [medforge-web internal] load build context
+#17 transferring context: 5.11kB done
+#17 DONE 0.0s
+
+#23 [medforge-web builder 2/6] WORKDIR /app
+#23 CACHED
+
+#24 [medforge-web builder 3/6] COPY package.json package-lock.json* ./
+#24 CACHED
+
+#25 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#25 CACHED
+
+#26 [medforge-caddy] exporting to image
+#26 exporting layers done
+#26 exporting manifest sha256:b463700f506373c916c63869919fdbd5abee2f47b37cc7989f27f84e7229a2ae done
+#26 exporting config sha256:6b334487a46eb84c770484b68651c5f4ea0121c5d5e4a3788c2d622ea095c9fd done
+#26 exporting attestation manifest sha256:be9bea24d0f4f78b743810ac5548bbbc15a5499c086caae9d81cbacbe54d441e 0.1s done
+#26 exporting manifest list sha256:6378e9f113e6edc9904d95410bb5d21c3efe6741922ae744e837da55b5a52dc2
+#26 exporting manifest list sha256:6378e9f113e6edc9904d95410bb5d21c3efe6741922ae744e837da55b5a52dc2 0.0s done
+#26 naming to docker.io/library/compose-medforge-caddy:latest done
+#26 unpacking to docker.io/library/compose-medforge-caddy:latest 0.0s done
+#26 DONE 0.2s
+
+#27 [medforge-web builder 5/6] COPY . .
+#27 DONE 0.2s
+
+#28 [medforge-web builder 6/6] RUN npm run build
+#28 ...
+
+#29 [medforge-caddy] resolving provenance for metadata file
+#29 DONE 0.0s
+
+#28 [medforge-web builder 6/6] RUN npm run build
+#28 0.420 
+#28 0.420 > medforge-web@0.1.0 build
+#28 0.420 > next build
+#28 0.420 
+#28 1.152 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#28 1.153 This information is used to shape Next.js' roadmap and prioritize features.
+#28 1.153 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#28 1.154 https://nextjs.org/telemetry
+#28 1.154 
+#28 1.188 ▲ Next.js 16.1.6 (Turbopack)
+#28 1.190 
+#28 1.317   Creating an optimized production build ...
+#28 ...
+
+#11 [medforge-api-worker 4/5] RUN apt-get update     && sed -i 's/^Components: .*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources     && apt-get update     && apt-get install -y --no-install-recommends curl ca-certificates kmod zfsutils-linux     && curl -LsSf https://astral.sh/uv/0.8.22/install.sh | sh     && ln -s /root/.local/bin/uv /usr/local/bin/uv     && uv pip install --system --no-cache-dir .     && apt-get clean && rm -rf /var/lib/apt/lists/*
+#11 1.277 Fetched 9874 kB in 1s (10.7 MB/s)
+#11 1.277 Reading package lists...
+#11 2.023 Hit:1 http://deb.debian.org/debian trixie InRelease
+#11 2.023 Hit:2 http://deb.debian.org/debian trixie-updates InRelease
+#11 2.023 Hit:3 http://deb.debian.org/debian-security trixie-security InRelease
+#11 2.041 Get:4 http://deb.debian.org/debian trixie/contrib amd64 Packages [53.8 kB]
+#11 2.058 Get:5 http://deb.debian.org/debian trixie/non-free amd64 Packages [100 kB]
+#11 2.061 Get:6 http://deb.debian.org/debian trixie/non-free-firmware amd64 Packages [6884 B]
+#11 2.066 Get:7 http://deb.debian.org/debian-security trixie-security/non-free-firmware amd64 Packages [544 B]
+#11 2.077 Fetched 162 kB in 0s (1484 kB/s)
+#11 2.077 Reading package lists...
+#11 2.777 Reading package lists...
+#11 3.443 Building dependency tree...
+#11 3.681 Reading state information...
+#11 4.110 ca-certificates is already the newest version (20250419).
+#11 4.110 The following additional packages will be installed:
+#11 4.110   libbrotli1 libcom-err2 libcurl4t64 libexpat1 libgnutls30t64 libgssapi-krb5-2
+#11 4.110   libidn2-0 libk5crypto3 libkeyutils1 libkmod2 libkrb5-3 libkrb5support0
+#11 4.110   libldap2 libnghttp2-14 libnghttp3-9 libnvpair3linux libp11-kit0 libpsl5t64
+#11 4.111   libpython3-stdlib libpython3.13-minimal libpython3.13-stdlib librtmp1
+#11 4.111   libsasl2-2 libsasl2-modules-db libssh2-1t64 libtasn1-6 libtirpc-common
+#11 4.111   libtirpc3t64 libunistring5 libuutil3linux libzfs6linux libzpool6linux
+#11 4.112   media-types python3 python3-minimal python3.13 python3.13-minimal
+#11 4.115 Suggested packages:
+#11 4.115   gnutls-bin krb5-doc krb5-user python3-doc python3-tk python3-venv
+#11 4.115   python3.13-venv python3.13-doc binutils binfmt-support nfs-kernel-server
+#11 4.115   samba-common-bin zfs-initramfs | zfs-dracut
+#11 4.115 Recommended packages:
+#11 4.115   bash-completion krb5-locales libldap-common publicsuffix libsasl2-modules
+#11 4.115   zfs-modules | zfs-dkms zfs-zed
+#11 4.367 The following NEW packages will be installed:
+#11 4.371   curl kmod libbrotli1 libcom-err2 libcurl4t64 libexpat1 libgnutls30t64
+#11 4.371   libgssapi-krb5-2 libidn2-0 libk5crypto3 libkeyutils1 libkmod2 libkrb5-3
+#11 4.371   libkrb5support0 libldap2 libnghttp2-14 libnghttp3-9 libnvpair3linux
+#11 4.371   libp11-kit0 libpsl5t64 libpython3-stdlib libpython3.13-minimal
+#11 4.371   libpython3.13-stdlib librtmp1 libsasl2-2 libsasl2-modules-db libssh2-1t64
+#11 4.371   libtasn1-6 libtirpc-common libtirpc3t64 libunistring5 libuutil3linux
+#11 4.371   libzfs6linux libzpool6linux media-types python3 python3-minimal python3.13
+#11 4.371   python3.13-minimal zfsutils-linux
+#11 4.423 0 upgraded, 40 newly installed, 0 to remove and 0 not upgraded.
+#11 4.423 Need to get 13.5 MB of archives.
+#11 4.423 After this operation, 46.1 MB of additional disk space will be used.
+#11 4.423 Get:1 http://deb.debian.org/debian trixie/main amd64 libexpat1 amd64 2.7.1-2 [108 kB]
+#11 4.428 Get:2 http://deb.debian.org/debian trixie/main amd64 libpython3.13-minimal amd64 3.13.5-2 [862 kB]
+#11 4.438 Get:3 http://deb.debian.org/debian trixie/main amd64 python3.13-minimal amd64 3.13.5-2 [2224 kB]
+#11 4.458 Get:4 http://deb.debian.org/debian trixie/main amd64 python3-minimal amd64 3.13.5-1 [27.2 kB]
+#11 4.458 Get:5 http://deb.debian.org/debian trixie/main amd64 media-types all 13.0.0 [29.3 kB]
+#11 4.458 Get:6 http://deb.debian.org/debian trixie/main amd64 libpython3.13-stdlib amd64 3.13.5-2 [1956 kB]
+#11 4.476 Get:7 http://deb.debian.org/debian trixie/main amd64 python3.13 amd64 3.13.5-2 [757 kB]
+#11 4.483 Get:8 http://deb.debian.org/debian trixie/main amd64 libpython3-stdlib amd64 3.13.5-1 [10.2 kB]
+#11 4.483 Get:9 http://deb.debian.org/debian trixie/main amd64 python3 amd64 3.13.5-1 [28.2 kB]
+#11 4.486 Get:10 http://deb.debian.org/debian trixie/main amd64 libkrb5support0 amd64 1.21.3-5 [33.0 kB]
+#11 4.486 Get:11 http://deb.debian.org/debian trixie/main amd64 libcom-err2 amd64 1.47.2-3+b7 [25.0 kB]
+#11 4.486 Get:12 http://deb.debian.org/debian trixie/main amd64 libk5crypto3 amd64 1.21.3-5 [81.5 kB]
+#11 4.487 Get:13 http://deb.debian.org/debian trixie/main amd64 libkeyutils1 amd64 1.6.3-6 [9456 B]
+#11 4.490 Get:14 http://deb.debian.org/debian trixie/main amd64 libkrb5-3 amd64 1.21.3-5 [326 kB]
+#11 4.493 Get:15 http://deb.debian.org/debian trixie/main amd64 libgssapi-krb5-2 amd64 1.21.3-5 [138 kB]
+#11 4.497 Get:16 http://deb.debian.org/debian trixie/main amd64 libtirpc-common all 1.3.6+ds-1 [11.0 kB]
+#11 4.497 Get:17 http://deb.debian.org/debian trixie/main amd64 libtirpc3t64 amd64 1.3.6+ds-1 [83.3 kB]
+#11 4.497 Get:18 http://deb.debian.org/debian trixie/contrib amd64 libnvpair3linux amd64 2.3.2-2 [62.0 kB]
+#11 4.501 Get:19 http://deb.debian.org/debian trixie/contrib amd64 libuutil3linux amd64 2.3.2-2 [53.3 kB]
+#11 4.504 Get:20 http://deb.debian.org/debian trixie/contrib amd64 libzfs6linux amd64 2.3.2-2 [238 kB]
+#11 4.512 Get:21 http://deb.debian.org/debian trixie/contrib amd64 libzpool6linux amd64 2.3.2-2 [1383 kB]
+#11 4.524 Get:22 http://deb.debian.org/debian trixie/contrib amd64 zfsutils-linux amd64 2.3.2-2 [595 kB]
+#11 4.532 Get:23 http://deb.debian.org/debian trixie/main amd64 libkmod2 amd64 34.2-2 [63.2 kB]
+#11 4.536 Get:24 http://deb.debian.org/debian trixie/main amd64 kmod amd64 34.2-2 [95.7 kB]
+#11 4.539 Get:25 http://deb.debian.org/debian trixie/main amd64 libbrotli1 amd64 1.1.0-2+b7 [307 kB]
+#11 4.545 Get:26 http://deb.debian.org/debian trixie/main amd64 libunistring5 amd64 1.3-2 [477 kB]
+#11 4.550 Get:27 http://deb.debian.org/debian trixie/main amd64 libidn2-0 amd64 2.3.8-2 [109 kB]
+#11 4.550 Get:28 http://deb.debian.org/debian trixie/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg1-9 [19.8 kB]
+#11 4.550 Get:29 http://deb.debian.org/debian trixie/main amd64 libsasl2-2 amd64 2.1.28+dfsg1-9 [57.5 kB]
+#11 4.554 Get:30 http://deb.debian.org/debian trixie/main amd64 libldap2 amd64 2.6.10+dfsg-1 [194 kB]
+#11 4.556 Get:31 http://deb.debian.org/debian trixie/main amd64 libnghttp2-14 amd64 1.64.0-1.1 [76.0 kB]
+#11 4.556 Get:32 http://deb.debian.org/debian trixie/main amd64 libnghttp3-9 amd64 1.8.0-1 [67.7 kB]
+#11 4.557 Get:33 http://deb.debian.org/debian trixie/main amd64 libpsl5t64 amd64 0.21.2-1.1+b1 [57.2 kB]
+#11 4.560 Get:34 http://deb.debian.org/debian trixie/main amd64 libp11-kit0 amd64 0.25.5-3 [425 kB]
+#11 4.565 Get:35 http://deb.debian.org/debian trixie/main amd64 libtasn1-6 amd64 4.20.0-2 [49.9 kB]
+#11 4.565 Get:36 http://deb.debian.org/debian trixie/main amd64 libgnutls30t64 amd64 3.8.9-3+deb13u1 [1466 kB]
+#11 4.578 Get:37 http://deb.debian.org/debian trixie/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2+b5 [58.8 kB]
+#11 4.579 Get:38 http://deb.debian.org/debian trixie/main amd64 libssh2-1t64 amd64 1.11.1-1 [245 kB]
+#11 4.581 Get:39 http://deb.debian.org/debian trixie/main amd64 libcurl4t64 amd64 8.14.1-2+deb13u2 [391 kB]
+#11 4.585 Get:40 http://deb.debian.org/debian trixie/main amd64 curl amd64 8.14.1-2+deb13u2 [270 kB]
+#11 4.776 debconf: unable to initialize frontend: Dialog
+#11 4.776 debconf: (TERM is not set, so the dialog frontend is not usable.)
+#11 4.776 debconf: falling back to frontend: Readline
+#11 4.777 debconf: unable to initialize frontend: Readline
+#11 4.778 debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/x86_64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, <STDIN> line 40.)
+#11 4.778 debconf: falling back to frontend: Teletype
+#11 4.785 debconf: unable to initialize frontend: Teletype
+#11 4.785 debconf: (This frontend requires a controlling tty.)
+#11 4.785 debconf: falling back to frontend: Noninteractive
+#11 6.165 Fetched 13.5 MB in 0s (73.2 MB/s)
+#11 6.232 Selecting previously unselected package libexpat1:amd64.
+#11 6.232 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5645 files and directories currently installed.)
+#11 6.232 Preparing to unpack .../libexpat1_2.7.1-2_amd64.deb ...
+#11 6.244 Unpacking libexpat1:amd64 (2.7.1-2) ...
+#11 6.343 Selecting previously unselected package libpython3.13-minimal:amd64.
+#11 6.344 Preparing to unpack .../libpython3.13-minimal_3.13.5-2_amd64.deb ...
+#11 6.353 Unpacking libpython3.13-minimal:amd64 (3.13.5-2) ...
+#11 6.441 Selecting previously unselected package python3.13-minimal.
+#11 6.443 Preparing to unpack .../python3.13-minimal_3.13.5-2_amd64.deb ...
+#11 6.454 Unpacking python3.13-minimal (3.13.5-2) ...
+#11 6.608 Setting up libpython3.13-minimal:amd64 (3.13.5-2) ...
+#11 6.654 Setting up libexpat1:amd64 (2.7.1-2) ...
+#11 6.666 Setting up python3.13-minimal (3.13.5-2) ...
+#11 7.530 Selecting previously unselected package python3-minimal.
+#11 7.530 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 5979 files and directories currently installed.)
+#11 7.534 Preparing to unpack .../python3-minimal_3.13.5-1_amd64.deb ...
+#11 7.539 Unpacking python3-minimal (3.13.5-1) ...
+#11 7.590 Selecting previously unselected package media-types.
+#11 7.591 Preparing to unpack .../media-types_13.0.0_all.deb ...
+#11 7.598 Unpacking media-types (13.0.0) ...
+#11 7.665 Selecting previously unselected package libpython3.13-stdlib:amd64.
+#11 7.665 Preparing to unpack .../libpython3.13-stdlib_3.13.5-2_amd64.deb ...
+#11 7.675 Unpacking libpython3.13-stdlib:amd64 (3.13.5-2) ...
+#11 7.817 Selecting previously unselected package python3.13.
+#11 7.818 Preparing to unpack .../python3.13_3.13.5-2_amd64.deb ...
+#11 7.825 Unpacking python3.13 (3.13.5-2) ...
+#11 7.888 Selecting previously unselected package libpython3-stdlib:amd64.
+#11 7.889 Preparing to unpack .../libpython3-stdlib_3.13.5-1_amd64.deb ...
+#11 7.899 Unpacking libpython3-stdlib:amd64 (3.13.5-1) ...
+#11 7.959 Setting up python3-minimal (3.13.5-1) ...
+#11 8.158 Selecting previously unselected package python3.
+#11 8.158 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6433 files and directories currently installed.)
+#11 8.162 Preparing to unpack .../00-python3_3.13.5-1_amd64.deb ...
+#11 8.175 Unpacking python3 (3.13.5-1) ...
+#11 8.246 Selecting previously unselected package libkrb5support0:amd64.
+#11 8.247 Preparing to unpack .../01-libkrb5support0_1.21.3-5_amd64.deb ...
+#11 8.252 Unpacking libkrb5support0:amd64 (1.21.3-5) ...
+#11 8.297 Selecting previously unselected package libcom-err2:amd64.
+#11 8.298 Preparing to unpack .../02-libcom-err2_1.47.2-3+b7_amd64.deb ...
+#11 8.305 Unpacking libcom-err2:amd64 (1.47.2-3+b7) ...
+#11 8.365 Selecting previously unselected package libk5crypto3:amd64.
+#11 8.366 Preparing to unpack .../03-libk5crypto3_1.21.3-5_amd64.deb ...
+#11 8.377 Unpacking libk5crypto3:amd64 (1.21.3-5) ...
+#11 8.446 Selecting previously unselected package libkeyutils1:amd64.
+#11 8.447 Preparing to unpack .../04-libkeyutils1_1.6.3-6_amd64.deb ...
+#11 8.451 Unpacking libkeyutils1:amd64 (1.6.3-6) ...
+#11 8.496 Selecting previously unselected package libkrb5-3:amd64.
+#11 8.497 Preparing to unpack .../05-libkrb5-3_1.21.3-5_amd64.deb ...
+#11 8.505 Unpacking libkrb5-3:amd64 (1.21.3-5) ...
+#11 8.592 Selecting previously unselected package libgssapi-krb5-2:amd64.
+#11 8.593 Preparing to unpack .../06-libgssapi-krb5-2_1.21.3-5_amd64.deb ...
+#11 8.602 Unpacking libgssapi-krb5-2:amd64 (1.21.3-5) ...
+#11 8.666 Selecting previously unselected package libtirpc-common.
+#11 8.668 Preparing to unpack .../07-libtirpc-common_1.3.6+ds-1_all.deb ...
+#11 8.672 Unpacking libtirpc-common (1.3.6+ds-1) ...
+#11 8.718 Selecting previously unselected package libtirpc3t64:amd64.
+#11 8.719 Preparing to unpack .../08-libtirpc3t64_1.3.6+ds-1_amd64.deb ...
+#11 8.730 Adding 'diversion of /lib/x86_64-linux-gnu/libtirpc.so.3 to /lib/x86_64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'
+#11 8.741 Adding 'diversion of /lib/x86_64-linux-gnu/libtirpc.so.3.0.0 to /lib/x86_64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'
+#11 8.745 Unpacking libtirpc3t64:amd64 (1.3.6+ds-1) ...
+#11 8.812 Selecting previously unselected package libnvpair3linux:amd64.
+#11 8.813 Preparing to unpack .../09-libnvpair3linux_2.3.2-2_amd64.deb ...
+#11 8.823 Unpacking libnvpair3linux:amd64 (2.3.2-2) ...
+#11 8.878 Selecting previously unselected package libuutil3linux:amd64.
+#11 8.879 Preparing to unpack .../10-libuutil3linux_2.3.2-2_amd64.deb ...
+#11 8.886 Unpacking libuutil3linux:amd64 (2.3.2-2) ...
+#11 8.942 Selecting previously unselected package libzfs6linux:amd64.
+#11 8.944 Preparing to unpack .../11-libzfs6linux_2.3.2-2_amd64.deb ...
+#11 8.954 Adding 'diversion of /lib/x86_64-linux-gnu/libzfs_core.so.3 to /lib/x86_64-linux-gnu/libzfs_core.so.3.usr-is-merged by libzfs6linux'
+#11 8.961 Adding 'diversion of /lib/x86_64-linux-gnu/libzfs_core.so.3.0.0 to /lib/x86_64-linux-gnu/libzfs_core.so.3.0.0.usr-is-merged by libzfs6linux'
+#11 8.967 Unpacking libzfs6linux:amd64 (2.3.2-2) ...
+#11 9.042 Selecting previously unselected package libzpool6linux:amd64.
+#11 9.043 Preparing to unpack .../12-libzpool6linux_2.3.2-2_amd64.deb ...
+#11 9.048 Unpacking libzpool6linux:amd64 (2.3.2-2) ...
+#11 9.160 Selecting previously unselected package zfsutils-linux.
+#11 9.162 Preparing to unpack .../13-zfsutils-linux_2.3.2-2_amd64.deb ...
+#11 9.170 Unpacking zfsutils-linux (2.3.2-2) ...
+#11 9.270 Selecting previously unselected package libkmod2:amd64.
+#11 9.272 Preparing to unpack .../14-libkmod2_34.2-2_amd64.deb ...
+#11 9.278 Unpacking libkmod2:amd64 (34.2-2) ...
+#11 9.335 Selecting previously unselected package kmod.
+#11 9.336 Preparing to unpack .../15-kmod_34.2-2_amd64.deb ...
+#11 9.349 Unpacking kmod (34.2-2) ...
+#11 9.420 Selecting previously unselected package libbrotli1:amd64.
+#11 9.421 Preparing to unpack .../16-libbrotli1_1.1.0-2+b7_amd64.deb ...
+#11 9.437 Unpacking libbrotli1:amd64 (1.1.0-2+b7) ...
+#11 9.516 Selecting previously unselected package libunistring5:amd64.
+#11 9.517 Preparing to unpack .../17-libunistring5_1.3-2_amd64.deb ...
+#11 9.527 Unpacking libunistring5:amd64 (1.3-2) ...
+#11 9.597 Selecting previously unselected package libidn2-0:amd64.
+#11 9.598 Preparing to unpack .../18-libidn2-0_2.3.8-2_amd64.deb ...
+#11 9.603 Unpacking libidn2-0:amd64 (2.3.8-2) ...
+#11 9.653 Selecting previously unselected package libsasl2-modules-db:amd64.
+#11 9.655 Preparing to unpack .../19-libsasl2-modules-db_2.1.28+dfsg1-9_amd64.deb ...
+#11 9.662 Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg1-9) ...
+#11 9.729 Selecting previously unselected package libsasl2-2:amd64.
+#11 9.730 Preparing to unpack .../20-libsasl2-2_2.1.28+dfsg1-9_amd64.deb ...
+#11 9.740 Unpacking libsasl2-2:amd64 (2.1.28+dfsg1-9) ...
+#11 9.792 Selecting previously unselected package libldap2:amd64.
+#11 9.793 Preparing to unpack .../21-libldap2_2.6.10+dfsg-1_amd64.deb ...
+#11 9.798 Unpacking libldap2:amd64 (2.6.10+dfsg-1) ...
+#11 9.857 Selecting previously unselected package libnghttp2-14:amd64.
+#11 9.859 Preparing to unpack .../22-libnghttp2-14_1.64.0-1.1_amd64.deb ...
+#11 9.866 Unpacking libnghttp2-14:amd64 (1.64.0-1.1) ...
+#11 9.942 Selecting previously unselected package libnghttp3-9:amd64.
+#11 9.943 Preparing to unpack .../23-libnghttp3-9_1.8.0-1_amd64.deb ...
+#11 9.953 Unpacking libnghttp3-9:amd64 (1.8.0-1) ...
+#11 10.01 Selecting previously unselected package libpsl5t64:amd64.
+#11 10.01 Preparing to unpack .../24-libpsl5t64_0.21.2-1.1+b1_amd64.deb ...
+#11 10.02 Unpacking libpsl5t64:amd64 (0.21.2-1.1+b1) ...
+#11 10.07 Selecting previously unselected package libp11-kit0:amd64.
+#11 10.07 Preparing to unpack .../25-libp11-kit0_0.25.5-3_amd64.deb ...
+#11 10.08 Unpacking libp11-kit0:amd64 (0.25.5-3) ...
+#11 10.16 Selecting previously unselected package libtasn1-6:amd64.
+#11 10.16 Preparing to unpack .../26-libtasn1-6_4.20.0-2_amd64.deb ...
+#11 10.17 Unpacking libtasn1-6:amd64 (4.20.0-2) ...
+#11 10.23 Selecting previously unselected package libgnutls30t64:amd64.
+#11 10.23 Preparing to unpack .../27-libgnutls30t64_3.8.9-3+deb13u1_amd64.deb ...
+#11 10.23 Unpacking libgnutls30t64:amd64 (3.8.9-3+deb13u1) ...
+#11 10.33 Selecting previously unselected package librtmp1:amd64.
+#11 10.33 Preparing to unpack .../28-librtmp1_2.4+20151223.gitfa8646d.1-2+b5_amd64.deb ...
+#11 10.34 Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b5) ...
+#11 10.41 Selecting previously unselected package libssh2-1t64:amd64.
+#11 10.41 Preparing to unpack .../29-libssh2-1t64_1.11.1-1_amd64.deb ...
+#11 10.42 Unpacking libssh2-1t64:amd64 (1.11.1-1) ...
+#11 10.48 Selecting previously unselected package libcurl4t64:amd64.
+#11 10.48 Preparing to unpack .../30-libcurl4t64_8.14.1-2+deb13u2_amd64.deb ...
+#11 10.49 Unpacking libcurl4t64:amd64 (8.14.1-2+deb13u2) ...
+#11 10.55 Selecting previously unselected package curl.
+#11 10.55 Preparing to unpack .../31-curl_8.14.1-2+deb13u2_amd64.deb ...
+#11 10.55 Unpacking curl (8.14.1-2+deb13u2) ...
+#11 10.63 Setting up media-types (13.0.0) ...
+#11 10.65 Setting up libkeyutils1:amd64 (1.6.3-6) ...
+#11 10.67 Setting up libtirpc-common (1.3.6+ds-1) ...
+#11 10.70 Setting up libbrotli1:amd64 (1.1.0-2+b7) ...
+#11 10.73 Setting up libnghttp2-14:amd64 (1.64.0-1.1) ...
+#11 10.75 Setting up libcom-err2:amd64 (1.47.2-3+b7) ...
+#11 10.78 Setting up libkrb5support0:amd64 (1.21.3-5) ...
+#11 10.79 Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg1-9) ...
+#11 10.80 Setting up libp11-kit0:amd64 (0.25.5-3) ...
+#11 10.82 Setting up libunistring5:amd64 (1.3-2) ...
+#11 10.85 Setting up libk5crypto3:amd64 (1.21.3-5) ...
+#11 10.88 Setting up libsasl2-2:amd64 (2.1.28+dfsg1-9) ...
+#11 10.90 Setting up libnghttp3-9:amd64 (1.8.0-1) ...
+#11 10.93 Setting up libtasn1-6:amd64 (4.20.0-2) ...
+#11 10.95 Setting up libkrb5-3:amd64 (1.21.3-5) ...
+#11 10.96 Setting up libssh2-1t64:amd64 (1.11.1-1) ...
+#11 10.98 Setting up libuutil3linux:amd64 (2.3.2-2) ...
+#11 11.00 Setting up libpython3.13-stdlib:amd64 (3.13.5-2) ...
+#11 11.03 Setting up libldap2:amd64 (2.6.10+dfsg-1) ...
+#11 11.05 Setting up libkmod2:amd64 (34.2-2) ...
+#11 11.08 Setting up libpython3-stdlib:amd64 (3.13.5-1) ...
+#11 11.10 Setting up python3.13 (3.13.5-2) ...
+#11 12.05 Setting up python3 (3.13.5-1) ...
+#11 12.07 running python rtupdate hooks for python3.13...
+#11 12.07 running python post-rtupdate hooks for python3.13...
+#11 12.16 Setting up libidn2-0:amd64 (2.3.8-2) ...
+#11 12.18 Setting up kmod (34.2-2) ...
+#11 12.21 Setting up libgssapi-krb5-2:amd64 (1.21.3-5) ...
+#11 12.23 Setting up libgnutls30t64:amd64 (3.8.9-3+deb13u1) ...
+#11 12.26 Setting up libtirpc3t64:amd64 (1.3.6+ds-1) ...
+#11 12.29 Setting up libpsl5t64:amd64 (0.21.2-1.1+b1) ...
+#11 12.31 Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b5) ...
+#11 12.32 Setting up libnvpair3linux:amd64 (2.3.2-2) ...
+#11 12.34 Setting up libcurl4t64:amd64 (8.14.1-2+deb13u2) ...
+#11 12.36 Setting up libzfs6linux:amd64 (2.3.2-2) ...
+#11 12.38 Setting up curl (8.14.1-2+deb13u2) ...
+#11 12.41 Setting up libzpool6linux:amd64 (2.3.2-2) ...
+#11 12.43 Setting up zfsutils-linux (2.3.2-2) ...
+#11 12.50 modprobe: FATAL: Module zfs not found in directory /lib/modules/6.8.0-100-generic
+#11 12.52 invoke-rc.d: could not determine current runlevel
+#11 12.53 invoke-rc.d: policy-rc.d denied execution of start.
+#11 12.54 invoke-rc.d: could not determine current runlevel
+#11 12.54 invoke-rc.d: policy-rc.d denied execution of start.
+#11 12.57 invoke-rc.d: could not determine current runlevel
+#11 12.58 invoke-rc.d: policy-rc.d denied execution of start.
+#11 12.59 invoke-rc.d: could not determine current runlevel
+#11 12.60 invoke-rc.d: policy-rc.d denied execution of start.
+#11 13.46 Processing triggers for libc-bin (2.41-12+deb13u1) ...
+#11 14.45 downloading uv 0.8.22 x86_64-unknown-linux-gnu
+#11 15.49 no checksums to verify
+#11 15.89 installing to /root/.local/bin
+#11 15.90   uv
+#11 15.90   uvx
+#11 15.90 everything's installed!
+#11 15.94 
+#11 15.94 To add $HOME/.local/bin to your PATH, either restart your shell or run:
+#11 15.94 
+#11 15.94     source $HOME/.local/bin/env (sh, bash, zsh)
+#11 15.94     source $HOME/.local/bin/env.fish (fish)
+#11 16.15 Using Python 3.12.12 environment at: /usr/local
+#11 16.47 Resolved 48 packages in 316ms
+#11 16.47    Building medforge-api @ file:///app
+#11 16.49 Downloading sqlalchemy (3.2MiB)
+#11 16.49 Downloading uvloop (4.2MiB)
+#11 16.50 Downloading cryptography (4.3MiB)
+#11 16.50 Downloading pydantic-core (2.0MiB)
+#11 16.65  Downloading pydantic-core
+#11 16.72  Downloading uvloop
+#11 16.73  Downloading cryptography
+#11 16.76  Downloading sqlalchemy
+#11 18.91       Built medforge-api @ file:///app
+#11 18.91 Prepared 48 packages in 2.44s
+#11 18.96 Installed 48 packages in 42ms
+#11 18.96  + alembic==1.18.4
+#11 18.96  + annotated-doc==0.0.4
+#11 18.96  + annotated-types==0.7.0
+#11 18.96  + anyio==4.12.1
+#11 18.96  + bcrypt==4.3.0
+#11 18.96  + certifi==2026.1.4
+#11 18.96  + cffi==2.0.0
+#11 18.96  + charset-normalizer==3.4.4
+#11 18.96  + click==8.3.1
+#11 18.96  + cryptography==46.0.5
+#11 18.96  + docker==7.1.0
+#11 18.96  + ecdsa==0.19.1
+#11 18.96  + fastapi==0.129.0
+#11 18.96  + greenlet==3.3.1
+#11 18.96  + h11==0.16.0
+#11 18.96  + httpcore==1.0.9
+#11 18.96  + httptools==0.7.1
+#11 18.96  + httpx==0.28.1
+#11 18.96  + idna==3.11
+#11 18.96  + itsdangerous==2.2.0
+#11 18.96  + mako==1.3.10
+#11 18.96  + markupsafe==3.0.3
+#11 18.96  + medforge-api==0.1.0 (from file:///app)
+#11 18.96  + passlib==1.7.4
+#11 18.96  + pyasn1==0.6.2
+#11 18.96  + pycparser==3.0
+#11 18.96  + pydantic==2.12.5
+#11 18.96  + pydantic-core==2.41.5
+#11 18.96  + pydantic-settings==2.13.0
+#11 18.96  + pymysql==1.1.2
+#11 18.96  + python-dotenv==1.2.1
+#11 18.96  + python-jose==3.5.0
+#11 18.96  + python-multipart==0.0.22
+#11 18.96  + pyyaml==6.0.3
+#11 18.96  + requests==2.32.5
+#11 18.96  + rsa==4.9.1
+#11 18.96  + six==1.17.0
+#11 18.96  + sqlalchemy==2.0.46
+#11 18.96  + sqlmodel==0.0.34
+#11 18.96  + starlette==0.52.1
+#11 18.96  + structlog==25.5.0
+#11 18.96  + typing-extensions==4.15.0
+#11 18.96  + typing-inspection==0.4.2
+#11 18.96  + urllib3==2.6.3
+#11 18.96  + uvicorn==0.41.0
+#11 18.96  + uvloop==0.22.1
+#11 18.96  + watchfiles==1.1.1
+#11 18.96  + websockets==16.0
+#11 DONE 19.5s
+
+#28 [medforge-web builder 6/6] RUN npm run build
+#28 8.359 ✓ Compiled successfully in 6.7s
+#28 8.371   Running TypeScript ...
+#28 12.41   Collecting page data using 127 workers ...
+#28 ...
+
+#30 [medforge-api-worker 5/5] RUN groupadd -g 999 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#30 ...
+
+#28 [medforge-web builder 6/6] RUN npm run build
+#28 18.64   Generating static pages using 127 workers (0/5) ...
+#28 19.15   Generating static pages using 127 workers (1/5) 
+#28 19.15   Generating static pages using 127 workers (2/5) 
+#28 19.15   Generating static pages using 127 workers (3/5) 
+#28 19.15 ✓ Generating static pages using 127 workers (5/5) in 502.3ms
+#28 19.15   Finalizing page optimization ...
+#28 19.57 
+#28 19.57 Route (app)
+#28 19.57 ┌ ƒ /
+#28 19.57 ├ ○ /_not-found
+#28 19.57 ├ ○ /auth/login
+#28 19.57 ├ ○ /auth/signup
+#28 19.57 ├ ƒ /competitions
+#28 19.57 ├ ƒ /competitions/[slug]
+#28 19.57 ├ ƒ /competitions/[slug]/leaderboard
+#28 19.57 ├ ƒ /competitions/[slug]/submit
+#28 19.57 ├ ƒ /datasets
+#28 19.57 ├ ƒ /datasets/[slug]
+#28 19.57 ├ ƒ /profile/[handle]
+#28 19.57 └ ○ /sessions
+#28 19.57 
+#28 19.57 
+#28 19.57 ○  (Static)   prerendered as static content
+#28 19.57 ƒ  (Dynamic)  server-rendered on demand
+#28 19.57 
+#28 DONE 19.8s
+
+#31 [medforge-api 5/5] RUN groupadd -g 995 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#31 ...
+
+#32 [medforge-web runner 3/6] RUN addgroup --system --gid 1001 nextjs     && adduser --system --uid 1001 nextjs
+#32 CACHED
+
+#33 [medforge-web runner 4/6] COPY --from=builder /app/public ./public
+#33 CACHED
+
+#34 [medforge-web runner 5/6] COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
+#34 DONE 0.5s
+
+#31 [medforge-api 5/5] RUN groupadd -g 995 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#31 ...
+
+#35 [medforge-web runner 6/6] COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+#35 DONE 0.2s
+
+#31 [medforge-api 5/5] RUN groupadd -g 995 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#31 DONE 2.8s
+
+#36 [medforge-web] exporting to image
+#36 exporting layers
+#36 ...
+
+#30 [medforge-api-worker 5/5] RUN groupadd -g 999 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#30 DONE 2.9s
+
+#37 [medforge-api-worker] exporting to image
+#37 ...
+
+#36 [medforge-web] exporting to image
+#36 exporting layers 3.0s done
+#36 exporting manifest sha256:0576d8e7f84b86a9141653505e5958152b564751d1168816195be8ad984a33a8 0.0s done
+#36 exporting config sha256:f4a234f5c0294461c9607195619901d08b3d55a21aaaa9f4ec06be037ffd1816 0.0s done
+#36 exporting attestation manifest sha256:a526bfee3e14de83ad2913a46493f8cfd4a1baf0961626c199d118247530f12b 0.1s done
+#36 exporting manifest list sha256:b6200b90e285dfcfce729e1860b52661be6053fe6ab202b9420190a4108e1d18 0.0s done
+#36 naming to docker.io/library/compose-medforge-web:latest done
+#36 unpacking to docker.io/library/compose-medforge-web:latest 0.4s done
+#36 DONE 3.6s
+
+#38 [medforge-web] resolving provenance for metadata file
+#38 DONE 0.0s
+
+#39 [medforge-api] exporting to image
+#39 exporting layers 8.1s done
+#39 exporting manifest sha256:08283d72e4f1efa4b505a3a174481c0dae5e4bc6e1904eb4fe6897debfd77c6a 0.0s done
+#39 exporting config sha256:74cc7476d649c40f6864d2219702cc2c7d7b98a31e3337e425728d8260c3ad2c 0.0s done
+#39 exporting attestation manifest sha256:4a81623823a05e1f717b25e9cc6562c03f9c3ded966c3bfc9c35daf838646800
+#39 ...
+
+#37 [medforge-api-worker] exporting to image
+#37 exporting layers 7.9s done
+#37 exporting manifest sha256:df24cb36b145ce414204498c2cca6846fdd1003a085d20a2e86421dab6d9bb1d 0.1s done
+#37 exporting config sha256:9ba142d91240b63b07ab6cbdfa059c1078bd2e4c74ffb9657700d6001c03bcdb 0.0s done
+#37 exporting attestation manifest sha256:087b4afaa84545b5fed426e8a52ffa8ee98c6e0f2085e48c39d23d15f98487c8 0.1s done
+#37 exporting manifest list sha256:0681580857824306dee3002391fcb1a1e7c0981c12b445e5095dedd3399bc82d
+#37 exporting manifest list sha256:0681580857824306dee3002391fcb1a1e7c0981c12b445e5095dedd3399bc82d 0.0s done
+#37 naming to docker.io/library/compose-medforge-api-worker:latest 0.0s done
+#37 unpacking to docker.io/library/compose-medforge-api-worker:latest
+#37 unpacking to docker.io/library/compose-medforge-api-worker:latest 1.0s done
+#37 DONE 9.3s
+
+#39 [medforge-api] exporting to image
+#39 exporting attestation manifest sha256:4a81623823a05e1f717b25e9cc6562c03f9c3ded966c3bfc9c35daf838646800 0.1s done
+#39 exporting manifest list sha256:e3a06dd6a14bcd48e4f5b9b660de0590d96cf59e1a2622e5dabb19f273cb38c3 0.0s done
+#39 naming to docker.io/library/compose-medforge-api:latest 0.0s done
+#39 unpacking to docker.io/library/compose-medforge-api:latest 1.0s done
+#39 DONE 9.4s
+
+#40 [medforge-api] resolving provenance for metadata file
+#40 DONE 0.1s
+
+#41 [medforge-api-worker] resolving provenance for metadata file
+#41 DONE 0.0s
+ Image compose-medforge-api Built 
+ Image compose-medforge-api-worker Built 
+ Image compose-medforge-caddy Built 
+ Image compose-medforge-web Built 
+ Container medforge-db Running 
+ Container medforge-api-worker Recreate 
+ Container medforge-caddy Recreate 
+ Container medforge-api Recreate 
+ Container medforge-caddy Recreated 
+ Container medforge-api Recreated 
+ Container medforge-web Recreate 
+ Container medforge-web Recreated 
+ Container medforge-api-worker Recreated 
+ Container medforge-caddy Starting 
+ Container medforge-api-worker Starting 
+ Container medforge-api Starting 
+ Container medforge-api-worker Started 
+ Container medforge-caddy Started 
+ Container medforge-api Started 
+ Container medforge-web Starting 
+ Container medforge-web Started 
+NAME                  IMAGE                                                                                COMMAND                  SERVICE               CREATED             STATUS                  PORTS
+medforge-api          compose-medforge-api                                                                 "uvicorn app.main:ap…"   medforge-api          12 seconds ago      Up 1 second             8000/tcp
+medforge-api-worker   compose-medforge-api-worker                                                          "python -m app.worke…"   medforge-api-worker   12 seconds ago      Up 1 second             8000/tcp
+medforge-caddy        compose-medforge-caddy                                                               "caddy run --config …"   medforge-caddy        12 seconds ago      Up 1 second             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 0.0.0.0:443->443/udp, [::]:443->443/udp, 2019/tcp
+medforge-db           mariadb:11@sha256:7fcb6109db2ba31b22a5709c1eaf9e84f76c9f1b9b9031ef09f24092f7f207cc   "docker-entrypoint.s…"   medforge-db           About an hour ago   Up About an hour        3306/tcp
+medforge-web          compose-medforge-web                                                                 "docker-entrypoint.s…"   medforge-web          11 seconds ago      Up Less than a second   3000/tcp
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+api ready on attempt 4/60
+web ready on attempt 1/60
+gpu_count=7
+pack_count=1

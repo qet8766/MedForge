@@ -42,9 +42,6 @@ def _is_allowed_origin(origin: str, settings: Settings) -> bool:
     if hostname is None:
         return False
 
-    if hostname in {"localhost", "127.0.0.1"}:
-        return True
-
     domain = settings.domain.strip().lower()
     if not domain:
         return False

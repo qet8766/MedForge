@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, FastAPI
+
 from app.problem_details import PROBLEM_CONTENT_TYPE, ProblemDocument, http_status_title
 
 CANONICAL_API_PREFIX = "/api/v1"

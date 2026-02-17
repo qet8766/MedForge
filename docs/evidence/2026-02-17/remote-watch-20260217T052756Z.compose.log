@@ -1,0 +1,254 @@
+medforge-web  | ▲ Next.js 16.1.6
+medforge-web  | - Local:         http://localhost:3000
+medforge-web  | - Network:       http://0.0.0.0:3000
+medforge-web  | 
+medforge-web  | ✓ Starting...
+medforge-web  | ✓ Ready in 74ms
+medforge-api  | INFO:     Started server process [1]
+medforge-api  | INFO:     Waiting for application startup.
+medforge-api  | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api  | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-caddy  | {"level":"info","ts":1771306036.4374282,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+medforge-caddy  | {"level":"info","ts":1771306036.4375944,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+medforge-caddy  | {"level":"info","ts":1771306036.4376326,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+medforge-caddy  | {"level":"warn","ts":1771306036.4385192,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771306036.4386468,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"info","ts":1771306036.4404535,"msg":"adapted config to JSON","adapter":"caddyfile"}
+medforge-caddy  | {"level":"info","ts":1771306036.4417427,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+medforge-caddy  | {"level":"info","ts":1771306036.4419873,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+medforge-caddy  | {"level":"info","ts":1771306036.442007,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+medforge-caddy  | {"level":"warn","ts":1771306036.4425354,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"warn","ts":1771306036.4425418,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"info","ts":1771306036.4425442,"logger":"http.log","msg":"server running","name":"remaining_auto_https_redirects","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306036.4425673,"logger":"http","msg":"enabling HTTP/3 listener","addr":":443"}
+medforge-caddy  | {"level":"info","ts":1771306036.442691,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306036.4426956,"logger":"http","msg":"enabling automatic TLS certificate management","domains":["*.medforge.xyz","api.medforge.xyz","medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771306036.4457886,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x12c8477efd80"}
+medforge-caddy  | {"level":"info","ts":1771306036.4467666,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+medforge-caddy  | {"level":"info","ts":1771306036.446784,"msg":"serving initial configuration"}
+medforge-caddy  | {"level":"info","ts":1771306036.4494894,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"ee5e951a-3cd9-48f9-a27d-2b27b46567f3","try_again":1771392436.4494855,"try_again_in":86399.999999249}
+medforge-caddy  | {"level":"info","ts":1771306036.4496205,"logger":"tls","msg":"finished cleaning storage units"}
+[Kmedforge-api has been recreated
+[Kmedforge-api exited with code 0
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+[Kmedforge-caddy has been recreated
+[Kmedforge-api has been recreated
+medforge-caddy  | {"level":"info","ts":1771306342.3941286,"msg":"shutting down apps, then terminating","signal":"SIGTERM"}
+medforge-caddy  | {"level":"warn","ts":1771306342.3942027,"msg":"exiting; byeee!! 👋","signal":"SIGTERM"}
+medforge-caddy  | {"level":"info","ts":1771306342.394243,"logger":"http","msg":"servers shutting down with eternal grace period"}
+medforge-caddy  | {"level":"info","ts":1771306342.3944974,"logger":"admin","msg":"stopped previous server","address":"localhost:2019"}
+medforge-caddy  | {"level":"info","ts":1771306342.394512,"msg":"shutdown complete","signal":"SIGTERM","exit_code":0}
+[Kmedforge-caddy exited with code 0
+[Kmedforge-api exited with code 0
+[Kmedforge-web has been recreated
+[Kmedforge-web exited with code 0
+medforge-caddy  | {"level":"info","ts":1771306353.7089944,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+medforge-caddy  | {"level":"info","ts":1771306353.709211,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+medforge-caddy  | {"level":"info","ts":1771306353.7092464,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+medforge-caddy  | {"level":"warn","ts":1771306353.7130373,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771306353.7132254,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"info","ts":1771306353.7140567,"msg":"adapted config to JSON","adapter":"caddyfile"}
+medforge-caddy  | {"level":"info","ts":1771306353.7153747,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+medforge-caddy  | {"level":"info","ts":1771306353.7156644,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+medforge-caddy  | {"level":"info","ts":1771306353.7156985,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+medforge-caddy  | {"level":"info","ts":1771306353.715714,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x1ce461143b00"}
+medforge-caddy  | {"level":"info","ts":1771306353.716331,"logger":"http","msg":"enabling HTTP/3 listener","addr":":443"}
+medforge-caddy  | {"level":"info","ts":1771306353.7165084,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"warn","ts":1771306353.7165668,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"warn","ts":1771306353.7168195,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"info","ts":1771306353.7168446,"logger":"http.log","msg":"server running","name":"remaining_auto_https_redirects","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306353.7168674,"logger":"http","msg":"enabling automatic TLS certificate management","domains":["api.medforge.medforge.xyz","medforge.medforge.xyz","*.medforge.medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771306353.7171786,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+medforge-caddy  | {"level":"info","ts":1771306353.7173243,"msg":"serving initial configuration"}
+medforge-caddy  | {"level":"info","ts":1771306353.721161,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"ee5e951a-3cd9-48f9-a27d-2b27b46567f3","try_again":1771392753.7211497,"try_again_in":86399.999999399}
+medforge-caddy  | {"level":"info","ts":1771306353.7212412,"logger":"tls.obtain","msg":"acquiring lock","identifier":"*.medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.72131,"logger":"tls","msg":"finished cleaning storage units"}
+medforge-caddy  | {"level":"info","ts":1771306353.7212913,"logger":"tls.obtain","msg":"acquiring lock","identifier":"medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.722393,"logger":"tls.obtain","msg":"lock acquired","identifier":"medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7224903,"logger":"tls.obtain","msg":"obtaining certificate","identifier":"medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7231288,"logger":"tls.issuance.acme","msg":"waiting on internal rate limiter","identifiers":["medforge.medforge.xyz"],"ca":"https://acme-v02.api.letsencrypt.org/directory","account":"admin@medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7231462,"logger":"tls.issuance.acme","msg":"done waiting on internal rate limiter","identifiers":["medforge.medforge.xyz"],"ca":"https://acme-v02.api.letsencrypt.org/directory","account":"admin@medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7231534,"logger":"tls.issuance.acme","msg":"using ACME account","account_id":"https://acme-v02.api.letsencrypt.org/acme/acct/3071593366","account_contact":["mailto:admin@medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771306353.7236667,"logger":"tls.obtain","msg":"lock acquired","identifier":"*.medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.723754,"logger":"tls.obtain","msg":"obtaining certificate","identifier":"*.medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7243214,"logger":"tls.issuance.acme","msg":"waiting on internal rate limiter","identifiers":["*.medforge.medforge.xyz"],"ca":"https://acme-v02.api.letsencrypt.org/directory","account":"admin@medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7243435,"logger":"tls.issuance.acme","msg":"done waiting on internal rate limiter","identifiers":["*.medforge.medforge.xyz"],"ca":"https://acme-v02.api.letsencrypt.org/directory","account":"admin@medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306353.7243516,"logger":"tls.issuance.acme","msg":"using ACME account","account_id":"https://acme-v02.api.letsencrypt.org/acme/acct/3071593366","account_contact":["mailto:admin@medforge.xyz"]}
+medforge-web    | ▲ Next.js 16.1.6
+medforge-web    | - Local:         http://localhost:3000
+medforge-web    | - Network:       http://0.0.0.0:3000
+medforge-web    | 
+medforge-web    | ✓ Starting...
+medforge-web    | ✓ Ready in 80ms
+medforge-caddy  | {"level":"info","ts":1771306355.8398902,"msg":"trying to solve challenge","identifier":"*.medforge.medforge.xyz","challenge_type":"dns-01","ca":"https://acme-v02.api.letsencrypt.org/directory"}
+medforge-caddy  | {"level":"info","ts":1771306355.8525124,"msg":"trying to solve challenge","identifier":"medforge.medforge.xyz","challenge_type":"dns-01","ca":"https://acme-v02.api.letsencrypt.org/directory"}
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-caddy  | {"level":"info","ts":1771306365.2640665,"msg":"authorization finalized","identifier":"*.medforge.medforge.xyz","authz_status":"valid"}
+medforge-caddy  | {"level":"info","ts":1771306365.264111,"msg":"validations succeeded; finalizing order","order":"https://acme-v02.api.letsencrypt.org/acme/order/3071593366/481192484536"}
+medforge-caddy  | {"level":"info","ts":1771306365.338702,"msg":"authorization finalized","identifier":"medforge.medforge.xyz","authz_status":"valid"}
+medforge-caddy  | {"level":"info","ts":1771306365.338731,"msg":"validations succeeded; finalizing order","order":"https://acme-v02.api.letsencrypt.org/acme/order/3071593366/481192484566"}
+medforge-caddy  | {"level":"info","ts":1771306367.2580419,"msg":"got renewal info","names":["medforge.medforge.xyz"],"window_start":1776410300,"window_end":1776565749,"selected_time":1776555997,"recheck_after":1771326312.258032,"explanation_url":""}
+medforge-caddy  | {"level":"info","ts":1771306367.258787,"msg":"got renewal info","names":["*.medforge.medforge.xyz"],"window_start":1776410299,"window_end":1776565749,"selected_time":1776528639,"recheck_after":1771328024.258782,"explanation_url":""}
+medforge-caddy  | {"level":"info","ts":1771306367.605413,"msg":"got renewal info","names":["*.medforge.medforge.xyz"],"window_start":1776410299,"window_end":1776565749,"selected_time":1776487393,"recheck_after":1771323869.605402,"explanation_url":""}
+medforge-caddy  | {"level":"info","ts":1771306367.6055338,"msg":"successfully downloaded available certificate chains","count":2,"first_url":"https://acme-v02.api.letsencrypt.org/acme/cert/069a0115e4a2ed178052a1ee532375619439"}
+medforge-caddy  | {"level":"info","ts":1771306367.6254954,"logger":"tls.obtain","msg":"certificate obtained successfully","identifier":"*.medforge.medforge.xyz","issuer":"acme-v02.api.letsencrypt.org-directory"}
+medforge-caddy  | {"level":"info","ts":1771306367.6256194,"logger":"tls.obtain","msg":"releasing lock","identifier":"*.medforge.medforge.xyz"}
+medforge-caddy  | {"level":"info","ts":1771306367.6257603,"msg":"got renewal info","names":["medforge.medforge.xyz"],"window_start":1776410300,"window_end":1776565749,"selected_time":1776469732,"recheck_after":1771324124.625748,"explanation_url":""}
+medforge-caddy  | {"level":"info","ts":1771306367.6258597,"msg":"successfully downloaded available certificate chains","count":2,"first_url":"https://acme-v02.api.letsencrypt.org/acme/cert/0695796cb7a4556419e7de1603ccfb03438b"}
+medforge-caddy  | {"level":"info","ts":1771306367.63485,"logger":"tls.obtain","msg":"certificate obtained successfully","identifier":"medforge.medforge.xyz","issuer":"acme-v02.api.letsencrypt.org-directory"}
+medforge-caddy  | {"level":"info","ts":1771306367.6349745,"logger":"tls.obtain","msg":"releasing lock","identifier":"medforge.medforge.xyz"}
+medforge-api    | 2026-02-17 05:33:10 [error    ] session.start_failed           error="[Errno 2] No such file or directory: 'zfs' [code=workspace_command_failed, operation=zfs list]" request_id=e22d0aa2-3f7e-4253-9338-bc4e3afb7877 session_id=aae553bc-6b85-4b7d-901a-085ec2a0b9cd slug=s3fmvpjx user_id=a75eac0f-52d4-4a1b-bedd-7f7fc07bbf19
+medforge-web    | Error: Failed to find Server Action "93984c50". This request might be from an older or newer deployment.
+medforge-web    | Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+medforge-web    |     at ignore-listed frames
+medforge-web    | Error: Failed to find Server Action "4563bc7e". This request might be from an older or newer deployment.
+medforge-web    | Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+medforge-web    |     at ignore-listed frames
+[Kmedforge-caddy has been recreated
+[Kmedforge-api has been recreated
+medforge-caddy  | {"level":"info","ts":1771306513.5937226,"msg":"shutting down apps, then terminating","signal":"SIGTERM"}
+medforge-caddy  | {"level":"warn","ts":1771306513.593774,"msg":"exiting; byeee!! 👋","signal":"SIGTERM"}
+medforge-caddy  | {"level":"info","ts":1771306513.5938148,"logger":"http","msg":"servers shutting down with eternal grace period"}
+medforge-caddy  | {"level":"info","ts":1771306513.872408,"logger":"admin","msg":"stopped previous server","address":"localhost:2019"}
+medforge-caddy  | {"level":"info","ts":1771306513.8724573,"msg":"shutdown complete","signal":"SIGTERM","exit_code":0}
+[Kmedforge-caddy exited with code 0
+[Kmedforge-api exited with code 0
+[Kmedforge-web has been recreated
+[Kmedforge-web exited with code 0
+medforge-caddy  | {"level":"info","ts":1771306524.7773843,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+medforge-caddy  | {"level":"info","ts":1771306524.777552,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+medforge-caddy  | {"level":"info","ts":1771306524.7775838,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+medforge-caddy  | {"level":"warn","ts":1771306524.7784407,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771306524.778565,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"info","ts":1771306524.7794306,"msg":"adapted config to JSON","adapter":"caddyfile"}
+medforge-caddy  | {"level":"info","ts":1771306524.7807868,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+medforge-caddy  | {"level":"info","ts":1771306524.7811007,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+medforge-caddy  | {"level":"info","ts":1771306524.7811182,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+medforge-caddy  | {"level":"info","ts":1771306524.7811716,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x1ea5c7238080"}
+medforge-caddy  | {"level":"warn","ts":1771306524.782956,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"warn","ts":1771306524.783047,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"info","ts":1771306524.7830591,"logger":"http.log","msg":"server running","name":"remaining_auto_https_redirects","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306524.7830975,"logger":"http","msg":"enabling HTTP/3 listener","addr":":443"}
+medforge-caddy  | {"level":"info","ts":1771306524.7833843,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306524.7834044,"logger":"http","msg":"enabling automatic TLS certificate management","domains":["*.medforge.medforge.xyz","api.medforge.medforge.xyz","medforge.medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771306524.7846968,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+medforge-caddy  | {"level":"info","ts":1771306524.7847786,"msg":"serving initial configuration"}
+medforge-caddy  | {"level":"info","ts":1771306524.7871933,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"ee5e951a-3cd9-48f9-a27d-2b27b46567f3","try_again":1771392924.7871907,"try_again_in":86399.999999369}
+medforge-caddy  | {"level":"info","ts":1771306524.7873795,"logger":"tls","msg":"finished cleaning storage units"}
+medforge-web    | ▲ Next.js 16.1.6
+medforge-web    | - Local:         http://localhost:3000
+medforge-web    | - Network:       http://0.0.0.0:3000
+medforge-web    | 
+medforge-web    | ✓ Starting...
+medforge-web    | ✓ Ready in 73ms
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-api    | 2026-02-17 05:35:35 [error    ] session.start_failed           error="cannot create 'tank/medforge/workspaces/118eeb1b-bb85-4a9f-8df6-64231bed349e': permission denied [code=workspace_command_failed, operation=zfs create tank/medforge/workspaces/118eeb1b-bb85-4a9f-8df6-64231bed349e]" request_id=83189f37-a749-48dd-b856-a5789ab490e9 session_id=61f6ffa0-1aa2-489d-8d9a-b9a1923430be slug=sdjqfepw user_id=118eeb1b-bb85-4a9f-8df6-64231bed349e
+[Kmedforge-api has been recreated
+[Kmedforge-api exited with code 0
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-api    | 2026-02-17 05:36:03 [error    ] session.start_failed           error="cannot mount 'tank/medforge/workspaces/9d267617-da1b-44d8-8e98-0851c70ad374': Permission denied\nfilesystem successfully created, but not mounted [code=workspace_command_failed, operation=zfs create tank/medforge/workspaces/9d267617-da1b-44d8-8e98-0851c70ad374]" request_id=ea7d2720-20ed-43e6-a77e-226402b611b2 session_id=3f78dac7-cc59-4069-b869-fea0b522f9d3 slug=5fchg7f3 user_id=9d267617-da1b-44d8-8e98-0851c70ad374
+[Kmedforge-api has been recreated
+[Kmedforge-api exited with code 0
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-api    | 2026-02-17 05:36:36 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 request_id=971e21a3-7c18-4d0a-8c64-fddf77d02c65 session_id=979993a0-05d8-4d10-848c-73accbc73395 slug=tahi3rpm tier=PUBLIC user_id=ef5f7e25-974a-493f-8915-2c559b89afec
+medforge-api    | 2026-02-17 05:36:47 [info     ] session.start                  gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 request_id=fe1d9ab4-19b3-4d9e-b3b3-c2b1d75887f7 session_id=20ed081a-ca5e-495c-805e-8436997eb6d4 slug=ete4dify tier=PUBLIC user_id=3fa53d38-1e96-495f-80fd-bb283914487c
+medforge-api    | 2026-02-17 05:36:56 [info     ] session.stop                   correlation_id=b91f813a-55d7-47f8-b9fd-08794217c430 gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=979993a0-05d8-4d10-848c-73accbc73395 slug=tahi3rpm tier=PUBLIC user_id=ef5f7e25-974a-493f-8915-2c559b89afec
+medforge-api    | 2026-02-17 05:36:56 [info     ] session.recovery.decision      container_id=685938edf6b6aaa49ccea795f35c85d2c28a865459059edf8f4874d9f7c54ba1 correlation_id=b91f813a-55d7-47f8-b9fd-08794217c430 recovery_mode=poll session_id=20ed081a-ca5e-495c-805e-8436997eb6d4 slug=ete4dify state=running user_id=3fa53d38-1e96-495f-80fd-bb283914487c
+medforge-api    | 2026-02-17 05:36:56 [info     ] session.poll.updated           correlation_id=b91f813a-55d7-47f8-b9fd-08794217c430 recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 05:37:26 [info     ] session.recovery.decision      container_id=685938edf6b6aaa49ccea795f35c85d2c28a865459059edf8f4874d9f7c54ba1 correlation_id=80452264-9d6d-4434-ae5a-2a457e3c9f14 recovery_mode=poll session_id=20ed081a-ca5e-495c-805e-8436997eb6d4 slug=ete4dify state=running user_id=3fa53d38-1e96-495f-80fd-bb283914487c
+medforge-api    | 2026-02-17 05:37:38 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 request_id=9d88a751-d446-4c17-8d63-cad7b64c18f6 session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 tier=PUBLIC user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:37:56 [info     ] session.stop                   correlation_id=e709a7a9-4cf5-4689-9f4f-fed4194fe3c9 gpu_id=1 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=20ed081a-ca5e-495c-805e-8436997eb6d4 slug=ete4dify tier=PUBLIC user_id=3fa53d38-1e96-495f-80fd-bb283914487c
+medforge-api    | 2026-02-17 05:37:56 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=e709a7a9-4cf5-4689-9f4f-fed4194fe3c9 recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:37:56 [info     ] session.poll.updated           correlation_id=e709a7a9-4cf5-4689-9f4f-fed4194fe3c9 recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 05:38:26 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=ac31bea8-a946-43b2-aab4-4a958cca6bae recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:38:56 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=ba1d8368-95b0-4a5a-8623-05b9606a6c35 recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:39:27 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=f55c1844-e11d-4b8b-a2cf-feb146ebd1f0 recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-caddy  | {"level":"info","ts":1771306771.1442962,"msg":"shutting down apps, then terminating","signal":"SIGTERM"}
+medforge-caddy  | {"level":"warn","ts":1771306771.1444232,"msg":"exiting; byeee!! 👋","signal":"SIGTERM"}
+medforge-caddy  | {"level":"info","ts":1771306771.144491,"logger":"http","msg":"servers shutting down with eternal grace period"}
+medforge-caddy  | {"level":"info","ts":1771306771.1448638,"logger":"admin","msg":"stopped previous server","address":"localhost:2019"}
+medforge-caddy  | {"level":"info","ts":1771306771.144875,"msg":"shutdown complete","signal":"SIGTERM","exit_code":0}
+[Kmedforge-caddy exited with code 0 (restarting)
+medforge-caddy  | {"level":"info","ts":1771306772.218785,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+medforge-caddy  | {"level":"info","ts":1771306772.2189584,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+medforge-caddy  | {"level":"info","ts":1771306772.2190006,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+medforge-caddy  | {"level":"warn","ts":1771306772.2197423,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771306772.2198613,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"info","ts":1771306772.220547,"msg":"adapted config to JSON","adapter":"caddyfile"}
+medforge-caddy  | {"level":"info","ts":1771306772.2218072,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+medforge-caddy  | {"level":"info","ts":1771306772.2221537,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+medforge-caddy  | {"level":"info","ts":1771306772.222193,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+medforge-caddy  | {"level":"info","ts":1771306772.2222428,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x3ce82722ad80"}
+medforge-caddy  | {"level":"info","ts":1771306772.2252839,"logger":"http","msg":"enabling HTTP/3 listener","addr":":443"}
+medforge-caddy  | {"level":"info","ts":1771306772.2256172,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"warn","ts":1771306772.2256799,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"warn","ts":1771306772.225683,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"info","ts":1771306772.2256901,"logger":"http.log","msg":"server running","name":"remaining_auto_https_redirects","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306772.225694,"logger":"http","msg":"enabling automatic TLS certificate management","domains":["medforge.medforge.xyz","*.medforge.medforge.xyz","api.medforge.medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771306772.2270603,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+medforge-caddy  | {"level":"info","ts":1771306772.2270708,"msg":"serving initial configuration"}
+medforge-caddy  | {"level":"info","ts":1771306772.2301679,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"ee5e951a-3cd9-48f9-a27d-2b27b46567f3","try_again":1771393172.2301645,"try_again_in":86399.999999559}
+medforge-caddy  | {"level":"info","ts":1771306772.2303772,"logger":"tls","msg":"finished cleaning storage units"}
+medforge-api    | 2026-02-17 05:39:57 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=bd85e807-c9ee-4243-aabf-9f31a996a361 recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-caddy  | {"level":"info","ts":1771306825.4605825,"msg":"shutting down apps, then terminating","signal":"SIGTERM"}
+medforge-caddy  | {"level":"warn","ts":1771306825.4609375,"msg":"exiting; byeee!! 👋","signal":"SIGTERM"}
+medforge-caddy  | {"level":"info","ts":1771306825.4610312,"logger":"http","msg":"servers shutting down with eternal grace period"}
+medforge-caddy  | {"level":"info","ts":1771306825.4613264,"logger":"admin","msg":"stopped previous server","address":"localhost:2019"}
+medforge-caddy  | {"level":"info","ts":1771306825.4615629,"msg":"shutdown complete","signal":"SIGTERM","exit_code":0}
+[Kmedforge-caddy exited with code 0 (restarting)
+medforge-caddy  | {"level":"info","ts":1771306826.5011656,"msg":"maxprocs: Leaving GOMAXPROCS=128: CPU quota undefined"}
+medforge-caddy  | {"level":"info","ts":1771306826.5043015,"msg":"GOMEMLIMIT is updated","package":"github.com/KimMachineGun/automemlimit/memlimit","GOMEMLIMIT":486097462886,"previous":9223372036854775807}
+medforge-caddy  | {"level":"info","ts":1771306826.504344,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+medforge-caddy  | {"level":"warn","ts":1771306826.5053034,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-For: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"warn","ts":1771306826.50545,"logger":"caddyfile","msg":"Unnecessary header_up X-Forwarded-Proto: the reverse proxy's default behavior is to pass headers to the upstream"}
+medforge-caddy  | {"level":"info","ts":1771306826.5062377,"msg":"adapted config to JSON","adapter":"caddyfile"}
+medforge-caddy  | {"level":"info","ts":1771306826.50755,"logger":"admin","msg":"admin endpoint started","address":"localhost:2019","enforce_origin":false,"origins":["//localhost:2019","//[::1]:2019","//127.0.0.1:2019"]}
+medforge-caddy  | {"level":"info","ts":1771306826.5078735,"logger":"http.auto_https","msg":"server is listening only on the HTTPS port but has no TLS connection policies; adding one to enable TLS","server_name":"srv0","https_port":443}
+medforge-caddy  | {"level":"info","ts":1771306826.5079145,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv0"}
+medforge-caddy  | {"level":"info","ts":1771306826.5079544,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x261d8a0ee080"}
+medforge-caddy  | {"level":"info","ts":1771306826.5085378,"logger":"http","msg":"enabling HTTP/3 listener","addr":":443"}
+medforge-caddy  | {"level":"info","ts":1771306826.50882,"logger":"http.log","msg":"server running","name":"srv0","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"warn","ts":1771306826.5088654,"logger":"http","msg":"HTTP/2 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"warn","ts":1771306826.5088685,"logger":"http","msg":"HTTP/3 skipped because it requires TLS","network":"tcp","addr":":80"}
+medforge-caddy  | {"level":"info","ts":1771306826.5088701,"logger":"http.log","msg":"server running","name":"remaining_auto_https_redirects","protocols":["h1","h2","h3"]}
+medforge-caddy  | {"level":"info","ts":1771306826.5088732,"logger":"http","msg":"enabling automatic TLS certificate management","domains":["medforge.medforge.xyz","*.medforge.medforge.xyz","api.medforge.medforge.xyz"]}
+medforge-caddy  | {"level":"info","ts":1771306826.509739,"msg":"autosaved config (load with --resume flag)","file":"/config/caddy/autosave.json"}
+medforge-caddy  | {"level":"info","ts":1771306826.5097504,"msg":"serving initial configuration"}
+medforge-caddy  | {"level":"info","ts":1771306826.5123374,"logger":"tls","msg":"storage cleaning happened too recently; skipping for now","storage":"FileStorage:/data/caddy","instance":"ee5e951a-3cd9-48f9-a27d-2b27b46567f3","try_again":1771393226.5123355,"try_again_in":86399.999999549}
+medforge-caddy  | {"level":"info","ts":1771306826.512458,"logger":"tls","msg":"finished cleaning storage units"}
+medforge-api    | 2026-02-17 05:40:27 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=51a2ff41-ff6b-4777-b921-7c09ce5251e5 recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-caddy  | {"level":"error","ts":1771306830.5274634,"logger":"http.log.error","msg":"dial tcp 172.30.0.4:8080: i/o timeout","request":{"remote_ip":"61.72.69.176","remote_port":"56742","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"s-rs2zy6k6.medforge.medforge.xyz","uri":"/","headers":{"Cookie":["REDACTED"],"User-Agent":["curl/8.5.0"],"Accept":["*/*"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"s-rs2zy6k6.medforge.medforge.xyz"}},"duration":3.031594744,"status":502,"err_id":"9mrycw5xw","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-caddy  | {"level":"error","ts":1771306837.8292944,"logger":"http.log.error","msg":"dial tcp 172.30.0.4:8080: i/o timeout","request":{"remote_ip":"61.72.69.176","remote_port":"60218","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"s-rs2zy6k6.medforge.medforge.xyz","uri":"/","headers":{"Accept":["*/*"],"Cookie":["REDACTED"],"User-Agent":["curl/8.5.0"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"s-rs2zy6k6.medforge.medforge.xyz"}},"duration":3.026551139,"status":502,"err_id":"rjhpgv7eg","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-api    | 2026-02-17 05:40:57 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=6fa090f4-9ef2-4d95-a194-f48462d0b8e1 recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:41:27 [info     ] session.recovery.decision      container_id=45e365a15d9192b7962420bdbb720caf4926a6ae1a934cfc471ab32e38358865 correlation_id=38728132-8a40-441a-b00c-23f9f3174ded recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 state=running user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:41:57 [info     ] session.stop                   correlation_id=ef889439-d2bd-44e2-96f7-7f82ba8c6df1 gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=requested recovery_mode=poll session_id=0e4d409e-f82b-4510-8574-48674b3ac133 slug=rs2zy6k6 tier=PUBLIC user_id=2e047ad4-2fda-43cc-b267-c6fa512e6e29
+medforge-api    | 2026-02-17 05:41:57 [info     ] session.poll.updated           correlation_id=ef889439-d2bd-44e2-96f7-7f82ba8c6df1 recovery_mode=poll updated=1
+medforge-api    | 2026-02-17 05:42:07 [info     ] session.start                  gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 request_id=50c55dc8-545b-4abc-8282-384ef243df25 session_id=0e056a6e-16a0-481d-af55-55a6e1e5b444 slug=jmpitxah tier=PUBLIC user_id=5da9697b-c0fd-402f-b0ef-8057a6afcbae
+medforge-caddy  | {"level":"error","ts":1771306928.162675,"logger":"http.log.error","msg":"dial tcp 172.30.0.4:8080: connect: connection refused","request":{"remote_ip":"61.72.69.176","remote_port":"59658","client_ip":"61.72.69.176","proto":"HTTP/2.0","method":"GET","host":"s-jmpitxah.medforge.medforge.xyz","uri":"/","headers":{"User-Agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.35 Safari/537.36"],"Accept":["text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"],"Sec-Fetch-User":["?1"],"Accept-Language":["en-US"],"Sec-Fetch-Mode":["navigate"],"Accept-Encoding":["gzip, deflate, br, zstd"],"Cookie":["REDACTED"],"Sec-Fetch-Site":["none"],"Sec-Fetch-Dest":["document"],"Priority":["u=0, i"],"Sec-Ch-Ua":["\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"HeadlessChrome\";v=\"134\""],"Sec-Ch-Ua-Mobile":["?0"],"Sec-Ch-Ua-Platform":["\"Windows\""],"Upgrade-Insecure-Requests":["1"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"s-jmpitxah.medforge.medforge.xyz"}},"duration":0.026198056,"status":502,"err_id":"d9bz5ekbc","err_trace":"reverseproxy.statusError (reverseproxy.go:1390)"}
+medforge-api    | 2026-02-17 05:42:27 [info     ] session.recovery.decision      container_id=4fecfaa15eb1a398d3aed78c8040244221a3c8dd3b1936a7cbc1ea02464531f2 correlation_id=d4d7f1c3-75b5-421b-8101-293df0bec739 recovery_mode=poll session_id=0e056a6e-16a0-481d-af55-55a6e1e5b444 slug=jmpitxah state=running user_id=5da9697b-c0fd-402f-b0ef-8057a6afcbae
+medforge-api    | 2026-02-17 05:42:57 [info     ] session.recovery.decision      container_id=4fecfaa15eb1a398d3aed78c8040244221a3c8dd3b1936a7cbc1ea02464531f2 correlation_id=e3fe61ff-8d44-4f75-9559-2096fb9395af recovery_mode=poll session_id=0e056a6e-16a0-481d-af55-55a6e1e5b444 slug=jmpitxah state=running user_id=5da9697b-c0fd-402f-b0ef-8057a6afcbae
+medforge-api    | 2026-02-17 05:43:27 [info     ] session.recovery.decision      container_id=4fecfaa15eb1a398d3aed78c8040244221a3c8dd3b1936a7cbc1ea02464531f2 correlation_id=4bdd09da-c2c9-44bd-8ccc-4d5f7b7b9d42 recovery_mode=poll session_id=0e056a6e-16a0-481d-af55-55a6e1e5b444 slug=jmpitxah state=running user_id=5da9697b-c0fd-402f-b0ef-8057a6afcbae
+[Kmedforge-api exited with code 0 (restarting)
+medforge-api    | INFO:     Started server process [1]
+medforge-api    | INFO:     Waiting for application startup.
+medforge-api    | INFO  [alembic.runtime.migration] Context impl MySQLImpl.
+medforge-api    | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+medforge-api    | 2026-02-17 05:43:39 [info     ] session.recovery.decision      container_id=None correlation_id=b2c21afa-e733-445f-9e65-c078161809fb recovery_mode=startup session_id=0e056a6e-16a0-481d-af55-55a6e1e5b444 slug=jmpitxah state=missing user_id=5da9697b-c0fd-402f-b0ef-8057a6afcbae
+medforge-api    | 2026-02-17 05:43:39 [info     ] session.stop                   correlation_id=b2c21afa-e733-445f-9e65-c078161809fb gpu_id=0 pack_id=00000000-0000-0000-0000-000000000100 reason=container_death recovery_mode=startup session_id=0e056a6e-16a0-481d-af55-55a6e1e5b444 slug=jmpitxah tier=PUBLIC user_id=5da9697b-c0fd-402f-b0ef-8057a6afcbae
+medforge-api    | 2026-02-17 05:43:39 [info     ] session.reconcile.updated      correlation_id=b2c21afa-e733-445f-9e65-c078161809fb recovery_mode=startup updated=1
+

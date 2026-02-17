@@ -25,6 +25,8 @@ from .test_helpers import assert_problem as _assert_problem
 
 USER_A = "00000000-0000-0000-0000-000000000011"
 USER_B = "00000000-0000-0000-0000-000000000012"
+ALLOWED_ORIGIN = "https://medforge.example.com"
+ALLOWED_API_ORIGIN = "https://api.medforge.example.com"
 
 
 @pytest.fixture(autouse=True)
@@ -87,8 +89,9 @@ def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens)
 def test_origin_matrix_allowed_origins(client, auth_tokens) -> None:
     """Known-good origins must be accepted on protected endpoints."""
     good_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        ALLOWED_ORIGIN,
+        ALLOWED_API_ORIGIN,
+        "https://s-origintest.medforge.example.com",
     ]
     for origin in good_origins:
         resp = client.post(
@@ -124,13 +127,13 @@ def test_auth_signup_rate_limit_429(client) -> None:
         client.post(
             "/api/v1/auth/signup",
             json={"email": f"ratelimit-{i}@example.com", "password": "sufficiently-strong"},
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": ALLOWED_ORIGIN},
         )
 
     response = client.post(
         "/api/v1/auth/signup",
         json={"email": "ratelimit-overflow@example.com", "password": "sufficiently-strong"},
-        headers={"Origin": "http://localhost:3000"},
+        headers={"Origin": ALLOWED_ORIGIN},
     )
     payload = _assert_problem(
         response,
@@ -147,13 +150,13 @@ def test_auth_login_rate_limit_429(client) -> None:
         client.post(
             "/api/v1/auth/login",
             json={"email": f"ratelimit-login-{i}@example.com", "password": "wrong"},
-            headers={"Origin": "http://localhost:3000"},
+            headers={"Origin": ALLOWED_ORIGIN},
         )
 
     response = client.post(
         "/api/v1/auth/login",
         json={"email": "ratelimit-login-overflow@example.com", "password": "wrong"},
-        headers={"Origin": "http://localhost:3000"},
+        headers={"Origin": ALLOWED_ORIGIN},
     )
     payload = _assert_problem(
         response,
@@ -171,7 +174,7 @@ def test_logout_invalidates_token(client) -> None:
     signup = client.post(
         "/api/v1/auth/signup",
         json={"email": "fixation-test@example.com", "password": "sufficiently-strong"},
-        headers={"Origin": "http://localhost:3000"},
+        headers={"Origin": ALLOWED_ORIGIN},
     )
     assert signup.status_code == 201
     cookie_header = signup.headers.get("set-cookie", "")
@@ -184,7 +187,7 @@ def test_logout_invalidates_token(client) -> None:
             break
     assert token is not None
 
-    logout = client.post("/api/v1/auth/logout", headers={"Origin": "http://localhost:3000"})
+    logout = client.post("/api/v1/auth/logout", headers={"Origin": ALLOWED_ORIGIN})
     assert logout.status_code == 200
 
     me = client.get("/api/v1/me", headers={"Cookie": f"medforge_session={token}"})

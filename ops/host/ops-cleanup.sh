@@ -10,12 +10,25 @@
 #   bash ops/host/ops-cleanup.sh --force       # remove orphaned containers
 #
 # Optional env:
-#   API_URL=http://127.0.0.1:8000
+#   API_URL=https://api.medforge.<DOMAIN>
+#   DOMAIN=<root-domain>
+#   COMPOSE_ENV=deploy/compose/.env
 
 set -euo pipefail
 
-API_URL="${API_URL:-http://127.0.0.1:8000}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REMOTE_PUBLIC_LIB="${ROOT_DIR}/ops/host/lib/remote-public.sh"
+COMPOSE_ENV="${COMPOSE_ENV:-${ROOT_DIR}/deploy/compose/.env}"
+API_URL="${API_URL:-}"
 FORCE=false
+
+if [ ! -f "${REMOTE_PUBLIC_LIB}" ]; then
+  echo "ERROR: missing helper library: ${REMOTE_PUBLIC_LIB}"
+  exit 1
+fi
+# shellcheck disable=SC1091
+# shellcheck source=ops/host/lib/remote-public.sh
+source "${REMOTE_PUBLIC_LIB}"
 
 usage() {
   cat <<'USAGE'
@@ -25,6 +38,17 @@ Options:
   --force    Actually remove orphaned containers (default: dry-run)
   -h, --help Show this help message
 USAGE
+}
+
+resolve_api_url() {
+  local domain="${DOMAIN:-}"
+  if [ -z "${domain}" ]; then
+    domain="$(remote_read_env_value "${COMPOSE_ENV}" DOMAIN | tr -d '[:space:]')"
+  fi
+  if [ -z "${domain}" ]; then
+    return 1
+  fi
+  printf "https://%s\n" "$(remote_public_api_host "${domain}")"
 }
 
 require_cmd() {
@@ -72,6 +96,14 @@ main() {
   parse_args "$@"
   require_cmd docker
   require_cmd curl
+
+  if [ -z "${API_URL}" ]; then
+    if ! API_URL="$(resolve_api_url)"; then
+      echo "ERROR: API_URL is required when DOMAIN is unavailable."
+      echo "Set API_URL explicitly or configure DOMAIN in ${COMPOSE_ENV}."
+      exit 1
+    fi
+  fi
 
   echo "=== MedForge Orphan Cleanup ==="
   echo "API URL: ${API_URL}"

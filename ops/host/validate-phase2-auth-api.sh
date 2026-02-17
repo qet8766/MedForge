@@ -6,11 +6,14 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
 PHASE_ID="phase2-auth-api"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
 EVIDENCE_FILE="${EVIDENCE_FILE:-${EVIDENCE_DIR}/${PHASE_ID}-${RUN_ID}.md}"
 LOG_FILE="${LOG_FILE:-${EVIDENCE_DIR}/${PHASE_ID}-${RUN_ID}.log}"
+ENV_FILE="${ENV_FILE:-${ROOT_DIR}/deploy/compose/.env}"
+DOMAIN="${DOMAIN:-}"
 
 PHASE_STATUS="INCONCLUSIVE"
 
@@ -19,6 +22,8 @@ usage() {
 Usage: bash ops/host/validate-phase2-auth-api.sh
 
 Optional env:
+  ENV_FILE=deploy/compose/.env
+  DOMAIN=<override>
   EVIDENCE_DIR=docs/evidence/<date>
   EVIDENCE_FILE=<explicit markdown path>
   LOG_FILE=<explicit log path>
@@ -100,11 +105,86 @@ run_auth_contract_tests() {
     tests/test_control_plane.py::test_session_stop_rejects_disallowed_origin
 }
 
+run_remote_auth_smoke() {
+  local api_base web_base
+  local email cookie_jar signup_code login_code me_code logout_code me_after_logout_code
+  local assert_code expected_code
+
+  api_base="https://$(remote_public_api_host "${DOMAIN}")"
+  web_base="https://$(remote_public_web_host "${DOMAIN}")"
+  email="phase2-remote-${RUN_ID}@medforge.test"
+  cookie_jar="$(mktemp /tmp/phase2-remote-cookie.XXXXXX)"
+
+  signup_code="$(curl -sS -o /tmp/phase2-remote-signup.out -w '%{http_code}' \
+    -X POST "${api_base}/api/v1/auth/signup" \
+    -H 'content-type: application/json' \
+    -H "Origin: ${web_base}" \
+    -c "${cookie_jar}" -b "${cookie_jar}" \
+    -d "{\"email\":\"${email}\",\"password\":\"Password123!\"}")"
+
+  if [ "${signup_code}" = "409" ]; then
+    login_code="$(curl -sS -o /tmp/phase2-remote-login.out -w '%{http_code}' \
+      -X POST "${api_base}/api/v1/auth/login" \
+      -H 'content-type: application/json' \
+      -H "Origin: ${web_base}" \
+      -c "${cookie_jar}" -b "${cookie_jar}" \
+      -d "{\"email\":\"${email}\",\"password\":\"Password123!\"}")"
+    assert_code="${login_code}"
+    expected_code="200"
+  else
+    assert_code="${signup_code}"
+    expected_code="201"
+  fi
+
+  if [ "${assert_code}" != "${expected_code}" ]; then
+    echo "ERROR: phase2 remote auth bootstrap failed (code=${assert_code}, expected=${expected_code})"
+    rm -f "${cookie_jar}"
+    return 1
+  fi
+
+  me_code="$(curl -sS -o /tmp/phase2-remote-me.out -w '%{http_code}' \
+    -b "${cookie_jar}" \
+    "${api_base}/api/v1/me")"
+  if [ "${me_code}" != "200" ]; then
+    echo "ERROR: phase2 remote /api/v1/me failed (code=${me_code})"
+    rm -f "${cookie_jar}"
+    return 1
+  fi
+
+  logout_code="$(curl -sS -o /tmp/phase2-remote-logout.out -w '%{http_code}' \
+    -X POST "${api_base}/api/v1/auth/logout" \
+    -H "Origin: ${web_base}" \
+    -b "${cookie_jar}" -c "${cookie_jar}")"
+  if [ "${logout_code}" != "200" ]; then
+    echo "ERROR: phase2 remote logout failed (code=${logout_code})"
+    rm -f "${cookie_jar}"
+    return 1
+  fi
+
+  me_after_logout_code="$(curl -sS -o /tmp/phase2-remote-me2.out -w '%{http_code}' \
+    -b "${cookie_jar}" \
+    "${api_base}/api/v1/me")"
+  if [ "${me_after_logout_code}" != "401" ]; then
+    echo "ERROR: phase2 remote auth invalidation failed (code=${me_after_logout_code})"
+    rm -f "${cookie_jar}"
+    return 1
+  fi
+
+  rm -f "${cookie_jar}"
+}
+
 main() {
   if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
     usage
     exit 0
   fi
+
+  if [ -z "${DOMAIN}" ]; then
+    DOMAIN="$(remote_read_env_value "${ENV_FILE}" DOMAIN)"
+  fi
+  remote_require_domain "${DOMAIN}"
+
+  require_cmd curl
 
   mkdir -p "${EVIDENCE_DIR}"
   : >"${LOG_FILE}"
@@ -116,10 +196,12 @@ main() {
     echo ""
     echo "Runtime:"
     echo "- run id: \`${RUN_ID}\`"
+    echo "- public domain: \`${DOMAIN}\`"
     echo "- api tests path: \`apps/api/tests\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 
+  run_check "Remote-Public Auth Smoke" "run_remote_auth_smoke"
   run_check "Auth and Session Contract Tests" "run_auth_contract_tests"
 
   PHASE_STATUS="PASS"

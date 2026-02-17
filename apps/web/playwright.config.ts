@@ -1,8 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.E2E_BASE_URL?.trim() || "http://medforge.localtest.me:18080";
+const domain = process.env.E2E_DOMAIN?.trim() || process.env.DOMAIN?.trim() || "";
+const baseURL = process.env.E2E_BASE_URL?.trim() || (domain ? `https://medforge.${domain}` : "");
 const ignoreHTTPSErrors = (process.env.E2E_IGNORE_HTTPS_ERRORS ?? "true").toLowerCase() === "true";
 const hostRules = process.env.E2E_CHROMIUM_HOST_RULES?.trim();
+
+if (!baseURL) {
+  throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-public e2e.");
+}
 
 export default defineConfig({
   testDir: "./e2e",

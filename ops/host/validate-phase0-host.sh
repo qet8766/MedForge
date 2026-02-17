@@ -6,6 +6,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${ROOT_DIR}/ops/host/lib/remote-public.sh"
 PHASE_ID="phase0-host"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -36,14 +37,6 @@ Optional env:
   EVIDENCE_FILE=<explicit markdown path>
   LOG_FILE=<explicit log path>
 USAGE
-}
-
-read_env_value() {
-  local key="$1"
-  if [ ! -f "${ENV_FILE}" ]; then
-    return 0
-  fi
-  awk -F= -v k="${key}" '$1 == k {print substr($0, index($0, "=") + 1); exit}' "${ENV_FILE}"
 }
 
 require_cmd() {
@@ -126,15 +119,17 @@ zfs_probe() {
 }
 
 tls_probe() {
-  local status
-  local openssl_log
+  local status web_host api_host
 
-  curl -fsS "https://medforge.${DOMAIN}" >/dev/null
-  curl -fsS "https://api.medforge.${DOMAIN}/healthz" >/dev/null
+  web_host="$(remote_public_web_host "${DOMAIN}")"
+  api_host="$(remote_public_api_host "${DOMAIN}")"
+
+  curl -fsS "https://${web_host}" >/dev/null
+  curl -fsS "https://${api_host}/healthz" >/dev/null
 
   status="$(curl -sS -o /tmp/${PHASE_ID}-session-proxy.out -w '%{http_code}' \
-    "https://api.medforge.${DOMAIN}/api/v1/auth/session-proxy" \
-    -H "Host: s-phase0check.medforge.${DOMAIN}")"
+    "https://${api_host}/api/v1/auth/session-proxy" \
+    -H "Host: $(remote_public_session_host "phase0check" "${DOMAIN}")")"
 
   case "${status}" in
     401|403|404)
@@ -145,13 +140,8 @@ tls_probe() {
       ;;
   esac
 
-  openssl_log="/tmp/${PHASE_ID}-openssl.out"
-  openssl s_client \
-    -verify_return_error \
-    -verify_hostname "medforge.${DOMAIN}" \
-    -connect "medforge.${DOMAIN}:443" \
-    </dev/null >"${openssl_log}" 2>&1
-  rg -q "Verify return code: 0" "${openssl_log}"
+  remote_tls_verify_host "${web_host}"
+  remote_tls_verify_host "${api_host}"
 }
 
 main() {
@@ -162,7 +152,7 @@ main() {
 
   require_cmd curl
   require_cmd docker
-  require_cmd getent
+  require_cmd dig
   require_cmd nvidia-smi
   require_cmd openssl
   require_cmd rg
@@ -176,10 +166,10 @@ main() {
   fi
 
   if [ -z "${DOMAIN}" ]; then
-    DOMAIN="$(read_env_value DOMAIN)"
+    DOMAIN="$(remote_read_env_value "${ENV_FILE}" DOMAIN)"
   fi
   if [ -z "${PACK_IMAGE}" ]; then
-    PACK_IMAGE="$(read_env_value PACK_IMAGE)"
+    PACK_IMAGE="$(remote_read_env_value "${ENV_FILE}" PACK_IMAGE)"
   fi
 
   if [ -z "${DOMAIN}" ]; then
@@ -212,7 +202,7 @@ main() {
   run_check "GPU Runtime In Container" "docker run --rm --gpus all --entrypoint nvidia-smi '${PACK_IMAGE}'"
   run_check "ZFS Pool Health" "zpool list && zpool status '${ZPOOL_NAME}' && sudo -n zfs list '${ZFS_WORKSPACE_ROOT}'"
   run_check "ZFS Write Read Snapshot Probe" "zfs_probe"
-  run_check "Wildcard DNS Resolution" "getent hosts 'medforge.${DOMAIN}' && getent hosts 'api.medforge.${DOMAIN}' && getent hosts 's-phase0check.medforge.${DOMAIN}'"
+  run_check "Public DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase0check'"
   run_check "Strict TLS Validation" "tls_probe"
 
   PHASE_STATUS="PASS"
