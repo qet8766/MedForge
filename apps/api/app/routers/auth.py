@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, Literal, cast
 from uuid import UUID
 
@@ -15,12 +15,9 @@ from app.models import AuthSession, User
 from app.rate_limit import require_auth_rate_limit
 from app.schemas import AuthCredentials, AuthUserResponse, SessionActionResponse
 from app.security import create_session_token, hash_password, hash_session_token, normalize_email, verify_password
+from app.util import utcnow
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
 
 
 def _cookie_samesite(settings: Settings) -> Literal["lax", "strict", "none"]:
@@ -60,7 +57,7 @@ def _issue_auth_session(
     settings: Settings,
 ) -> str:
     token = create_session_token()
-    now = _utcnow()
+    now = utcnow()
     auth_session = AuthSession(
         user_id=user_id,
         token_hash=hash_session_token(token, settings.session_secret),
@@ -167,7 +164,7 @@ def logout(
             .where(revoked_at_col.is_(None))
         ).first()
         if auth_session is not None:
-            auth_session.revoked_at = _utcnow()
+            auth_session.revoked_at = utcnow()
             session.add(auth_session)
             session.commit()
 

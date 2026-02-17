@@ -14,7 +14,7 @@ function resolveApiBase(): string {
   return NEXT_PUBLIC_API_URL || API_BASE_FALLBACK;
 }
 
-export function normalizeApiPath(path: string): string {
+function normalizeApiPath(path: string): string {
   if (!path.startsWith("/")) {
     throw new Error(`API path must start with '/': ${path}`);
   }

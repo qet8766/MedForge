@@ -13,6 +13,7 @@ from app.config import Settings, get_settings
 from app.database import get_session
 from app.models import AuthSession, Role, User
 from app.security import hash_session_token
+from app.util import utcnow
 
 
 @dataclass(frozen=True)
@@ -22,10 +23,6 @@ class AuthPrincipal:
     email: str | None
     can_use_internal: bool
     source: str
-
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -85,7 +82,7 @@ def _principal_from_cookie(
 
     auth_session, user = row
 
-    now = _utcnow()
+    now = utcnow()
     created_at = _as_utc(auth_session.created_at)
     expires_at = _as_utc(auth_session.expires_at)
     hard_expires_at = created_at + timedelta(seconds=settings.auth_max_ttl_seconds)

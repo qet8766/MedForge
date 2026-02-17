@@ -4,7 +4,6 @@ import base64
 import secrets
 import uuid
 from collections.abc import Iterable
-from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import UUID
 
@@ -16,16 +15,13 @@ from sqlmodel import Session, select
 from app.deps import AuthPrincipal
 from app.models import Exposure, GpuDevice, Pack, PackExposure, Role, SessionRecord, SessionStatus, User
 from app.seed import DEFAULT_PACK_ID
+from app.util import utcnow
 
 ACTIVE_SESSION_STATUSES: tuple[SessionStatus, ...] = (
     SessionStatus.STARTING,
     SessionStatus.RUNNING,
     SessionStatus.STOPPING,
 )
-
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
 
 
 def _slug_token() -> str:
@@ -190,7 +186,7 @@ def mark_session_stopping(session: Session, *, row: SessionRecord) -> SessionRec
 def finalize_running(session: Session, *, row: SessionRecord, container_id: str) -> SessionRecord:
     row.status = SessionStatus.RUNNING
     row.container_id = container_id
-    row.started_at = _utcnow()
+    row.started_at = utcnow()
     row.error_message = None
     session.add(row)
     session.commit()
@@ -200,7 +196,7 @@ def finalize_running(session: Session, *, row: SessionRecord, container_id: str)
 
 def finalize_stopped(session: Session, *, row: SessionRecord) -> SessionRecord:
     row.status = SessionStatus.STOPPED
-    row.stopped_at = _utcnow()
+    row.stopped_at = utcnow()
     row.error_message = None
     session.add(row)
     session.commit()
@@ -210,7 +206,7 @@ def finalize_stopped(session: Session, *, row: SessionRecord) -> SessionRecord:
 
 def finalize_error(session: Session, *, row: SessionRecord, error_message: str) -> SessionRecord:
     row.status = SessionStatus.ERROR
-    row.stopped_at = _utcnow()
+    row.stopped_at = utcnow()
     row.error_message = error_message[:2000]
     session.add(row)
     session.commit()
