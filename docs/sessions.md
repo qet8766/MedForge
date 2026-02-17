@@ -3,8 +3,7 @@
 > V2 Update (2026-02-17): Canonical session APIs are split by exposure:
 > - `POST /api/v2/external/sessions`, `GET /api/v2/external/sessions/current`, `POST /api/v2/external/sessions/{id}/stop`
 > - `POST /api/v2/internal/sessions`, `GET /api/v2/internal/sessions/current`, `POST /api/v2/internal/sessions/{id}/stop` (requires `can_use_internal`)
-> Runtime env now uses `MEDFORGE_EXPOSURE=EXTERNAL|INTERNAL`.
-> Any remaining unsplit `/api/v2/sessions` or pre-split field wording below is legacy text and should be read as superseded by this v2 split.
+> Runtime env uses `MEDFORGE_EXPOSURE=EXTERNAL|INTERNAL`.
 
 Implementation status note (2026-02-17):
 
@@ -21,8 +20,6 @@ Implementation status note (2026-02-17):
 
 ### Scope
 
-Session runtime lifecycle and recovery contract.
-
 ### In Scope
 
 - session create/stop/current endpoint behavior and invariants
@@ -33,9 +30,7 @@ Session runtime lifecycle and recovery contract.
 ### Out of Scope
 
 - auth cookie and wildcard forward-auth contract (`@docs/auth-routing.md`)
-- competition submission/scoring contracts (`@docs/competitions.md`)
 - schema/table definitions (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
-- operational runbook commands (`@docs/runbook.md`)
 
 ### Canonical Sources
 
@@ -43,7 +38,6 @@ Session runtime lifecycle and recovery contract.
 - `@apps/api/app/session_lifecycle.py`
 - `@apps/api/app/session_recovery.py`
 - `@apps/api/app/session_runtime/`
-- `@docs/phase-checking-strategy.md`
 
 ### Packs
 

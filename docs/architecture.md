@@ -21,8 +21,6 @@ Implementation status note (2026-02-17):
 
 ### Out of Scope
 
-- day-2 operational procedures and remediation commands (`docs/runbook.md`)
-- phase execution steps and acceptance commands (`docs/phase-checking-strategy.md`)
 - endpoint-level deep contracts owned by domain docs (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
 - schema-level entities/enums/invariants owned by runtime code (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
 
@@ -40,8 +38,6 @@ Canonical runtime claim precedence:
 1. Latest accepted phase evidence in `docs/evidence/<date>/`
 2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-external.sh`
 3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
-
-Status vocabulary: `VERIFIED` (evidenced), `UNVERIFIED` (described but not evidenced), `NOT_IMPLEMENTED` (modeled but runtime-blocked).
 
 ## Platform Scope
 

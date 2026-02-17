@@ -91,8 +91,6 @@ Expected on-disk dataset coverage:
 **Public eval path:** `${PUBLIC_EVAL_DATA_ROOT}/titanic-kaggle/`
 **Metric:** accuracy | **Source:** [Kaggle](https://www.kaggle.com/competitions/titanic)
 
-Predict which passengers survived the 1912 Titanic shipwreck.
-
 #### Files
 
 | File | Rows | Description |
