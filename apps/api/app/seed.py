@@ -88,7 +88,7 @@ SEED_DATASETS: list[DatasetSeed] = [
     {
         "slug": "oxford-iiit-pet",
         "title": "Oxford-IIIT Pet",
-        "source": "kaggle",
+        "source": "oxford-vgg",
         "exposure": Exposure.INTERNAL,
         "license": "Dataset terms per source mirror",
         "dataset_dir": "oxford-iiit-pet",

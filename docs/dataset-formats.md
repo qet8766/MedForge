@@ -81,6 +81,7 @@ Expected on-disk dataset coverage:
 | `titanic-kaggle` | `train.csv` | `test.csv`, `sample_submission.csv`, `manifest.json` (under competition slug) |
 | `rsna-pneumonia-detection` | `train_labels.csv`, `detailed_class_info.csv`, `train_images/` | `test_ids.csv`, `sample_submission.csv`, `test_images/`, `manifest.json` (under competition slug) |
 | `cifar-100` | `train_labels.csv`, `train/` | `test_ids.csv`, `sample_submission.csv`, `test/`, `manifest.json` (under competition slug) |
+| `oxford-iiit-pet` | `train_labels.csv`, `train_images/`, `train_masks/`, `train_trimaps/` | `test_ids.csv`, `sample_submission.csv`, `test_images/`, `manifest.json` (under competition slug) |
 
 ---
 
@@ -225,6 +226,68 @@ image_id,label
 
 ---
 
+### 4. Oxford-IIIT Pet Segmentation
+
+**Dataset slug:** `oxford-iiit-pet` | **Competition slug:** `oxford-pet-segmentation`
+**Training path:** `${TRAINING_DATA_ROOT}/oxford-iiit-pet/`
+**Public eval path:** `${PUBLIC_EVAL_DATA_ROOT}/oxford-pet-segmentation/`
+**Metric:** mean_iou | **Source:** [Oxford VGG](https://www.robots.ox.ac.uk/~vgg/data/pets/)
+
+Binary semantic segmentation — segment pet foreground from background in variable-resolution images. Scored with mean IoU over the test split. Dataset provided by Oxford Visual Geometry Group and IIIT Hyderabad.
+
+#### Files
+
+| File | Count / Rows | Description |
+|------|--------------|-------------|
+| `train_labels.csv` | ~3,680 rows | Image IDs + RLE masks + dimensions (trainval split) |
+| `train_images/` | ~3,680 `.jpg` | Training images (variable resolution) |
+| `train_masks/` | ~3,680 `.png` | Binary masks (255=foreground, 0=background — matches scoring format) |
+| `train_trimaps/` | ~3,680 `.png` | Original 3-class trimaps (1=pet, 2=background, 3=boundary) |
+| `test_ids.csv` | ~3,669 rows | Test image IDs + dimensions (no masks) |
+| `test_images/` | ~3,669 `.jpg` | Test images |
+| `sample_submission.csv` | ~3,669 rows | Sample submission (empty RLE masks) |
+
+Placement contract: `train_labels.csv`, `train_images/`, `train_masks/`, and `train_trimaps/` live under `${TRAINING_DATA_ROOT}/oxford-iiit-pet/`; `test_ids.csv`, `test_images/`, `sample_submission.csv`, and `manifest.json` live under `${PUBLIC_EVAL_DATA_ROOT}/oxford-pet-segmentation/`.
+
+#### Trimap and boundary annotations
+
+`train_trimaps/` contains the original 3-class annotations from the Oxford-IIIT Pet dataset:
+- **1** = pet (foreground)
+- **2** = background
+- **3** = boundary (pet/background edge)
+
+`train_masks/` contains binary masks derived from the trimaps where only value 1 is foreground. Boundary pixels (trimap value 3) are excluded from scoring ground truth (don't-care), following the original paper's evaluation protocol.
+
+Users may leverage the full trimaps for advanced training strategies such as boundary-aware loss functions, multi-class training, or edge-sensitive architectures.
+
+#### Columns
+
+| Column | Type | Notes |
+|--------|------|-------|
+| image_id | string | Filename stem (e.g. `Abyssinian_1`, `Bengal_42`) |
+| rle_mask | string | RLE-encoded binary mask (row-major, 1-based); empty string = no foreground |
+| width | int | Image width in pixels (in `train_labels.csv` and `test_ids.csv`) |
+| height | int | Image height in pixels (in `train_labels.csv` and `test_ids.csv`) |
+
+#### Submission
+
+```
+image_id,rle_mask
+Abyssinian_1,5 10 20 15
+Bengal_42,
+```
+
+`image_id` must match every ID in `test_ids.csv`. `rle_mask` is a space-separated string of `start length` pairs (1-based pixel indices, row-major / C-order flattening). Empty string means no foreground pixels predicted.
+
+#### RLE convention
+
+- Flatten mask array in row-major (C) order to a 1D vector of length `width * height`.
+- Find contiguous runs of 1s (foreground pixels).
+- Encode each run as `start length` where `start` is the 1-based index of the first pixel in the run.
+- Example: a 4x4 mask with foreground at pixels [0,1,2,5,6] (0-based) encodes as `1 3 6 2`.
+
+---
+
 ### Re-download / Rehydrate
 
 Use these when files are missing or corrupted.
@@ -302,6 +365,20 @@ with (eval_root / "sample_submission.csv").open("w", newline="", encoding="utf-8
 PY
 ```
 
+#### Oxford-IIIT Pet (torchvision)
+
+```bash
+python3 tools/data-prep/prepare-oxford-pet.py
+```
+
+Quick checks:
+
+```bash
+find ${TRAINING_DATA_ROOT}/oxford-iiit-pet/train_images -type f -name '*.jpg' | wc -l                 # ~3680
+find ${PUBLIC_EVAL_DATA_ROOT}/oxford-pet-segmentation/test_images -type f -name '*.jpg' | wc -l       # ~3669
+wc -l < ${TEST_HOLDOUTS_DIR}/oxford-pet-segmentation/holdout_labels.csv                               # ~3670 (header + data)
+```
+
 Quick checks:
 
 ```bash
@@ -335,5 +412,6 @@ Scoring inputs are split by sensitivity:
 | `titanic-survival` | `PassengerId,Survived` (int 0/1) |
 | `rsna-pneumonia-detection` | `patientId,x,y,width,height,Target` (bbox + int 0/1) |
 | `cifar-100-classification` | `image_id,label` (int 0–99) |
+| `oxford-pet-segmentation` | `image_id,rle_mask` (1-based RLE, row-major) |
 
 Titanic `titanic-survival` uses labelled Kaggle test IDs (`892..1309`, 418 rows) from `wesleyhowe/titanic-labelled-test-set/test_augmented.csv`, stored server-side only.

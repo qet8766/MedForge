@@ -509,6 +509,133 @@ def test_validate_submission_schema_unsupported_slug_rejected(tmp_path: Path) ->
         validate_submission_schema("unknown-competition", submission)
 
 
+# ---------------------------------------------------------------------------
+# Oxford-IIIT Pet segmentation scoring tests
+# ---------------------------------------------------------------------------
+
+
+def _pet_segmentation_competition() -> Competition:
+    return Competition(
+        slug="oxford-pet-segmentation",
+        title="Oxford-IIIT Pet Segmentation",
+        description="",
+        competition_exposure=CompetitionExposure.INTERNAL,
+        status=CompetitionStatus.ACTIVE,
+        is_permanent=True,
+        metric="mean_iou",
+        higher_is_better=True,
+        submission_cap_per_day=20,
+        dataset_id="00000000-0000-0000-0000-000000000004",
+    )
+
+
+def test_pet_segmentation_perfect_score(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    labels = tmp_path / "labels.csv"
+    submission = tmp_path / "submission.csv"
+
+    _write_manifest(
+        manifest,
+        evaluation_split_version="v1-pet-seg-test",
+        id_column="image_id",
+        target_columns=["rle_mask"],
+        expected_row_count=2,
+    )
+    labels.write_text(
+        "image_id,rle_mask\n"
+        "Abyssinian_1,1 5 10 3\n"
+        "Bengal_42,2 4\n",
+        encoding="utf-8",
+    )
+    # Identical submission -> perfect IoU
+    submission.write_text(
+        "image_id,rle_mask\n"
+        "Abyssinian_1,1 5 10 3\n"
+        "Bengal_42,2 4\n",
+        encoding="utf-8",
+    )
+
+    result = score_submission_file(
+        competition=_pet_segmentation_competition(),
+        submission_path=submission,
+        labels_path=labels,
+        manifest_path=manifest,
+    )
+    assert result.primary_score == 1.0
+    assert result.metric_version == "mean_iou-v1"
+    assert result.evaluation_split_version == "v1-pet-seg-test"
+
+
+def test_pet_segmentation_partial_overlap(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    labels = tmp_path / "labels.csv"
+    submission = tmp_path / "submission.csv"
+
+    _write_manifest(
+        manifest,
+        evaluation_split_version="v1-pet-seg-test",
+        id_column="image_id",
+        target_columns=["rle_mask"],
+        expected_row_count=1,
+    )
+    # Label pixels (0-based): {0,1,2,3,4} (from "1 5")
+    labels.write_text(
+        "image_id,rle_mask\n"
+        "img_1,1 5\n",
+        encoding="utf-8",
+    )
+    # Pred pixels (0-based): {2,3,4,5,6} (from "3 5")
+    # Intersection: {2,3,4} = 3 pixels
+    # Union: {0,1,2,3,4,5,6} = 7 pixels
+    # IoU = 3/7
+    submission.write_text(
+        "image_id,rle_mask\n"
+        "img_1,3 5\n",
+        encoding="utf-8",
+    )
+
+    result = score_submission_file(
+        competition=_pet_segmentation_competition(),
+        submission_path=submission,
+        labels_path=labels,
+        manifest_path=manifest,
+    )
+    assert abs(result.primary_score - 3.0 / 7.0) < 1e-9
+
+
+def test_pet_segmentation_empty_masks(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    labels = tmp_path / "labels.csv"
+    submission = tmp_path / "submission.csv"
+
+    _write_manifest(
+        manifest,
+        evaluation_split_version="v1-pet-seg-test",
+        id_column="image_id",
+        target_columns=["rle_mask"],
+        expected_row_count=1,
+    )
+    # Both label and submission have empty masks -> IoU = 1.0
+    labels.write_text(
+        "image_id,rle_mask\n"
+        "img_empty,\n",
+        encoding="utf-8",
+    )
+    submission.write_text(
+        "image_id,rle_mask\n"
+        "img_empty,\n",
+        encoding="utf-8",
+    )
+
+    result = score_submission_file(
+        competition=_pet_segmentation_competition(),
+        submission_path=submission,
+        labels_path=labels,
+        manifest_path=manifest,
+    )
+    assert result.primary_score == 1.0
+
+
 def test_validate_submission_schema_detection_partial_bbox_rejected(tmp_path: Path) -> None:
     submission = tmp_path / "submission.csv"
     submission.write_text(
