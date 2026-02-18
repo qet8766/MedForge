@@ -21,3 +21,6 @@ test-results/
 .gate56-*.log
 deploy/compose/.env
 temporary scripts/
+
+# Worktrees
+.worktrees/
