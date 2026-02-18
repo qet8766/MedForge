@@ -1,0 +1,127 @@
+GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-2a3838bd-ff28-e77b-f9e2-47738d6eae8b)
+GPU 1: NVIDIA GeForce RTX 5090 (UUID: GPU-9819d8ad-e2ff-83f2-a70b-e9198091b4f0)
+GPU 2: NVIDIA GeForce RTX 5090 (UUID: GPU-b766fded-5bf3-a334-68f9-5e421a770bd9)
+GPU 3: NVIDIA GeForce RTX 5090 (UUID: GPU-a8bca0c2-09ee-3884-a2a6-bf9bd174c374)
+GPU 4: NVIDIA GeForce RTX 5090 (UUID: GPU-6ee9e898-d1a5-6070-a846-ae4171fb5e5a)
+GPU 5: NVIDIA GeForce RTX 5090 (UUID: GPU-e87fc627-5ce4-265b-4e1a-96e53001fb63)
+GPU 6: NVIDIA GeForce RTX 5090 (UUID: GPU-b668f8be-ce4c-2463-cd26-0001bae260d7)
+Wed Feb 18 13:39:20 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 5090        Off |   00000000:01:00.0 Off |                  N/A |
+|  0%   28C    P8             15W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA GeForce RTX 5090        Off |   00000000:11:00.0 Off |                  N/A |
+|  0%   26C    P8              8W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA GeForce RTX 5090        Off |   00000000:21:00.0 Off |                  N/A |
+|  0%   26C    P8             28W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA GeForce RTX 5090        Off |   00000000:C1:00.0 Off |                  N/A |
+|  0%   26C    P8              7W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   4  NVIDIA GeForce RTX 5090        Off |   00000000:D1:00.0 Off |                  N/A |
+|  0%   26C    P8             27W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   5  NVIDIA GeForce RTX 5090        Off |   00000000:E1:00.0 Off |                  N/A |
+|  0%   28C    P8             14W /  600W |     142MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   6  NVIDIA GeForce RTX 5090        Off |   00000000:F1:00.0 Off |                  N/A |
+|  0%   28C    P8             14W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                        4MiB |
+|    1   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                        4MiB |
+|    2   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                        4MiB |
+|    3   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                        4MiB |
+|    4   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                        4MiB |
+|    5   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                       96MiB |
+|    5   N/A  N/A          252826      G   /usr/bin/gnome-shell                     17MiB |
+|    6   N/A  N/A          252669      G   /usr/lib/xorg/Xorg                        4MiB |
++-----------------------------------------------------------------------------------------+
+Wed Feb 18 04:39:21 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 5090        Off |   00000000:01:00.0 Off |                  N/A |
+|  0%   28C    P8             15W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA GeForce RTX 5090        Off |   00000000:11:00.0 Off |                  N/A |
+|  0%   27C    P8              8W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA GeForce RTX 5090        Off |   00000000:21:00.0 Off |                  N/A |
+|  0%   26C    P8             28W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA GeForce RTX 5090        Off |   00000000:C1:00.0 Off |                  N/A |
+|  0%   26C    P8              8W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   4  NVIDIA GeForce RTX 5090        Off |   00000000:D1:00.0 Off |                  N/A |
+|  0%   26C    P8             28W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   5  NVIDIA GeForce RTX 5090        Off |   00000000:E1:00.0 Off |                  N/A |
+|  0%   28C    P8             14W /  600W |     142MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   6  NVIDIA GeForce RTX 5090        Off |   00000000:F1:00.0 Off |                  N/A |
+|  0%   29C    P8             14W /  600W |      15MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+NAME   SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
+tank  29.1T  1.53T  27.6T        -         -     0%     5%  1.00x    ONLINE  -
+  pool: tank
+ state: ONLINE
+config:
+
+	NAME                                                             STATE     READ WRITE CKSUM
+	tank                                                             ONLINE       0     0     0
+	  raidz1-0                                                       ONLINE       0     0     0
+	    nvme-Samsung_SSD_9100_PRO_8TB_S7YHNJ0YA01917L                ONLINE       0     0     0
+	    nvme-Samsung_SSD_9100_PRO_8TB_S7YHNJ0YA01914Y                ONLINE       0     0     0
+	    nvme-Samsung_SSD_9100_PRO_with_Heatsink_8TB_S875NJ0YB01071N  ONLINE       0     0     0
+	    nvme-Samsung_SSD_9100_PRO_8TB_S7YHNJ0YA03733Z                ONLINE       0     0     0
+
+errors: No known data errors
+NAME                       USED  AVAIL  REFER  MOUNTPOINT
+tank/medforge/workspaces  21.2M  19.9T   907K  /tank/medforge/workspaces
+NAME                                                                                  USED  AVAIL  REFER  MOUNTPOINT
+tank/medforge/workspaces/phase0-validation-20260218T043920Z@phase0-20260218T043920Z     0B      -   140K  -
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176

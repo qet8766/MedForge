@@ -1,0 +1,295 @@
+ Image medforge-api:local Building 
+ Image compose-medforge-web Building 
+ Image compose-medforge-caddy Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.71kB done
+#1 DONE 0.0s
+
+#2 [medforge-web internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.29kB done
+#2 DONE 0.0s
+
+#3 [medforge-api internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.86kB done
+#3 DONE 0.1s
+
+#4 [medforge-caddy internal] load build definition from Dockerfile
+#4 transferring dockerfile: 450B done
+#4 DONE 0.1s
+
+#5 [medforge-web internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 0.0s
+
+#6 [medforge-web internal] load .dockerignore
+#6 transferring context:
+#6 transferring context: 391B done
+#6 DONE 0.0s
+
+#7 [medforge-web builder 1/6] FROM docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8
+#7 resolve docker.io/library/node:20-alpine@sha256:09e2b3d9726018aecf269bd35325f46bf75046a643a66d28360ec71132750ec8 0.0s done
+#7 DONE 0.0s
+
+#8 [medforge-web internal] load build context
+#8 transferring context: 634.17kB 0.0s done
+#8 DONE 0.0s
+
+#9 [medforge-caddy internal] load metadata for docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#9 ...
+
+#10 [medforge-web builder 2/6] WORKDIR /app
+#10 CACHED
+
+#11 [medforge-web builder 3/6] COPY package.json package-lock.json* ./
+#11 DONE 0.1s
+
+#12 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#12 ...
+
+#13 [medforge-api] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#13 DONE 1.2s
+
+#9 [medforge-caddy internal] load metadata for docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#9 DONE 1.2s
+
+#14 [medforge-caddy internal] load metadata for docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#14 DONE 1.2s
+
+#15 [medforge-api] docker-image://docker.io/docker/dockerfile:1@sha256:b6afd42430b15f2d2a4c5a02b919e98a525b785b1aaff16747d2f623364e39b6
+#15 resolve docker.io/docker/dockerfile:1@sha256:b6afd42430b15f2d2a4c5a02b919e98a525b785b1aaff16747d2f623364e39b6 0.1s done
+#15 CACHED
+
+#16 [medforge-caddy internal] load .dockerignore
+#16 transferring context: 2B done
+#16 DONE 0.0s
+
+#17 [medforge-caddy stage-1 1/2] FROM docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#17 resolve docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+#17 resolve docker.io/library/caddy:2@sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb 0.1s done
+#17 DONE 0.1s
+
+#18 [medforge-caddy builder 1/2] FROM docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc
+#18 resolve docker.io/library/caddy:2-builder@sha256:01668408cc26e2e00c9d067c30cb43b2ba14ad1f2808beda55503cb2a31f59dc 0.1s done
+#18 DONE 0.1s
+
+#19 [medforge-caddy builder 2/2] RUN xcaddy build --with github.com/caddy-dns/cloudflare
+#19 CACHED
+
+#20 [medforge-caddy stage-1 2/2] COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+#20 CACHED
+
+#21 [medforge-caddy] exporting to image
+#21 exporting layers done
+#21 exporting manifest sha256:b463700f506373c916c63869919fdbd5abee2f47b37cc7989f27f84e7229a2ae done
+#21 exporting config sha256:6b334487a46eb84c770484b68651c5f4ea0121c5d5e4a3788c2d622ea095c9fd done
+#21 exporting attestation manifest sha256:e460ee1b546ff3e013955179f60164958ffb3922f2db73be3991a8cbe6cb5041
+#21 exporting attestation manifest sha256:e460ee1b546ff3e013955179f60164958ffb3922f2db73be3991a8cbe6cb5041 0.0s done
+#21 exporting manifest list sha256:359b9fa1ee7db9521d3edb59ef4e7fad71563018d367e49ece6ef5e3dc414f8d 0.0s done
+#21 naming to docker.io/library/compose-medforge-caddy:latest done
+#21 unpacking to docker.io/library/compose-medforge-caddy:latest 0.0s done
+#21 DONE 0.1s
+
+#22 [medforge-caddy] resolving provenance for metadata file
+#22 DONE 0.0s
+
+#23 [medforge-api internal] load metadata for docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab
+#23 DONE 1.1s
+
+#12 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#12 ...
+
+#24 [medforge-api internal] load .dockerignore
+#24 transferring context: 443B done
+#24 DONE 0.0s
+
+#25 [medforge-api stage-0 1/8] FROM docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab
+#25 resolve docker.io/library/python:3.12-slim@sha256:9e01bf1ae5db7649a236da7be1e94ffbbbdd7a93f867dd0d8d5720d9e1f89fab 0.0s done
+#25 DONE 0.0s
+
+#26 [medforge-api internal] load build context
+#26 transferring context: 328.55kB 0.0s done
+#26 DONE 0.0s
+
+#27 [medforge-api stage-0 4/8] RUN curl -LsSf "https://astral.sh/uv/0.8.22/install.sh" | sh     && ln -s /root/.local/bin/uv /usr/local/bin/uv
+#27 CACHED
+
+#28 [medforge-api stage-0 5/8] COPY pyproject.toml uv.lock ./
+#28 CACHED
+
+#29 [medforge-api stage-0 2/8] WORKDIR /app
+#29 CACHED
+
+#30 [medforge-api stage-0 3/8] RUN --mount=type=cache,target=/var/cache/apt,sharing=locked     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked     apt-get update     && sed -i 's/^Components: .*/Components: main contrib non-free non-free-firmware/'        /etc/apt/sources.list.d/debian.sources     && apt-get update     && apt-get install -y --no-install-recommends        curl ca-certificates kmod zfsutils-linux
+#30 CACHED
+
+#31 [medforge-api stage-0 6/8] RUN --mount=type=cache,target=/root/.cache/uv     uv export --format requirements-txt --no-dev --frozen --no-emit-project       > /tmp/requirements.txt     && uv pip install --system -r /tmp/requirements.txt     && rm /tmp/requirements.txt
+#31 CACHED
+
+#32 [medforge-api stage-0 7/8] COPY . .
+#32 DONE 0.1s
+
+#12 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#12 ...
+
+#33 [medforge-api stage-0 8/8] RUN groupadd -g 995 docker || true     && useradd -r -m -s /bin/false -G docker medforge     && chown -R medforge:medforge /app
+#33 DONE 1.3s
+
+#34 [medforge-api] exporting to image
+#34 exporting layers 0.3s done
+#34 exporting manifest sha256:53403a9804b051e1c70eb18a9588ecf42e5edbc828a632960282094ba6254751
+#34 exporting manifest sha256:53403a9804b051e1c70eb18a9588ecf42e5edbc828a632960282094ba6254751 0.1s done
+#34 exporting config sha256:5e3d45626522ba71aa8569609d31d21d67b89e80e61bac470a00b341caaa720a 0.0s done
+#34 exporting attestation manifest sha256:52f7633b4a75c6ce6a1b42499cd1e97222b843964512adb55d6d27b13b8b9544
+#34 exporting attestation manifest sha256:52f7633b4a75c6ce6a1b42499cd1e97222b843964512adb55d6d27b13b8b9544 0.1s done
+#34 exporting manifest list sha256:a597bdb6e7838f0216756832db7179cba5e8fd447b5ad8bb2e833b109c442321 0.0s done
+#34 naming to docker.io/library/medforge-api:local done
+#34 unpacking to docker.io/library/medforge-api:local
+#34 unpacking to docker.io/library/medforge-api:local 0.1s done
+#34 DONE 0.6s
+
+#12 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#12 4.301 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#12 ...
+
+#35 [medforge-api] resolving provenance for metadata file
+#35 DONE 0.0s
+
+#12 [medforge-web builder 4/6] RUN npm ci --no-audit --no-fund
+#12 11.89 
+#12 11.89 added 739 packages in 11s
+#12 11.89 npm notice
+#12 11.89 npm notice New major version of npm available! 10.8.2 -> 11.10.0
+#12 11.89 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.10.0
+#12 11.89 npm notice To update run: npm install -g npm@11.10.0
+#12 11.89 npm notice
+#12 DONE 14.1s
+
+#36 [medforge-web builder 5/6] COPY . .
+#36 DONE 0.3s
+
+#37 [medforge-web builder 6/6] RUN npm run build
+#37 0.464 
+#37 0.464 > medforge-web@0.1.0 build
+#37 0.464 > next build
+#37 0.464 
+#37 1.129 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#37 1.129 This information is used to shape Next.js' roadmap and prioritize features.
+#37 1.129 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#37 1.129 https://nextjs.org/telemetry
+#37 1.129 
+#37 1.155 ▲ Next.js 16.1.6 (Turbopack)
+#37 1.155 
+#37 1.298   Creating an optimized production build ...
+#37 9.159 ✓ Compiled successfully in 7.5s
+#37 9.167   Running TypeScript ...
+#37 15.20   Collecting page data using 127 workers ...
+#37 21.72   Generating static pages using 127 workers (0/15) ...
+#37 22.37   Generating static pages using 127 workers (3/15) 
+#37 22.37   Generating static pages using 127 workers (7/15) 
+#37 22.56   Generating static pages using 127 workers (11/15) 
+#37 22.56 ✓ Generating static pages using 127 workers (15/15) in 837.8ms
+#37 22.56   Finalizing page optimization ...
+#37 22.90 
+#37 22.90 Route (app)
+#37 22.90 ┌ ƒ /
+#37 22.90 ├ ○ /_not-found
+#37 22.90 ├ ○ /admin
+#37 22.90 ├ ○ /admin/competitions
+#37 22.90 ├ ○ /admin/sessions
+#37 22.90 ├ ○ /admin/users
+#37 22.90 ├ ○ /auth/login
+#37 22.90 ├ ○ /auth/signup
+#37 22.90 ├ ƒ /competitions
+#37 22.90 ├ ƒ /competitions/[slug]
+#37 22.90 ├ ƒ /competitions/[slug]/history
+#37 22.90 ├ ƒ /competitions/[slug]/leaderboard
+#37 22.90 ├ ƒ /competitions/[slug]/submit
+#37 22.90 ├ ƒ /dashboard
+#37 22.90 ├ ƒ /datasets
+#37 22.90 ├ ƒ /datasets/[slug]
+#37 22.90 ├ ○ /onboarding
+#37 22.90 ├ ƒ /profile/[handle]
+#37 22.90 ├ ○ /rankings
+#37 22.90 ├ ○ /sessions
+#37 22.90 ├ ƒ /sessions/[id]
+#37 22.90 ├ ○ /settings
+#37 22.90 ├ ○ /settings/account
+#37 22.90 ├ ○ /settings/appearance
+#37 22.90 └ ○ /settings/profile
+#37 22.90 
+#37 22.90 
+#37 22.90 ○  (Static)   prerendered as static content
+#37 22.90 ƒ  (Dynamic)  server-rendered on demand
+#37 22.90 
+#37 DONE 23.1s
+
+#38 [medforge-web runner 3/6] RUN addgroup --system --gid 1001 nextjs     && adduser --system --uid 1001 nextjs
+#38 CACHED
+
+#39 [medforge-web runner 4/6] COPY --from=builder /app/public ./public
+#39 CACHED
+
+#40 [medforge-web runner 5/6] COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
+#40 DONE 0.4s
+
+#41 [medforge-web runner 6/6] COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+#41 DONE 0.1s
+
+#42 [medforge-web] exporting to image
+#42 exporting layers
+#42 exporting layers 3.0s done
+#42 exporting manifest sha256:170d803659c946086dd0b602532bf21f41932d8e8be41611b01f125e3c7b8359 0.0s done
+#42 exporting config sha256:1e54538ea83f4547933b37ec19b09e7795737f5a9dd179d7bc1a43a929221441 0.0s done
+#42 exporting attestation manifest sha256:72c40df524772a0b42a7ad6ff0fbac75b5b600fdbc27bdde7e9387a3d5ccdc21 0.1s done
+#42 exporting manifest list sha256:37af1543ab4360b1b4916cb87ae6454b588617723fc026479ae392d87979cd63
+#42 exporting manifest list sha256:37af1543ab4360b1b4916cb87ae6454b588617723fc026479ae392d87979cd63 0.0s done
+#42 naming to docker.io/library/compose-medforge-web:latest done
+#42 unpacking to docker.io/library/compose-medforge-web:latest
+#42 unpacking to docker.io/library/compose-medforge-web:latest 0.5s done
+#42 DONE 3.6s
+
+#43 [medforge-web] resolving provenance for metadata file
+#43 DONE 0.0s
+ Image compose-medforge-caddy Built 
+ Image medforge-api:local Built 
+ Image compose-medforge-web Built 
+time="2026-02-18T13:29:24+09:00" level=warning msg="Found orphan containers ([medforge-web-dev]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container medforge-db Running 
+ Container medforge-caddy Recreate 
+ Container medforge-api Recreate 
+ Container medforge-api-worker Recreate 
+ Container medforge-caddy Recreated 
+ Container medforge-api Recreated 
+ Container medforge-web Recreate 
+ Container medforge-web Recreated 
+ Container medforge-api-worker Recreated 
+ Container medforge-api-worker Starting 
+ Container medforge-caddy Starting 
+ Container medforge-api Starting 
+ Container medforge-api-worker Started 
+ Container medforge-caddy Started 
+ Container medforge-api Started 
+ Container medforge-web Starting 
+ Container medforge-web Started 
+NAME                  IMAGE                                                                                COMMAND                  SERVICE               CREATED          STATUS                  PORTS
+medforge-api          medforge-api:local                                                                   "uvicorn app.main:ap…"   medforge-api          12 seconds ago   Up 1 second             8000/tcp
+medforge-api-worker   medforge-api:local                                                                   "python -m app.worke…"   medforge-api-worker   12 seconds ago   Up 1 second             8000/tcp
+medforge-caddy        compose-medforge-caddy                                                               "caddy run --config …"   medforge-caddy        12 seconds ago   Up 1 second             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 0.0.0.0:443->443/udp, [::]:443->443/udp, 2019/tcp
+medforge-db           mariadb:11@sha256:7fcb6109db2ba31b22a5709c1eaf9e84f76c9f1b9b9031ef09f24092f7f207cc   "docker-entrypoint.s…"   medforge-db           18 hours ago     Up 6 hours              3306/tcp
+medforge-web          compose-medforge-web                                                                 "docker-entrypoint.s…"   medforge-web          11 seconds ago   Up Less than a second   3000/tcp
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+medforge.medforge.xyz.
+61.72.69.176
+
+===== parallel check: External API Reachability =====
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+curl: (22) The requested URL returned error: 502
+api ready on attempt 4/60
+
+===== parallel check: External Web Reachability =====
+web ready on attempt 1/60
+gpu_count=7
+pack_count=1

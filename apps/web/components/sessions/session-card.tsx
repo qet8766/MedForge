@@ -32,7 +32,7 @@ export function SessionCard({ session }: SessionCardProps): React.JSX.Element {
               href={`/sessions/${session.id}`}
               className="hover:underline"
             >
-              <CardTitle className="font-mono">{session.slug}</CardTitle>
+              <CardTitle className="font-mono" data-testid="session-slug">{session.slug}</CardTitle>
             </Link>
             <StatusBadge status={session.status} />
           </div>

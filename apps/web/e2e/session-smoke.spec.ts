@@ -34,6 +34,7 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
 
   await page.goto("/sessions");
   await page.getByTestId("session-create").click();
+  await page.getByTestId("session-create-confirm").click();
   await page.getByTestId("session-current").waitFor({ state: "visible", timeout: 20_000 });
 
   const slugRaw = await page.getByTestId("session-slug").textContent();
@@ -70,7 +71,8 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
   await sessionPage.close();
 
   await page.getByTestId("session-stop").click();
-  await expect(page.getByTestId("session-status")).toContainText("Session stop requested.");
+  await page.getByTestId("session-stop-confirm").click();
+  await expect(page.getByText("Session stop requested.")).toBeVisible({ timeout: 10_000 });
 
   const resultFile = process.env.E2E_RESULT_FILE?.trim();
   if (resultFile) {

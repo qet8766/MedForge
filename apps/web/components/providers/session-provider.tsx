@@ -27,7 +27,7 @@ type SessionProviderProps = {
 };
 
 export function SessionProvider({ children }: SessionProviderProps): React.JSX.Element {
-  const { session, loading, error } = useSessionPolling();
+  const { session, loading, error, refresh: refreshPolling } = useSessionPolling();
   const surface = inferClientSurface();
 
   const createSession = useCallback(async (): Promise<SessionCreateResponse | null> => {
@@ -55,8 +55,8 @@ export function SessionProvider({ children }: SessionProviderProps): React.JSX.E
   }, [session, surface]);
 
   const refresh = useCallback(() => {
-    // Re-trigger by navigation; polling will pick it up
-  }, []);
+    refreshPolling();
+  }, [refreshPolling]);
 
   const value = useMemo<SessionContextValue>(
     () => ({ session, loading, error, createSession, stopSession, refresh }),

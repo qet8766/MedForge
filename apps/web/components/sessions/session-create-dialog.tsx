@@ -89,7 +89,7 @@ export function SessionCreateDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={creating}>
+          <Button onClick={handleCreate} disabled={creating} data-testid="session-create-confirm">
             {creating ? (
               <>
                 <Loader2 className="size-4 animate-spin" />

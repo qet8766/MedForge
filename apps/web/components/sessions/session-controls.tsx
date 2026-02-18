@@ -40,6 +40,7 @@ export function SessionControls({
           description={`This will stop session ${activeSessionSlug ?? "current"}. Any unsaved work in the IDE may be lost.`}
           confirmLabel="Stop Session"
           onConfirm={onStopSession}
+          confirmTestId="session-stop-confirm"
           trigger={
             <Button
               variant="destructive"

@@ -21,6 +21,7 @@ type ConfirmDialogProps = {
   onConfirm: () => void | Promise<void>;
   trigger: React.ReactNode;
   variant?: "destructive" | "default";
+  confirmTestId?: string;
 };
 
 export function ConfirmDialog({
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   onConfirm,
   trigger,
   variant = "destructive",
+  confirmTestId,
 }: ConfirmDialogProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,7 @@ export function ConfirmDialog({
             variant={variant}
             onClick={handleConfirm}
             disabled={loading}
+            data-testid={confirmTestId}
           >
             {loading ? "Processing..." : confirmLabel}
           </Button>

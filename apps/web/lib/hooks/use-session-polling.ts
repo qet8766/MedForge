@@ -9,6 +9,7 @@ type UseSessionPollingReturn = {
   session: SessionRead | null;
   loading: boolean;
   error: string | null;
+  refresh: () => void;
 };
 
 const DEFAULT_POLL_INTERVAL_MS = 3000;
@@ -19,7 +20,12 @@ export function useSessionPolling(
   const [session, setSession] = useState<SessionRead | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const refresh = useCallback(() => {
+    setRefreshToken((t) => t + 1);
+  }, []);
 
   const fetchSession = useCallback(async (): Promise<SessionRead | null> => {
     const surface = inferClientSurface();
@@ -43,7 +49,8 @@ export function useSessionPolling(
 
   useEffect(() => {
     void poll();
-  }, [poll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poll, refreshToken]);
 
   useEffect(() => {
     if (timerRef.current !== null) {
@@ -68,5 +75,5 @@ export function useSessionPolling(
     };
   }, [session, pollInterval, poll]);
 
-  return { session, loading, error };
+  return { session, loading, error, refresh };
 }
