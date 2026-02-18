@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 import docker
+
+log = logging.getLogger(__name__)
 
 from app.session_runtime.adapters.docker_inspect import inspect_container
 from app.session_runtime.adapters.docker_start import run_container, wait_until_running
@@ -52,7 +56,7 @@ class DockerContainerAdapter:
             failed = self._client.containers.get(container_id)
             failed.remove(force=True)
         except Exception:
-            return
+            log.warning("cleanup_failed_container: unable to remove container_id=%s", container_id, exc_info=True)
 
     def stop_container(self, request: SessionStopRequest) -> None:
         return stop_container(self._client, request)

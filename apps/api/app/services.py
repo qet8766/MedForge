@@ -67,7 +67,7 @@ def process_submission_by_id(session: Session, *, submission_id: UUID, settings:
     if submission is None:
         return None
 
-    if submission.score_status not in (ScoreStatus.QUEUED, ScoreStatus.FAILED):
+    if submission.score_status not in (ScoreStatus.QUEUED, ScoreStatus.FAILED, ScoreStatus.SCORING):
         return submission
 
     competition = session.get(Competition, submission.competition_id)

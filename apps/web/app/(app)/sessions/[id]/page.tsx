@@ -10,15 +10,12 @@ import {
   apiGet,
   apiPostJson,
   type SessionActionResponse,
-  type SessionListItem,
   type SessionRead,
 } from "@/lib/api";
 import { apiPathForSurface, inferClientSurface } from "@/lib/surface";
 import { isTransitioning } from "@/lib/status";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SessionDetail } from "@/components/sessions/session-detail";
-
-type SessionsApiResponse = SessionListItem[];
 
 export default function SessionDetailPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
@@ -31,17 +28,11 @@ export default function SessionDetailPage(): React.JSX.Element {
 
   const fetchSession = useCallback(async (): Promise<void> => {
     try {
-      const response = await apiGet<SessionsApiResponse>(
-        apiPathForSurface(surface, "/sessions")
+      const result = await apiGet<SessionRead>(
+        apiPathForSurface(surface, `/sessions/${sessionId}`)
       );
-      const match = response.find((s) => s.id === sessionId);
-      if (match) {
-        setSession(match);
-        setError(null);
-      } else {
-        setError(`Session ${sessionId} not found.`);
-        setSession(null);
-      }
+      setSession(result);
+      setError(null);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load session.";

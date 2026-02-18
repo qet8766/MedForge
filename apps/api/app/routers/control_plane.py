@@ -24,8 +24,8 @@ from app.schemas import (
     SessionRead,
 )
 from app.security import hash_password, normalize_email, verify_password
-from app.session_lifecycle import create_session_for_principal, stop_session_for_principal
-from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
+from app.session_lifecycle import create_session_for_principal, get_session_for_principal, stop_session_for_principal
+from app.session_repo import ACTIVE_SESSION_STATUSES, count_sessions_for_user, list_sessions_for_user
 from app.util import commit_and_refresh, parse_enum_filter
 
 router = APIRouter(tags=["control-plane"])
@@ -152,6 +152,38 @@ def create_internal_session(
         settings=settings,
         exposure=Exposure.INTERNAL,
     )
+
+
+@router.get("/external/sessions/{id}", response_model=ApiEnvelope[SessionRead])
+def get_external_session(
+    request: Request,
+    session_id: UUID = Path(alias="id"),
+    principal: AuthPrincipal = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> ApiEnvelope[SessionRead]:
+    result = get_session_for_principal(
+        session_id=session_id,
+        principal=principal,
+        session=session,
+        exposure=Exposure.EXTERNAL,
+    )
+    return envelope(request, result)
+
+
+@router.get("/internal/sessions/{id}", response_model=ApiEnvelope[SessionRead])
+def get_internal_session(
+    request: Request,
+    session_id: UUID = Path(alias="id"),
+    principal: AuthPrincipal = Depends(require_internal_access),
+    session: Session = Depends(get_session),
+) -> ApiEnvelope[SessionRead]:
+    result = get_session_for_principal(
+        session_id=session_id,
+        principal=principal,
+        session=session,
+        exposure=Exposure.INTERNAL,
+    )
+    return envelope(request, result)
 
 
 @router.post(
@@ -295,15 +327,18 @@ def _list_sessions_for_exposure(
     parsed_statuses = parse_enum_filter(status_filter, SessionStatus)
     statuses: tuple[SessionStatus, ...] | None = tuple(parsed_statuses) if parsed_statuses else None
 
-    all_rows = list_sessions_for_user(
+    page = list_sessions_for_user(
         session,
         user_id=principal.user_id,
         statuses=statuses,
         exposure=exposure,
+        limit=validated_limit + 1,
+        offset=offset,
     )
 
-    page = all_rows[offset : offset + validated_limit]
-    has_more = offset + validated_limit < len(all_rows)
+    has_more = len(page) > validated_limit
+    if has_more:
+        page = page[:validated_limit]
     next_cursor = encode_offset_cursor(offset + validated_limit) if has_more else None
 
     results = [SessionRead.model_validate(row) for row in page]

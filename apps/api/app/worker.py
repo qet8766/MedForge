@@ -3,10 +3,11 @@ from __future__ import annotations
 import argparse
 import logging
 import time
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from sqlalchemy import asc
-from sqlmodel import Session, select
+from sqlmodel import Session, or_, select
 
 from app.config import get_settings
 from app.database import engine, init_db
@@ -15,16 +16,26 @@ from app.services import process_submission_by_id
 
 log = logging.getLogger("medforge.worker")
 
+SCORING_STUCK_THRESHOLD = timedelta(minutes=10)
+
 
 def process_once(limit: int) -> int:
     processed = 0
     settings = get_settings()
 
     with Session(engine) as session:
+        scoring_cutoff = datetime.now(UTC) - SCORING_STUCK_THRESHOLD
+        created_at_col = cast(Any, Submission.created_at)
         queued = session.exec(
             select(Submission)
-            .where(Submission.score_status == ScoreStatus.QUEUED)
-            .order_by(asc(cast(Any, Submission.created_at)))
+            .where(
+                or_(
+                    Submission.score_status == ScoreStatus.QUEUED,
+                    (Submission.score_status == ScoreStatus.SCORING)
+                    & (created_at_col < scoring_cutoff),
+                )
+            )
+            .order_by(asc(created_at_col))
             .limit(limit)
         ).all()
 

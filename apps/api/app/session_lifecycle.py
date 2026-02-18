@@ -125,6 +125,19 @@ def _get_owned_or_admin_session(
     return row
 
 
+def get_session_for_principal(
+    *,
+    session_id: UUID,
+    principal: AuthPrincipal,
+    session: Session,
+    exposure: Exposure | None = None,
+) -> SessionRead:
+    row = _get_owned_or_admin_session(session=session, session_id=session_id, principal=principal)
+    if exposure is not None and row.exposure != exposure:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+    return SessionRead.model_validate(row)
+
+
 def stop_session_for_principal(
     *,
     session_id: UUID,

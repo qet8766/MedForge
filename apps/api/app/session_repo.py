@@ -224,6 +224,8 @@ def list_sessions_for_user(
     user_id: UUID,
     statuses: Iterable[SessionStatus] | None = None,
     exposure: Exposure | None = None,
+    limit: int | None = None,
+    offset: int = 0,
 ) -> list[SessionRecord]:
     statement = select(SessionRecord).where(SessionRecord.user_id == user_id)
     if statuses is not None:
@@ -232,4 +234,29 @@ def list_sessions_for_user(
     if exposure is not None:
         statement = statement.where(SessionRecord.exposure == exposure)
     created_col = cast(Any, SessionRecord.created_at)
-    return list(session.exec(statement.order_by(created_col.desc())).all())
+    statement = statement.order_by(created_col.desc())
+    if offset:
+        statement = statement.offset(offset)
+    if limit is not None:
+        statement = statement.limit(limit)
+    return list(session.exec(statement).all())
+
+
+def count_sessions_for_user(
+    session: Session,
+    *,
+    user_id: UUID,
+    statuses: Iterable[SessionStatus] | None = None,
+    exposure: Exposure | None = None,
+) -> int:
+    statement = (
+        select(func.count())
+        .select_from(SessionRecord)
+        .where(SessionRecord.user_id == user_id)
+    )
+    if statuses is not None:
+        status_col = cast(Any, SessionRecord.status)
+        statement = statement.where(status_col.in_(tuple(statuses)))
+    if exposure is not None:
+        statement = statement.where(SessionRecord.exposure == exposure)
+    return int(session.exec(statement).one())

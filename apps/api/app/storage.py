@@ -48,6 +48,8 @@ async def store_submission_file(
     destination.write_bytes(payload)
 
     digest = hashlib.sha256(payload).hexdigest()
-    row_count = payload.count(b"\n")
+    newline_count = payload.count(b"\n")
+    has_trailing_content = len(payload) > 0 and not payload.endswith(b"\n")
+    line_count = newline_count + (1 if has_trailing_content else 0)
 
-    return StoredFile(path=destination, sha256=digest, row_count=max(0, row_count - 1))
+    return StoredFile(path=destination, sha256=digest, row_count=max(0, line_count - 1))
