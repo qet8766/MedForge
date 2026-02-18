@@ -1,15 +1,5 @@
 # MedForge Architecture (Canonical)
 
-> V2 Update (2026-02-17): Exposure split is now canonical.
-> - API read/write surfaces: `/api/v2/external/*` and `/api/v2/internal/*`
-> - Shared auth/identity: `/api/v2/auth/*`, `/api/v2/me`
-> - Session wildcard hosts: `s-<slug>.external.medforge.<domain>` and `s-<slug>.internal.medforge.<domain>`
-
-Implementation status note (2026-02-17):
-- Canonical validation lane is `remote-external` only.
-- Latest full progression is `PASS` through Phase 5 (`@docs/phase-checking-strategy.md`, `@docs/validation-logs.md`).
-- This file is architecture/runtime contract only; operations runbooks stay in `@docs/runbook.md`.
-
 ### Scope
 
 ### In Scope
@@ -21,23 +11,23 @@ Implementation status note (2026-02-17):
 
 ### Out of Scope
 
-- endpoint-level deep contracts owned by domain docs (`@docs/sessions.md`, `@docs/auth-routing.md`, `@docs/competitions.md`)
-- schema-level entities/enums/invariants owned by runtime code (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
+- endpoint-level deep contracts owned by domain docs (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- schema-level entities/enums/invariants owned by runtime code (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
 
 ### Canonical Sources
 
-- `@deploy/compose/docker-compose.yml`
-- `@deploy/caddy/Caddyfile`
-- `@apps/api/app/routers/control_plane.py`
-- `@apps/api/app/session_lifecycle.py`
-- `@apps/api/app/session_recovery.py`
+- `deploy/compose/docker-compose.yml`
+- `deploy/caddy/Caddyfile`
+- `apps/api/app/routers/control_plane.py`
+- `apps/api/app/session_lifecycle.py`
+- `apps/api/app/session_recovery.py`
 
 ## Validation Scope and Truth Sources
 
 Canonical runtime claim precedence:
-1. Latest accepted phase evidence in `@docs/evidence/<date>/`
-2. Validators in `@ops/host/validate-phase*.sh` and `@ops/host/validate-policy-remote-external.sh`
-3. Source contracts in `@apps/api`, `@apps/web`, `@deploy/caddy`, and `@deploy/compose`
+1. Latest accepted phase evidence in `docs/evidence/<date>/`
+2. Validators in `ops/host/validate-phase*.sh` and `ops/host/validate-policy-remote-external.sh`
+3. Source contracts in `apps/api`, `apps/web`, `deploy/caddy`, and `deploy/compose`
 
 ## Platform Scope
 
@@ -51,7 +41,7 @@ Primary goals:
 
 Constraints:
 - Single-host deployment target.
-- Stack: Next.js (`@apps/web`), FastAPI + SQLModel (`@apps/api`), MariaDB, Caddy, Docker, ZFS.
+- Stack: Next.js (`apps/web`), FastAPI + SQLModel (`apps/api`), MariaDB, Caddy, Docker, ZFS.
 - INTERNAL exposure is runtime-enabled behind explicit user entitlement (`can_use_internal`).
 
 Non-goals:
@@ -76,7 +66,9 @@ Non-goals:
 - Allocation model: one physical GPU per active session.
 - Workspace model: one per-session ZFS dataset mounted into each runtime.
 
-Source manifests: `@deploy/compose/docker-compose.yml`, `@deploy/caddy/Caddyfile`, `@deploy/packs/default/Dockerfile`, `@deploy/compose/.env.example`.
+Dev overlay: `deploy/compose/docker-compose.dev.yml` adds `medforge-web-dev` (hot-reload Next.js on `dev.medforge.<domain>`), routed by Caddy but not present in the production compose file.
+
+Source manifests: `deploy/compose/docker-compose.yml`, `deploy/caddy/Caddyfile`, `deploy/packs/default/Dockerfile`, `deploy/compose/.env.example`.
 
 ## Network and Routing Architecture
 
@@ -96,6 +88,7 @@ Fixed IP contract on `medforge-external-sessions`: `medforge-caddy=172.30.0.2`, 
 | `api.medforge.<domain>` | `medforge-api` |
 | `s-<slug>.external.medforge.<domain>` | EXTERNAL session upstream |
 | `s-<slug>.internal.medforge.<domain>` | INTERNAL session upstream |
+| `dev.medforge.<domain>` | `medforge-web-dev` (dev overlay, hot-reload) |
 
 Routing invariants:
 - Caddy strips client `X-Upstream`; client hints cannot select session upstreams.
@@ -109,30 +102,46 @@ Reality gate for external claims:
 - External DNS must resolve `medforge.<domain>`, `external.medforge.<domain>`, `internal.medforge.<domain>`, `api.medforge.<domain>`.
 - TLS hostname validation must pass for `medforge.<domain>` and `api.medforge.<domain>`.
 
-## Session Runtime Contract
+## API Surface Overview
 
-API prefix: `/api/v2`.
+| Route Prefix | Domain | Detail Doc |
+| --- | --- | --- |
+| `/api/v2/auth/*` | Authentication (shared) | `docs/auth-routing.md` |
+| `/api/v2/me` | Identity (shared) | `docs/auth-routing.md` |
+| `/api/v2/external/sessions/*` | EXTERNAL sessions | `docs/sessions.md` |
+| `/api/v2/internal/sessions/*` | INTERNAL sessions | `docs/sessions.md` |
+| `/api/v2/external/competitions/*` | EXTERNAL competitions | `docs/competitions.md` |
+| `/api/v2/internal/competitions/*` | INTERNAL competitions | `docs/competitions.md` |
+| `/api/v2/external/datasets/*` | EXTERNAL datasets | `docs/competitions.md` |
+| `/api/v2/internal/datasets/*` | INTERNAL datasets | `docs/competitions.md` |
+| `/api/v2/external/admin/*` | EXTERNAL admin | `docs/competitions.md` |
+| `/api/v2/internal/admin/*` | INTERNAL admin | `docs/competitions.md` |
+| `/healthz` | Health check | `docs/sessions.md` |
 
-Endpoint set:
-- Session control:
-  - `GET /api/v2/external/sessions/current`, `POST /api/v2/external/sessions`, `POST /api/v2/external/sessions/{id}/stop`
-  - `GET /api/v2/internal/sessions/current`, `POST /api/v2/internal/sessions`, `POST /api/v2/internal/sessions/{id}/stop`
-- Routing auth: `GET /api/v2/auth/session-proxy`.
-- Health: `GET /healthz`.
+## API Response Contract
 
-State model: active = `starting|running|stopping`; terminal = `stopped|error`.
+This is the single authoritative definition of the API envelope format. Other docs cross-reference this section.
 
-Runtime invariants:
-- Allocation is transactional: lock user row, enforce per-user concurrency, choose enabled free GPU, insert `starting` row.
-- GPU exclusivity is enforced by allocation-time locking plus active-state checks.
-- Stop requests are intent-based (`202`); stop/snapshot finalization is asynchronous in recovery.
-- Recovery runs on startup and poll loop, using exponential backoff capped by `SESSION_POLL_BACKOFF_MAX_SECONDS`.
-- Health contract: `200` + `ok` when recovery is healthy; `503` + `degraded` when enabled recovery is unavailable.
-- INTERNAL routes require authenticated users with `can_use_internal=true`.
+Success responses use a universal envelope:
+- `{ "data": ..., "meta": { "request_id": ..., "api_version": ..., "timestamp": ..., ... } }`
 
-API response contract:
-- Success: envelope `{data, meta}`.
-- Errors: `application/problem+json` including `type`, `status`, `detail`, `code`, `request_id`.
+Error responses use RFC 7807-style `application/problem+json` payloads:
+- `{ "type": ..., "title": ..., "status": ..., "detail": ..., "instance": ..., "code": ..., "request_id": ..., "errors": [...] }`
+- `errors` is optional and used for validation-style failures.
+
+Client parsing strategy: use `detail` when present, fall back to `title`, then fall back to a generic status message.
+
+## Session Runtime Summary
+
+Session lifecycle covers create, stop, recovery, and health. State model: active = `starting|running|stopping`; terminal = `stopped|error`. INTERNAL routes require `can_use_internal=true`.
+
+Full contract: `docs/sessions.md`.
+
+## Competition Architecture Summary
+
+Four seeded permanent competitions: `titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`, `oxford-pet-segmentation`. Scoring mode: `single_realtime_hidden`. Leaderboard rule: `best_per_user` with deterministic ordering. Daily submission caps enforced per user per competition.
+
+Full contract: `docs/competitions.md`.
 
 ## Security Boundaries
 
@@ -160,19 +169,4 @@ Storage/runtime guarantees:
 - Competition data uses three disjoint roots: `TRAINING_DATA_ROOT` (training), `PUBLIC_EVAL_DATA_ROOT` (public eval + manifest), and `TEST_HOLDOUTS_DIR` (hidden labels only).
 - Session containers never mount `TEST_HOLDOUTS_DIR`; hidden holdouts remain API/worker-only.
 
-Operational detail references: `@docs/runbook.md`, `@ops/storage/zfs-setup.sh`, `@ops/network/firewall-setup.sh`, `@ops/host/bootstrap-easy.sh`.
-
-## Competition Architecture
-
-Seeded permanent EXTERNAL competitions: `titanic-survival`, `rsna-pneumonia-detection`, `cifar-100-classification`.
-
-Competition posture: `scoring_mode=single_realtime_hidden`, `leaderboard_rule=best_per_user`, `evaluation_policy=canonical_test_first`, no alpha-finals stage.
-
-Competition endpoints:
-- Read: `GET /api/v2/competitions`, `GET /api/v2/competitions/{slug}`, `GET /api/v2/competitions/{slug}/leaderboard`, `GET /api/v2/datasets`, `GET /api/v2/datasets/{slug}`.
-- Write/admin: `POST /api/v2/competitions/{slug}/submissions`, `GET /api/v2/competitions/{slug}/submissions/me`, `POST /api/v2/admin/submissions/{submission_id}/score`.
-
-Competition invariants:
-- Valid submissions can produce non-null official `primary_score`.
-- Daily submission caps are enforced per user per competition.
-- Leaderboard ranking is deterministic from official scored rows.
+Operational detail references: `docs/runbook.md`, `ops/storage/zfs-setup.sh`, `ops/network/firewall-setup.sh`, `ops/host/bootstrap-easy.sh`.

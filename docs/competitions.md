@@ -1,9 +1,4 @@
-## Competitions
-
-> V2 Update (2026-02-17): competition APIs are exposure-scoped.
-> - EXTERNAL: `/api/v2/external/competitions*`, `/api/v2/external/datasets*`
-> - INTERNAL: `/api/v2/internal/competitions*`, `/api/v2/internal/datasets*` (requires `can_use_internal`)
-> Field name is now `competition_exposure` (`external|internal`).
+# Competitions
 
 ### Scope
 
@@ -18,18 +13,18 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 
 ### Out of Scope
 
-- dataset mirror filesystem and rehydration procedures (`@docs/dataset-formats.md`)
-- global auth/routing and wildcard policy (`@docs/auth-routing.md`)
-- schema/table-level definitions (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
-- operational run commands (`@docs/runbook.md`)
+- dataset mirror filesystem and rehydration procedures (`docs/dataset-formats.md`)
+- global auth/routing and wildcard policy (`docs/auth-routing.md`)
+- schema/table-level definitions (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
+- operational run commands (`docs/runbook.md`)
 
 ### Canonical Sources
 
-- `@apps/api/app/routers/competitions/`
-- `@apps/api/app/services.py`
-- `@apps/api/app/scoring/`
+- `apps/api/app/routers/competitions/`
+- `apps/api/app/services.py`
+- `apps/api/app/scoring/`
 
-### Terminology
+## Terminology
 
 - `competition_exposure` means platform policy (`external` or `internal`) and is not related to label visibility.
 - `primary_score` is computed from hidden holdout labels.
@@ -41,7 +36,7 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 - `evaluation_policy` is `canonical_test_first`.
 - Alpha has no due dates, no phase switches, and no `final_score` field.
 
-### Alpha Competitions
+## Alpha Competitions
 
 - `titanic-survival` (metric: `accuracy`, cap: `20/day/user`)
 - `rsna-pneumonia-detection` (metric: `map_iou`, cap: `10/day/user`)
@@ -49,9 +44,9 @@ Competition API, scoring, and leaderboard runtime contract for alpha.
 
 Seed set includes EXTERNAL competitions and one INTERNAL competition (`oxford-pet-segmentation`).
 
-### Submission and Scoring Flow
+## Submission and Scoring Flow
 
-1. User uploads CSV to `POST /api/v2/competitions/{slug}/submissions`.
+1. User uploads CSV to `POST /api/v2/external/competitions/{slug}/submissions` (or the matching `/internal/` route).
 2. API validates schema and daily cap.
 3. Submission is created as `score_status=queued`.
 4. If `AUTO_SCORE_ON_SUBMIT=true` (default), API scores immediately; otherwise the worker scores asynchronously.
@@ -59,7 +54,7 @@ Seed set includes EXTERNAL competitions and one INTERNAL competition (`oxford-pe
 6. Scoring appends an official row in `submission_scores` with `primary_score`, `score_components_json`, `scorer_version`, `metric_version`, `evaluation_split_version`, and `manifest_sha256`.
 7. Leaderboard ranks by best per-user official `primary_score`; deterministic tie-break uses earliest score timestamp then submission ID.
 
-### API Surface
+## API Surface
 
 Canonical versioned routes:
 - EXTERNAL surface:
@@ -73,9 +68,9 @@ Canonical versioned routes:
 - INTERNAL surface (requires `can_use_internal`):
 - same route set under `/api/v2/internal/*`
 
-### Router Module Structure
+## Router Module Structure
 
-The competition API is implemented as a modular router package at `@apps/api/app/routers/competitions/`:
+The competition API is implemented as a modular router package at `apps/api/app/routers/competitions/`:
 
 - `catalog.py` — competition and dataset read endpoints
 - `submissions.py` — submission upload and history
@@ -87,28 +82,16 @@ The competition API is implemented as a modular router package at `@apps/api/app
 - `dependencies.py` — shared FastAPI dependencies
 - `errors.py` — RFC 7807 error helpers
 
-### Admin API
+## Admin API
 
 - `POST /api/v2/external/admin/submissions/{submission_id}/score`
 - `POST /api/v2/internal/admin/submissions/{submission_id}/score`
 
-### Response Contract
+## Response Contract
 
-- Success responses use a universal envelope:
-  - `{ "data": ..., "meta": { request_id, api_version, timestamp, ... } }`
-- `meta.api_version` is the schema version
-- Errors use RFC 7807-style payloads (`application/problem+json`) with:
-  - `type`, `title`, `status`, `detail`, `instance`, `code`, `request_id`
-  - optional `errors` array for validation-style failures
+See `docs/architecture.md` > **API Response Contract** for the canonical envelope and error format.
 
-### Notes
-
-- Client parsing strategy for competition endpoints should be:
-  - use `detail` when present
-  - fall back to `title`
-  - finally fall back to a generic status message
-
-### Security and Data Policy
+## Security and Data Policy
 
 - Hidden holdout labels are stored server-side only and are never mounted in user sessions.
 - Competition dataset mirrors are intended for controlled internal deployment.

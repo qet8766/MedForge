@@ -14,23 +14,23 @@ This is the single source of truth for validation phase order, acceptance criter
 
 ### Out of Scope
 
-- runtime architecture contract details (`@docs/architecture.md`)
-- endpoint-level domain contracts (`@docs/sessions.md`, `@docs/auth-routing.md`, `@docs/competitions.md`)
-- day-2 operational remediation playbooks (`@docs/runbook.md`)
+- runtime architecture contract details (`docs/architecture.md`)
+- endpoint-level domain contracts (`docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- day-2 operational remediation playbooks (`docs/runbook.md`)
 
 ### Canonical Sources
 
-- `@ops/host/validate-policy-remote-external.sh`
-- `@ops/host/validate-phases-all.sh`
-- `@ops/host/validate-phase*.sh`
-- `@ops/host/bootstrap-easy.sh`
-- `@ops/host/quick-check.sh`
-- `@ops/storage/zfs-setup.sh`
-- `@ops/network/firewall-setup.sh`
-- `@deploy/compose/docker-compose.yml`
-- `@deploy/compose/.env.example`
-- `@docs/validation-logs.md`
-- `@docs/evidence/`
+- `ops/host/validate-policy-remote-external.sh`
+- `ops/host/validate-phases-all.sh`
+- `ops/host/validate-phase*.sh`
+- `ops/host/bootstrap-easy.sh`
+- `ops/host/quick-check.sh`
+- `ops/storage/zfs-setup.sh`
+- `ops/network/firewall-setup.sh`
+- `deploy/compose/docker-compose.yml`
+- `deploy/compose/.env.example`
+- `docs/validation-logs.md`
+- `docs/evidence/`
 
 ## Scope and Non-Negotiables
 
@@ -53,23 +53,23 @@ Latest full progression run completed under the remote-external-only phase model
 
 | Phase | Name | Latest Evidence | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Host Foundation | `@docs/evidence/2026-02-17/phase0-host-20260217T124352Z.md` | `2026-02-17T12:43:52Z` | PASS |
-| 1 | Control Plane Bootstrap | `@docs/evidence/2026-02-17/phase1-bootstrap-20260217T124354Z.md` | `2026-02-17T12:43:54Z` | PASS |
-| 2 | Auth + Session API Contracts | `@docs/evidence/2026-02-17/phase2-auth-api-20260217T124410Z.md` | `2026-02-17T12:44:10Z` | PASS |
-| 3 | Session Lifecycle + Recovery | `@docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T124425Z.md` | `2026-02-17T12:44:25Z` | PASS |
-| 4 | Routing, Isolation, End-to-End | `@docs/evidence/2026-02-17/phase4-routing-e2e-20260217T124444Z.md` | `2026-02-17T12:44:44Z` | PASS |
-| 5 | Competition Platform (Alpha) | `@docs/evidence/2026-02-17/phase5-competitions-20260217T124557Z.md` | `2026-02-17T12:45:57Z` | PASS |
+| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T124352Z.md` | `2026-02-17T12:43:52Z` | PASS |
+| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T124354Z.md` | `2026-02-17T12:43:54Z` | PASS |
+| 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T124410Z.md` | `2026-02-17T12:44:10Z` | PASS |
+| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T124425Z.md` | `2026-02-17T12:44:25Z` | PASS |
+| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T124444Z.md` | `2026-02-17T12:44:44Z` | PASS |
+| 5 | Competition Platform (Alpha) | `docs/evidence/2026-02-17/phase5-competitions-20260217T124557Z.md` | `2026-02-17T12:45:57Z` | PASS |
 
 ## Evidence Policy
 
-- Keep concise canonical pointers in `@docs/validation-logs.md`.
-- Store raw command transcripts and long evidence payloads under `@docs/evidence/<date>/`.
+- Keep concise canonical pointers in `docs/validation-logs.md`.
+- Store raw command transcripts and long evidence payloads under `docs/evidence/<date>/`.
 - Treat evidence artifacts as immutable once written.
 - Every phase `PASS` requires:
   - runner exit code `0`
   - markdown summary artifact
   - raw log artifact
-  - concise index pointer update in `@docs/validation-logs.md`
+  - concise index pointer update in `docs/validation-logs.md`
 
 ## Build, Test, and Validation Entry Points
 
@@ -77,26 +77,26 @@ Use this section as the canonical command inventory for local checks and remote-
 
 ### Environment and Platform Bring-Up
 
-- `cp @deploy/compose/.env.example @deploy/compose/.env`
-- `sudo bash @ops/host/bootstrap-easy.sh`
-- `bash @ops/host/quick-check.sh`
-- `docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose.yml up -d --build`
-- `docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`
-- `POOL_DISKS='/dev/sdX' bash @ops/storage/zfs-setup.sh`
-- `bash @ops/network/firewall-setup.sh`
+- `cp deploy/compose/.env.example deploy/compose/.env`
+- `sudo bash ops/host/bootstrap-easy.sh`
+- `bash ops/host/quick-check.sh`
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`
+- `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy`
+- `POOL_DISKS='/dev/sdX' bash ops/storage/zfs-setup.sh`
+- `bash ops/network/firewall-setup.sh`
 
 ### Backend, Frontend, and Script Checks
 
-- `cd @apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`
-- `cd @apps/api && pytest -q`
-- `cd @apps/web && npm install && npm run build`
+- `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`
+- `cd apps/api && pytest -q`
+- `cd apps/web && npm install && npm run build`
 - `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n`
 - `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` (when available)
 
 ### Canonical Remote-External Validation
 
-- `bash @ops/host/validate-policy-remote-external.sh`
-- `bash @ops/host/validate-phases-all.sh`
+- `bash ops/host/validate-policy-remote-external.sh`
+- `bash ops/host/validate-phases-all.sh`
 - Platform/session checks must produce accepted phase evidence (`.md` and `.log` artifacts), with runtime witness output (logs, curl output, screenshots where required).
 - Phase-specific reruns use the per-phase runner commands documented in each phase section below.
 
@@ -116,7 +116,7 @@ Required checks:
 
 Runner:
 
-- `bash @ops/host/validate-phase0-host.sh`
+- `bash ops/host/validate-phase0-host.sh`
 
 ### Phase 1: Control Plane Bootstrap
 
@@ -131,7 +131,7 @@ Required checks:
 
 Runner:
 
-- `bash @ops/host/validate-phase1-bootstrap.sh`
+- `bash ops/host/validate-phase1-bootstrap.sh`
 
 ### Phase 2: Auth + Session API Contracts
 
@@ -147,7 +147,7 @@ Required checks:
 
 Runner:
 
-- `bash @ops/host/validate-phase2-auth-api.sh`
+- `bash ops/host/validate-phase2-auth-api.sh`
 
 ### Phase 3: Session Lifecycle + Recovery
 
@@ -163,7 +163,7 @@ Required checks:
 
 Runner:
 
-- `bash @ops/host/validate-phase3-lifecycle-recovery.sh`
+- `bash ops/host/validate-phase3-lifecycle-recovery.sh`
 
 ### Phase 4: Routing, Isolation, End-to-End
 
@@ -181,7 +181,7 @@ Required checks:
 
 Runner:
 
-- `bash @ops/host/validate-phase4-routing-e2e.sh`
+- `bash ops/host/validate-phase4-routing-e2e.sh`
 
 ### Phase 5: Competition Platform (Alpha)
 
@@ -197,14 +197,14 @@ Required checks:
 
 Runner:
 
-- `bash @ops/host/validate-phase5-competitions.sh`
+- `bash ops/host/validate-phase5-competitions.sh`
 
 ## Full Progression Runner
 
 Run all phases in order:
 
-- `bash @ops/host/validate-policy-remote-external.sh`
-- `bash @ops/host/validate-phases-all.sh`
+- `bash ops/host/validate-policy-remote-external.sh`
+- `bash ops/host/validate-phases-all.sh`
 
 The progression runner must stop on first failure.
 

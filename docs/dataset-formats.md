@@ -1,4 +1,4 @@
-## Dataset Formats
+# Dataset Formats
 
 ### Scope
 
@@ -13,17 +13,17 @@ Canonical dataset layout and submission/holdout format requirements.
 
 ### Out of Scope
 
-- competition API behavior and leaderboard semantics (`@docs/competitions.md`)
-- runtime auth/routing and session lifecycle contracts (`@docs/auth-routing.md`, `@docs/sessions.md`)
-- host/service operational runbook procedures (`@docs/runbook.md`)
+- competition API behavior and leaderboard semantics (`docs/competitions.md`)
+- runtime auth/routing and session lifecycle contracts (`docs/auth-routing.md`, `docs/sessions.md`)
+- host/service operational runbook procedures (`docs/runbook.md`)
 
 ### Canonical Sources
 
-- `@apps/api/data/public-eval/`
-- `@apps/api/data/scoring-holdouts/`
-- `@apps/api/app/scoring/`
-- `@apps/api/app/storage.py`
-- `@tools/data-prep/`
+- `apps/api/data/public-eval/`
+- `apps/api/data/scoring-holdouts/`
+- `apps/api/app/scoring/`
+- `apps/api/app/storage.py`
+- `tools/data-prep/`
 
 Canonical roots:
 
@@ -33,7 +33,7 @@ Canonical roots:
 
 Recommended values:
 
-- Local repo development (from `@apps/api`):
+- Local repo development (from `apps/api`):
   - `TRAINING_DATA_ROOT=../../datasets/train`
   - `PUBLIC_EVAL_DATA_ROOT=data/public-eval`
   - `TEST_HOLDOUTS_DIR=data/scoring-holdouts`
@@ -46,8 +46,8 @@ Before running shell examples below:
 
 ```bash
 export TRAINING_DATA_ROOT="${TRAINING_DATA_ROOT:-/data/medforge/datasets/train}"
-export PUBLIC_EVAL_DATA_ROOT="${PUBLIC_EVAL_DATA_ROOT:-data/public-eval}"
-export TEST_HOLDOUTS_DIR="${TEST_HOLDOUTS_DIR:-data/scoring-holdouts}"
+export PUBLIC_EVAL_DATA_ROOT="${PUBLIC_EVAL_DATA_ROOT:-/data/medforge/datasets/public-eval}"
+export TEST_HOLDOUTS_DIR="${TEST_HOLDOUTS_DIR:-/data/medforge/scoring-holdouts}"
 ```
 
 **Three distinct roots exist — keep them isolated:**
@@ -64,8 +64,8 @@ Runtime guardrails:
 Retention policy:
 
 - Keep full source training and public evaluation inputs in their dedicated roots.
-- `@apps/api/data/public-eval/*` contains only public eval artifacts (`manifest.json`, test IDs/images, sample submission files).
-- `@apps/api/data/scoring-holdouts/*` contains hidden holdout labels only.
+- `apps/api/data/public-eval/*` contains only public eval artifacts (`manifest.json`, test IDs/images, sample submission files).
+- `apps/api/data/scoring-holdouts/*` contains hidden holdout labels only.
 
 Competition evaluation uses a canonical-test-first policy:
 
@@ -377,13 +377,8 @@ Quick checks:
 find ${TRAINING_DATA_ROOT}/oxford-iiit-pet/train_images -type f -name '*.jpg' | wc -l                 # ~3680
 find ${PUBLIC_EVAL_DATA_ROOT}/oxford-pet-segmentation/test_images -type f -name '*.jpg' | wc -l       # ~3669
 wc -l < ${TEST_HOLDOUTS_DIR}/oxford-pet-segmentation/holdout_labels.csv                               # ~3670 (header + data)
-```
-
-Quick checks:
-
-```bash
-find ${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l       # 21347
-find ${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l     # 5337
+find ${TRAINING_DATA_ROOT}/rsna-pneumonia-detection/train_images -type f -name '*.dcm' | wc -l        # 21347
+find ${PUBLIC_EVAL_DATA_ROOT}/rsna-pneumonia-detection/test_images -type f -name '*.dcm' | wc -l      # 5337
 find ${TRAINING_DATA_ROOT}/cifar-100/train -type f -name '*.png' | wc -l                              # 50000
 find ${PUBLIC_EVAL_DATA_ROOT}/cifar-100/test -type f -name '*.png' | wc -l                            # 10000
 ```

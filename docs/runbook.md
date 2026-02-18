@@ -12,28 +12,32 @@ Day-2 operational procedures for the MedForge platform.
 
 ### Out of Scope
 
-- normative runtime/API contracts (`@docs/architecture.md`, `@docs/sessions.md`, `@docs/auth-routing.md`, `@docs/competitions.md`)
-- schema/entity definitions (`@apps/api/app/models.py`, `@apps/api/alembic/versions/`)
-- phase acceptance criteria ownership (`@docs/phase-checking-strategy.md`)
+- normative runtime/API contracts (`docs/architecture.md`, `docs/sessions.md`, `docs/auth-routing.md`, `docs/competitions.md`)
+- schema/entity definitions (`apps/api/app/models.py`, `apps/api/alembic/versions/`)
+- phase acceptance criteria ownership (`docs/phase-checking-strategy.md`)
 
 ### Canonical Sources
 
-- `@ops/host/`
-- `@ops/network/firewall-setup.sh`
-- `@ops/storage/`
-- `@deploy/compose/docker-compose.yml`
-- `@deploy/caddy/Caddyfile`
+- `ops/host/`
+- `ops/network/firewall-setup.sh`
+- `ops/storage/`
+- `deploy/compose/docker-compose.yml`
+- `deploy/caddy/Caddyfile`
 
 ## Service Architecture
 
 ```
 User → Caddy (wildcard TLS) → FastAPI (medforge-api) → Docker (mf-session-*)
                                     ↓
-                               SQLite/MySQL + ZFS snapshots
+                          medforge-api-worker (async scoring)
+                                    ↓
+                               MariaDB (medforge-db) + ZFS snapshots
 ```
 
-Key services in `@deploy/compose/docker-compose.yml`:
+Key services in `deploy/compose/docker-compose.yml`:
 - `medforge-api` — FastAPI control plane
+- `medforge-api-worker` — Background submission scoring worker
+- `medforge-db` — MariaDB system of record
 - `medforge-caddy` — TLS termination + wildcard session routing
 - `medforge-web` — Next.js frontend
 
@@ -43,7 +47,7 @@ Host mount prerequisite:
 
 Routing operation note:
 - Validate session reachability against wildcard root (`https://s-<slug>.medforge.<domain>/`).
-- For normative wildcard auth behavior, use `@docs/auth-routing.md`.
+- For normative wildcard auth behavior, use `docs/auth-routing.md`.
 
 ## Common Operations
 
@@ -51,13 +55,13 @@ Routing operation note:
 
 ```bash
 # Restart all services
-docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose.yml restart
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart
 
 # Restart just the API (triggers boot reconciliation)
-docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose.yml restart medforge-api
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart medforge-api
 
 # Full rebuild and restart
-docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose.yml up -d --build
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build
 ```
 
 ### Trigger Reconciliation
@@ -65,7 +69,7 @@ docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose
 The API runs `reconcile_on_startup` automatically on boot. To trigger manually:
 
 ```bash
-bash @ops/host/ops-reconcile.sh
+bash ops/host/ops-reconcile.sh
 ```
 
 This restarts the API service, which:
@@ -77,30 +81,30 @@ This restarts the API service, which:
 
 ```bash
 # List all session snapshots
-bash @ops/host/ops-snapshots.sh
+bash ops/host/ops-snapshots.sh
 
 # Filter by session slug
-bash @ops/host/ops-snapshots.sh abc12345
+bash ops/host/ops-snapshots.sh abc12345
 
 # Filter by user UUID
-bash @ops/host/ops-snapshots.sh --user 00000000-0000-0000
+bash ops/host/ops-snapshots.sh --user 00000000-0000-0000
 ```
 
 ### Clean Up Orphaned Containers
 
 ```bash
 # Dry run — list orphans without removing
-bash @ops/host/ops-cleanup.sh
+bash ops/host/ops-cleanup.sh
 
 # Force removal
-bash @ops/host/ops-cleanup.sh --force
+bash ops/host/ops-cleanup.sh --force
 ```
 
 ### View Logs
 
 ```bash
 # Stream API and Caddy logs
-docker compose --env-file @deploy/compose/.env -f @deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs -f medforge-api medforge-caddy
 
 # Session container logs
 docker logs mf-session-<slug>
@@ -114,20 +118,20 @@ Canonical phase validation is remote-external only.
 
 ```bash
 # Policy guard (fails if repo code reintroduces local/split validation modes)
-bash @ops/host/validate-policy-remote-external.sh
+bash ops/host/validate-policy-remote-external.sh
 
 # Full remote-external phase progression
-bash @ops/host/validate-phases-all.sh
+bash ops/host/validate-phases-all.sh
 
 # Phase 4 only (remote-external routing/isolation/browser/websocket)
-bash @ops/host/validate-phase4-routing-e2e.sh
+bash ops/host/validate-phase4-routing-e2e.sh
 ```
 
 ## Health Checks
 
 ```bash
 # API health
-curl https://api.medforge.medforge.xyz/healthz
+curl https://api.medforge.<domain>/healthz
 
 # Returns {"data":{"status":"ok"}} when healthy
 # Returns 503 {"data":{"status":"degraded"}} when recovery thread is dead
@@ -145,11 +149,11 @@ curl https://api.medforge.medforge.xyz/healthz
 docker ps -a --filter "name=mf-session-<slug>"
 
 # Check API logs for the session
-docker compose ... logs medforge-api 2>&1 | grep "<slug>"
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs medforge-api 2>&1 | grep "<slug>"
 ```
 
 **Resolution:**
-1. Run reconciliation: `bash @ops/host/ops-reconcile.sh`
+1. Run reconciliation: `bash ops/host/ops-reconcile.sh`
 2. The reconcile pass will mark STARTING sessions with missing containers as ERROR
 
 ### Session Stuck in STOPPING
@@ -162,11 +166,11 @@ docker compose ... logs medforge-api 2>&1 | grep "<slug>"
 docker inspect mf-session-<slug> --format '{{.State.Status}}'
 
 # Check for stop/snapshot errors in logs
-docker compose ... logs medforge-api 2>&1 | grep "session.recovery.failure"
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml logs medforge-api 2>&1 | grep "session.recovery.failure"
 ```
 
 **Resolution:**
-1. Run reconciliation: `bash @ops/host/ops-reconcile.sh`
+1. Run reconciliation: `bash ops/host/ops-reconcile.sh`
 2. If stop keeps failing, manually remove: `docker rm -f mf-session-<slug>`
 3. Run reconciliation again to finalize the database state
 
@@ -180,24 +184,24 @@ docker compose ... logs medforge-api 2>&1 | grep "session.recovery.failure"
 docker ps --filter "name=mf-session-"
 
 # Check for orphaned containers holding GPU locks
-bash @ops/host/ops-cleanup.sh
+bash ops/host/ops-cleanup.sh
 ```
 
 **Resolution:**
-1. Clean up orphaned containers: `bash @ops/host/ops-cleanup.sh --force`
-2. Run reconciliation to free GPU locks: `bash @ops/host/ops-reconcile.sh`
+1. Clean up orphaned containers: `bash ops/host/ops-cleanup.sh --force`
+2. Run reconciliation to free GPU locks: `bash ops/host/ops-reconcile.sh`
 
 ### Recovery Thread Dead (503 on /healthz)
 
 **Symptoms:** `/healthz` returns 503 with `{"status":"degraded"}`.
 
 **Resolution:**
-1. Restart the API service: `bash @ops/host/ops-reconcile.sh`
+1. Restart the API service: `bash ops/host/ops-reconcile.sh`
 2. Check logs for the cause of the thread crash
 
 ## Escalation Path
 
 1. **Self-service:** Run reconciliation + cleanup scripts
-2. **Service restart:** `docker compose ... restart medforge-api`
-3. **Full rebuild:** `docker compose ... up -d --build`
+2. **Service restart:** `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart medforge-api`
+3. **Full rebuild:** `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`
 4. **Host reboot:** Last resort; all sessions will be reconciled on API boot
