@@ -6,7 +6,8 @@ Day-2 operational procedures for the MedForge platform.
 
 ### In Scope
 
-- operator commands for restart, reconciliation, cleanup, logs, and health checks
+- operator commands for restart, rebuild, reconciliation, cleanup, logs, and health checks
+- container rebuild policy (source-path → service → command mapping)
 - troubleshooting playbooks for common runtime failures
 - canonical validation command entry points for operations execution
 
@@ -54,6 +55,9 @@ Routing operation note:
 ### Restart Services
 
 ```bash
+# Bring up all services (no rebuild)
+docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d
+
 # Restart all services
 docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart
 
@@ -62,6 +66,16 @@ docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.y
 
 # Full rebuild and restart
 docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build
+```
+
+### Rebuild After Code Changes
+
+```bash
+# Rebuild and restart API after code changes
+docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-api medforge-api-worker
+
+# Rebuild and restart web
+docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-web
 ```
 
 ### Trigger Reconciliation
@@ -205,3 +219,18 @@ bash ops/host/ops-cleanup.sh
 2. **Service restart:** `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml restart medforge-api`
 3. **Full rebuild:** `docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.yml up -d --build`
 4. **Host reboot:** Last resort; all sessions will be reconciled on API boot
+
+## Container Rebuild Policy
+
+After editing source files for a containerized service, rebuild and restart the affected container(s) in the same change set. Do not consider a change complete until the running container reflects it.
+
+| Source path | Affected service(s) | Command |
+| --- | --- | --- |
+| `apps/api/**` | `medforge-api`, `medforge-api-worker` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-api medforge-api-worker` |
+| `apps/web/**` | `medforge-web` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-web` |
+| `deploy/caddy/Caddyfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml restart medforge-caddy` |
+| `deploy/caddy/Dockerfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-caddy` |
+| `deploy/compose/docker-compose.yml` | affected service(s) | `docker compose -f deploy/compose/docker-compose.yml up -d <service>` |
+
+- `medforge-web-dev` (dev compose) uses a live volume mount — no rebuild needed for `apps/web/**` changes.
+- Caddyfile is mounted read-only into the container — a restart (not rebuild) is sufficient for config changes.

@@ -87,9 +87,46 @@ Use this section as the canonical command inventory for local checks and remote-
 
 ### Backend, Frontend, and Script Checks
 
-- `cd apps/api && uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`
-- `cd apps/api && pytest -q`
-- `cd apps/web && npm install && npm run build`
+#### API (run from `apps/api/`)
+
+Setup:
+- `uv venv .venv && . .venv/bin/activate && uv pip install -e '.[dev,lint]'`
+
+Tests:
+- `python -m pytest -m "not docker and not load"` — all tests (exclude docker-dependent and load)
+- `python -m pytest tests/test_scoring.py` — single file
+- `python -m pytest tests/test_scoring.py -k "test_name"` — single test by name
+- `pytest -q` — quick full run
+
+Lint and format:
+- `ruff check app/ tests/` — lint check
+- `ruff format --check app/ tests/` — format check
+- `ruff check --fix app/ tests/` — auto-fix lint
+- `ruff format app/ tests/` — auto-fix format
+
+Type check:
+- `mypy app/`
+
+DB migrations:
+- `alembic revision --autogenerate -m "description"` — create migration
+- `alembic upgrade head` — apply migrations
+
+#### Web (run from `apps/web/`)
+
+Setup and build:
+- `npm install && npm run build` — install deps and production build
+- `npm run dev` — dev server (hot-reload)
+
+Lint:
+- `npx eslint .`
+
+E2E tests (requires running platform + Playwright installed):
+- `npm run test:e2e` — run E2E suite
+- `npm run test:e2e:install` — install Playwright browsers
+- `npm run test:e2e:headed` — E2E in headed mode (visible browser)
+
+#### Shell scripts
+
 - `find ops -name '*.sh' -print0 | xargs -0 -n1 bash -n`
 - `find ops -name '*.sh' -print0 | xargs -0 -n1 shellcheck` (when available)
 

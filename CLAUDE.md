@@ -50,81 +50,7 @@ Browser ──► Caddy (TLS, wildcard routing, forward-auth)
 
 ## Development Commands
 
-### API (run from `apps/api/`)
-```bash
-# Run all tests (exclude docker-dependent and load tests)
-cd apps/api && python -m pytest -m "not docker and not load"
-
-# Run a single test file
-cd apps/api && python -m pytest tests/test_scoring.py
-
-# Run a single test by name
-cd apps/api && python -m pytest tests/test_scoring.py -k "test_name"
-
-# Lint
-cd apps/api && ruff check app/ tests/
-cd apps/api && ruff format --check app/ tests/
-
-# Auto-fix lint
-cd apps/api && ruff check --fix app/ tests/
-cd apps/api && ruff format app/ tests/
-
-# Type check
-cd apps/api && mypy app/
-
-# DB migration (create)
-cd apps/api && alembic revision --autogenerate -m "description"
-
-# DB migration (apply)
-cd apps/api && alembic upgrade head
-```
-
-### Web (run from `apps/web/`)
-```bash
-# Dev server (hot-reload)
-cd apps/web && npm run dev
-
-# Production build
-cd apps/web && npm run build
-
-# Lint
-cd apps/web && npx eslint .
-
-# E2E tests (requires running platform + Playwright installed)
-cd apps/web && npm run test:e2e
-
-# Install Playwright browsers
-cd apps/web && npm run test:e2e:install
-
-# E2E in headed mode (visible browser)
-cd apps/web && npm run test:e2e:headed
-```
-
-### Docker Compose (from repo root)
-```bash
-# Bring up all services
-docker compose -f deploy/compose/docker-compose.yml up -d
-
-# Rebuild and restart API after code changes
-docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-api medforge-api-worker
-
-# Rebuild and restart web
-docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-web
-
-# View logs
-docker compose -f deploy/compose/docker-compose.yml logs -f medforge-api
-```
-
-### Platform Validation (from repo root)
-```bash
-# Run all 6 validation phases sequentially
-ops/host/validate-phases-all.sh
-
-# Run a single phase
-ops/host/validate-phase0-host.sh
-ops/host/validate-phase2-auth-api.sh
-# ... etc (phases 0-5)
-```
+See [docs/phase-checking-strategy.md](docs/phase-checking-strategy.md#backend-frontend-and-script-checks) (API/Web) and [docs/runbook.md](docs/runbook.md#common-operations) (Docker Compose, validation).
 
 ## Policy Authority
 - `AGENTS.md` is the top-level contributor and repository policy contract.
@@ -164,13 +90,13 @@ Runtime claims are stale until revalidated when platform-affecting files change:
 | File | Owner Scope |
 | --- | --- |
 | `docs/architecture.md` | System-level runtime architecture, trust boundaries, status register |
-| `docs/phase-checking-strategy.md` | Phase order, acceptance criteria, commands, evidence policy |
+| `docs/phase-checking-strategy.md` | Phase order, acceptance criteria, commands, evidence policy, contributor command quick-reference |
 | `docs/validation-logs.md` | Canonical pointer index for latest accepted artifacts |
 | `docs/sessions.md` | Session lifecycle/runtime/recovery contract |
 | `docs/auth-routing.md` | Cookie auth, origin guard, wildcard routing/forward-auth contract |
 | `docs/competitions.md` | Competition API/scoring/leaderboard contract |
 | `docs/dataset-formats.md` | Dataset mirror layout and submission/holdout format contract |
-| `docs/runbook.md` | Day-2 operations and troubleshooting procedures |
+| `docs/runbook.md` | Day-2 operations, troubleshooting procedures, container rebuild policy |
 
 ### Evidence and Discard Rules
 - `docs/evidence/<date>/` stores run artifacts (`.md`, `.log`, and related outputs).
@@ -189,18 +115,8 @@ Runtime claims are stale until revalidated when platform-affecting files change:
 - Testing: follow `docs/phase-checking-strategy.md` for canonical test lanes, runner commands, and evidence policy. Pytest markers: `docker` (needs real Docker), `load` (manual soak tests).
 
 ## Container Rebuild Policy
-After editing source files for a containerized service, rebuild and restart the affected container(s) in the same change set. Do not consider a change complete until the running container reflects it.
 
-| Source path | Affected service(s) | Command |
-| --- | --- | --- |
-| `apps/api/**` | `medforge-api`, `medforge-api-worker` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-api medforge-api-worker` |
-| `apps/web/**` | `medforge-web` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-web` |
-| `deploy/caddy/Caddyfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml restart medforge-caddy` |
-| `deploy/caddy/Dockerfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-caddy` |
-| `deploy/compose/docker-compose.yml` | affected service(s) | `docker compose -f deploy/compose/docker-compose.yml up -d <service>` |
-
-- `medforge-web-dev` (dev compose) uses a live volume mount — no rebuild needed for `apps/web/**` changes.
-- Caddyfile is mounted read-only into the container — a restart (not rebuild) is sufficient for config changes.
+See [docs/runbook.md](docs/runbook.md#container-rebuild-policy).
 
 ## Runtime Contract Source Map
 - Schema-level runtime contracts are code-owned by `apps/api/app/models.py`, `apps/api/app/schemas.py`, and `apps/api/alembic/versions/`.
