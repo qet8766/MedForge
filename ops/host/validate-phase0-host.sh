@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
-# Phase 0 host foundation validation.
-# Verifies GPU runtime, ZFS primitives, wildcard DNS, and strict TLS.
+# Phase 0 host infrastructure validation.
+# Verifies GPU runtime, ZFS primitives, Docker networks, wildcard DNS, and strict TLS.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${ROOT_DIR}/ops/host/lib/remote-external.sh"
+source "${ROOT_DIR}/ops/host/lib/phase-runner.sh"
 PHASE_ID="phase0-host"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-${ROOT_DIR}/docs/evidence/$(date -u +%F)}"
@@ -21,7 +22,6 @@ PACK_IMAGE="${PACK_IMAGE:-}"
 
 PHASE_STATUS="INCONCLUSIVE"
 TMP_DATASET=""
-TMP_SNAPSHOT=""
 TMP_DATASET_CREATED=false
 
 usage() {
@@ -52,26 +52,6 @@ record() {
   printf "%s\n" "${line}" >>"${EVIDENCE_FILE}"
 }
 
-run_check() {
-  local name="$1"
-  local cmd="$2"
-
-  record "### ${name}"
-  record ""
-  record '```bash'
-  record "${cmd}"
-  record '```'
-
-  if eval "${cmd}" >>"${LOG_FILE}" 2>&1; then
-    record "- status: PASS"
-  else
-    record "- status: FAIL"
-    record "- log: \`${LOG_FILE}\`"
-    exit 1
-  fi
-  record ""
-}
-
 cleanup() {
   local exit_code=$?
 
@@ -90,18 +70,41 @@ cleanup() {
 }
 trap cleanup EXIT
 
-zfs_probe() {
-  local mountpoint
-  local probe
-  local readback
+gpu_host_visibility() {
+  nvidia-smi -L
+  nvidia-smi
+}
 
-  TMP_DATASET="${ZFS_WORKSPACE_ROOT}/phase0-validation-${RUN_ID}"
-  TMP_SNAPSHOT="${TMP_DATASET}@phase0-${RUN_ID}"
+gpu_vram_probe() {
+  local vram
+  vram="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader | head -n1)"
+  echo "GPU VRAM: ${vram}"
+  if [ -z "${vram}" ]; then
+    echo "ERROR: could not query GPU VRAM"
+    return 1
+  fi
+}
 
-  sudo -n zfs create -p "${TMP_DATASET}"
+gpu_container_runtime() {
+  docker run --rm --gpus all --entrypoint nvidia-smi "${PACK_IMAGE}"
+}
+
+zfs_pool_health() {
+  zpool list
+  zpool status "${ZPOOL_NAME}"
+  sudo -n zfs list "${ZFS_WORKSPACE_ROOT}"
+}
+
+zfs_write_read_snapshot_probe() {
+  local mountpoint probe readback
+  local tmp_ds="${ZFS_WORKSPACE_ROOT}/phase0-validation-${RUN_ID}"
+  local tmp_snap="${tmp_ds}@phase0-${RUN_ID}"
+
+  sudo -n zfs create -p "${tmp_ds}"
+  TMP_DATASET="${tmp_ds}"
   TMP_DATASET_CREATED=true
 
-  mountpoint="$(sudo -n zfs get -H -o value mountpoint "${TMP_DATASET}")"
+  mountpoint="$(sudo -n zfs get -H -o value mountpoint "${tmp_ds}")"
   probe="phase0-${RUN_ID}"
   printf "%s\n" "${probe}" | sudo -n tee "${mountpoint}/probe.txt" >/dev/null
   readback="$(sudo -n cat "${mountpoint}/probe.txt")"
@@ -110,16 +113,66 @@ zfs_probe() {
     return 1
   fi
 
-  sudo -n zfs snapshot "${TMP_SNAPSHOT}"
-  sudo -n zfs list -t snapshot "${TMP_SNAPSHOT}"
+  sudo -n zfs snapshot "${tmp_snap}"
+  sudo -n zfs list -t snapshot "${tmp_snap}"
 
-  sudo -n zfs destroy "${TMP_SNAPSHOT}"
-  sudo -n zfs destroy "${TMP_DATASET}"
+  sudo -n zfs destroy "${tmp_snap}"
+  sudo -n zfs destroy "${tmp_ds}"
   TMP_DATASET_CREATED=false
 }
 
+zfs_snapshot_restore_probe() {
+  local mountpoint original overwritten restored
+  local tmp_ds="${ZFS_WORKSPACE_ROOT}/phase0-restore-${RUN_ID}"
+  local tmp_snap="${tmp_ds}@restore-test"
+
+  sudo -n zfs create -p "${tmp_ds}"
+  TMP_DATASET="${tmp_ds}"
+  TMP_DATASET_CREATED=true
+
+  mountpoint="$(sudo -n zfs get -H -o value mountpoint "${tmp_ds}")"
+
+  original="restore-original-${RUN_ID}"
+  printf "%s\n" "${original}" | sudo -n tee "${mountpoint}/restore.txt" >/dev/null
+  sudo -n zfs snapshot "${tmp_snap}"
+
+  overwritten="overwritten-data"
+  printf "%s\n" "${overwritten}" | sudo -n tee "${mountpoint}/restore.txt" >/dev/null
+
+  sudo -n zfs rollback "${tmp_snap}"
+
+  restored="$(sudo -n cat "${mountpoint}/restore.txt")"
+  if [ "${restored}" != "${original}" ]; then
+    echo "ERROR: ZFS rollback mismatch: expected '${original}', got '${restored}'"
+    sudo -n zfs destroy "${tmp_snap}" || true
+    sudo -n zfs destroy "${tmp_ds}" || true
+    TMP_DATASET_CREATED=false
+    return 1
+  fi
+  echo "ZFS snapshot restore verified: data matches original after rollback"
+
+  sudo -n zfs destroy "${tmp_snap}"
+  sudo -n zfs destroy "${tmp_ds}"
+  TMP_DATASET_CREATED=false
+}
+
+docker_network_check() {
+  local net
+  for net in medforge-external-sessions medforge-internal-sessions; do
+    if ! docker network inspect "${net}" >/dev/null 2>&1; then
+      echo "ERROR: docker network '${net}' not found"
+      return 1
+    fi
+    echo "Docker network '${net}' exists"
+  done
+}
+
+dns_resolution() {
+  remote_dns_check_bundle "${DOMAIN}" "phase0check"
+}
+
 tls_probe() {
-  local status web_host api_host
+  local web_host api_host
 
   web_host="$(remote_external_web_host "${DOMAIN}")"
   api_host="$(remote_external_api_host "${DOMAIN}")"
@@ -127,12 +180,14 @@ tls_probe() {
   curl -fsS "https://${web_host}" >/dev/null
   curl -fsS "https://${api_host}/healthz" >/dev/null
 
+  local status
   status="$(curl -sS -o /tmp/${PHASE_ID}-session-proxy.out -w '%{http_code}' \
     "https://${api_host}/api/v2/auth/session-proxy" \
     -H "Host: $(remote_external_session_host "phase0check" "${DOMAIN}")")"
 
   case "${status}" in
     401|403|404)
+      echo "Session proxy probe: ${status} (expected)"
       ;;
     *)
       echo "ERROR: unexpected wildcard session-proxy status: ${status}"
@@ -185,7 +240,7 @@ main() {
   : >"${LOG_FILE}"
 
   {
-    echo "## Phase 0 Host Foundation Evidence ($(date -u +%F))"
+    echo "## Phase 0 Host Infrastructure Evidence ($(date -u +%F))"
     echo ""
     echo "Generated by: \`ops/host/validate-phase0-host.sh\`"
     echo ""
@@ -198,12 +253,15 @@ main() {
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  run_check "GPU Host Visibility" "nvidia-smi -L && nvidia-smi"
-  run_check "GPU Runtime In Container" "docker run --rm --gpus all --entrypoint nvidia-smi '${PACK_IMAGE}'"
-  run_check "ZFS Pool Health" "zpool list && zpool status '${ZPOOL_NAME}' && sudo -n zfs list '${ZFS_WORKSPACE_ROOT}'"
-  run_check "ZFS Write Read Snapshot Probe" "zfs_probe"
-  run_check "External DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase0check'"
-  run_check "Strict TLS Validation" "tls_probe"
+  run_check_timed "GPU Host Visibility" "gpu_host_visibility"
+  run_check_timed "GPU VRAM Probe" "gpu_vram_probe"
+  run_check_timed "GPU Runtime In Container" "gpu_container_runtime"
+  run_check_timed "ZFS Pool Health" "zfs_pool_health"
+  run_check_timed "ZFS Write Read Snapshot Probe" "zfs_write_read_snapshot_probe"
+  run_check_timed "ZFS Snapshot Restore Probe" "zfs_snapshot_restore_probe"
+  run_check_timed "Docker Network Existence" "docker_network_check"
+  run_check_timed "External DNS Resolution" "dns_resolution"
+  run_check_timed "Strict TLS Validation" "tls_probe"
 
   PHASE_STATUS="PASS"
   record "## Verdict"

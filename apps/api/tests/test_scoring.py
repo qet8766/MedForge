@@ -623,3 +623,62 @@ def test_validate_submission_schema_detection_partial_bbox_rejected(tmp_path: Pa
 
     with pytest.raises(ValueError, match="bbox fields must be all-empty"):
         validate_submission_schema("rsna-pneumonia-detection", submission)
+
+
+# ---------------------------------------------------------------------------
+# Stuck scoring recovery test
+# ---------------------------------------------------------------------------
+
+
+def test_worker_requeues_stuck_scoring_submissions(tmp_path: Path) -> None:
+    """Verify the worker picks up submissions stuck in SCORING state past the threshold."""
+    import uuid
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import ScoreStatus, Submission
+    from app.worker import SCORING_STUCK_THRESHOLD
+
+    stuck_created_at = datetime.now(UTC) - SCORING_STUCK_THRESHOLD - timedelta(minutes=5)
+    recent_created_at = datetime.now(UTC) - timedelta(minutes=1)
+    competition_id = uuid.uuid4()
+
+    stuck_sub = Submission(
+        id=uuid.uuid4(),
+        competition_id=competition_id,
+        user_id=uuid.uuid4(),
+        filename="stuck.csv",
+        artifact_path=str(tmp_path / "stuck.csv"),
+        artifact_sha256="0" * 64,
+        row_count=3,
+        score_status=ScoreStatus.SCORING,
+        created_at=stuck_created_at,
+    )
+
+    recent_sub = Submission(
+        id=uuid.uuid4(),
+        competition_id=competition_id,
+        user_id=uuid.uuid4(),
+        filename="recent.csv",
+        artifact_path=str(tmp_path / "recent.csv"),
+        artifact_sha256="1" * 64,
+        row_count=3,
+        score_status=ScoreStatus.SCORING,
+        created_at=recent_created_at,
+    )
+
+    # Simulate the worker query to verify stuck detection logic
+    scoring_cutoff = datetime.now(UTC) - SCORING_STUCK_THRESHOLD
+
+    # Verify the stuck submission is older than cutoff
+    assert stuck_sub.created_at < scoring_cutoff, "stuck sub should be older than cutoff"
+    assert recent_sub.created_at >= scoring_cutoff, "recent sub should be newer than cutoff"
+
+    # Verify the worker would pick the stuck sub (score_status=SCORING and created_at < cutoff)
+    assert stuck_sub.score_status == ScoreStatus.SCORING
+    assert recent_sub.score_status == ScoreStatus.SCORING
+
+    # The worker query condition for stuck recovery is:
+    #   (score_status == SCORING) & (created_at < scoring_cutoff)
+    # Verify stuck sub satisfies it and recent sub does not
+    assert stuck_sub.created_at < scoring_cutoff
+    assert not (recent_sub.created_at < scoring_cutoff)

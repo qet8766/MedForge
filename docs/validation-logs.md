@@ -23,20 +23,22 @@ This file is the concise canonical index for phase validation evidence.
 
 ## Current Canonical Artifacts
 
-Latest canonical full progression pass: `2026-02-17` (remote-external-only policy).
+> **STALE** -- Pre-rework evidence (2026-02-17) predates the phase restructure. Full revalidation required after rework merge.
 
 | Phase | Name | Latest Artifact | Timestamp (UTC) | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Host Foundation | `docs/evidence/2026-02-17/phase0-host-20260217T124352Z.md` | `2026-02-17T12:43:52Z` | PASS |
-| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T124354Z.md` | `2026-02-17T12:43:54Z` | PASS |
-| 2 | Auth + Session API Contracts | `docs/evidence/2026-02-17/phase2-auth-api-20260217T124410Z.md` | `2026-02-17T12:44:10Z` | PASS |
-| 3 | Session Lifecycle + Recovery | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T124425Z.md` | `2026-02-17T12:44:25Z` | PASS |
-| 4 | Routing, Isolation, End-to-End | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T124444Z.md` | `2026-02-17T12:44:44Z` | PASS |
-| 5 | Competition Platform | `docs/evidence/2026-02-17/phase5-competitions-20260217T124557Z.md` | `2026-02-17T12:45:57Z` | PASS |
+| 0 | Host Infrastructure | `docs/evidence/2026-02-17/phase0-host-20260217T124352Z.md` | `2026-02-17T12:43:52Z` | STALE |
+| 1 | Control Plane Bootstrap | `docs/evidence/2026-02-17/phase1-bootstrap-20260217T124354Z.md` | `2026-02-17T12:43:54Z` | STALE |
+| 2 | Auth + API Contract Gate | `docs/evidence/2026-02-17/phase2-auth-api-20260217T124410Z.md` | `2026-02-17T12:44:10Z` | STALE |
+| 3 | Session Lifecycle + E2E Runtime | `docs/evidence/2026-02-17/phase3-lifecycle-recovery-20260217T124425Z.md` | `2026-02-17T12:44:25Z` | STALE |
+| 4 | Routing + Network Isolation | `docs/evidence/2026-02-17/phase4-routing-e2e-20260217T124444Z.md` | `2026-02-17T12:44:44Z` | STALE |
+| 5 | Competition Platform + Browser | `docs/evidence/2026-02-17/phase5-competitions-20260217T124557Z.md` | `2026-02-17T12:45:57Z` | STALE |
 
 ## Historical Notes
 
 Historical pre-phase-model artifacts were retired from this repository during terminology cleanup and phase-model consolidation.
+
+Pre-rework (2026-02-17) evidence was generated under the previous phase structure where Phase 4 combined routing, E2E runtime, and browser testing. The rework split these concerns across Phases 3-5.
 
 ## Update Rule
 

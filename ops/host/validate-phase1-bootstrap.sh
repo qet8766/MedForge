@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Phase 1 control-plane bootstrap validation.
-# Brings up compose services, verifies reachability, and validates seed rows.
+# Brings up compose services, verifies reachability with body validation,
+# validates seed rows, DB migration alignment, and bootstrap pytest lanes.
 
 set -euo pipefail
 
@@ -96,12 +97,39 @@ services_running() {
   done
 }
 
-api_health_remote() {
-  curl -fsS "https://$(remote_external_api_host "${DOMAIN}")/healthz" >/dev/null
+api_health_remote_with_body() {
+  local api_host out_file body status_field
+  api_host="$(remote_external_api_host "${DOMAIN}")"
+  out_file="$(mktemp /tmp/phase1-healthz.XXXXXX)"
+
+  curl -fsS "https://${api_host}/healthz" -o "${out_file}"
+
+  status_field="$(python3 -c "import json; print(json.load(open('${out_file}'))['status'])")"
+  if [ "${status_field}" != "ok" ]; then
+    echo "ERROR: /healthz status field is '${status_field}', expected 'ok'"
+    cat "${out_file}"
+    rm -f "${out_file}"
+    return 1
+  fi
+  echo "API /healthz body validated: status=${status_field}"
+  rm -f "${out_file}"
 }
 
-web_health_remote() {
-  curl -fsS "https://$(remote_external_web_host "${DOMAIN}")" >/dev/null
+web_health_remote_with_body() {
+  local web_host out_file
+  web_host="$(remote_external_web_host "${DOMAIN}")"
+  out_file="$(mktemp /tmp/phase1-web.XXXXXX)"
+
+  curl -fsS "https://${web_host}" -o "${out_file}"
+
+  if ! rg -q '<html' "${out_file}"; then
+    echo "ERROR: web root response does not contain expected HTML marker"
+    head -c 500 "${out_file}"
+    rm -f "${out_file}"
+    return 1
+  fi
+  echo "Web root body validated: contains HTML marker"
+  rm -f "${out_file}"
 }
 
 db_seed_invariants() {
@@ -124,6 +152,39 @@ db_seed_invariants() {
   echo "pack_count=${pack_count}"
 }
 
+db_migration_alignment() {
+  docker exec medforge-api python3 -c "
+from app.database import check_migration_alignment
+result = check_migration_alignment()
+print(f'migration_head={result}')
+" 2>/dev/null && return 0
+
+  echo "WARN: migration alignment check via Python unavailable, falling back to alembic_version query"
+  local version
+  version="$(docker exec medforge-db sh -lc 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -Nse "SELECT version_num FROM alembic_version LIMIT 1;" medforge')"
+  if [ -z "${version}" ]; then
+    echo "ERROR: no alembic_version row found"
+    return 1
+  fi
+  echo "alembic_version=${version}"
+}
+
+run_bootstrap_pytest_lanes() {
+  cd "${ROOT_DIR}/apps/api"
+
+  if [ ! -d ".venv" ]; then
+    echo "ERROR: apps/api/.venv not found."
+    return 1
+  fi
+
+  # shellcheck source=/dev/null
+  . .venv/bin/activate
+
+  pytest -q \
+    tests/test_session_runtime_contract.py \
+    tests/test_session_runtime_resources.py
+}
+
 validate_parallel_env() {
   case "${VALIDATE_PARALLEL}" in
     0|1)
@@ -143,9 +204,8 @@ main() {
 
   require_cmd docker
   require_cmd curl
-  require_cmd dig
-  require_cmd openssl
   require_cmd rg
+  require_cmd python3
 
   if [ ! -f "${ENV_FILE}" ]; then
     echo "ERROR: env file not found: ${ENV_FILE}"
@@ -182,19 +242,19 @@ main() {
   run_check_timed "Compose Up" "compose_up"
   run_check_timed "Compose Service Table" "compose_ps"
   run_check_timed "Core Services Running" "services_running"
-  run_check_timed "External DNS Resolution" "remote_dns_check_bundle '${DOMAIN}' 'phase1check'"
-  run_check_timed "External TLS Validation" "remote_tls_verify_host \"$(remote_external_web_host "${DOMAIN}")\" && remote_tls_verify_host \"$(remote_external_api_host "${DOMAIN}")\""
 
   if [ "${VALIDATE_PARALLEL}" = "1" ]; then
     run_parallel_checks \
-      "External API Reachability" "wait_for_health api 60 1 api_health_remote" \
-      "External Web Reachability" "wait_for_health web 60 1 web_health_remote"
+      "External API Reachability (Body Validated)" "wait_for_health api 60 1 api_health_remote_with_body" \
+      "External Web Reachability (Body Validated)" "wait_for_health web 60 1 web_health_remote_with_body"
   else
-    run_check_timed "External API Reachability" "wait_for_health api 60 1 api_health_remote"
-    run_check_timed "External Web Reachability" "wait_for_health web 60 1 web_health_remote"
+    run_check_timed "External API Reachability (Body Validated)" "wait_for_health api 60 1 api_health_remote_with_body"
+    run_check_timed "External Web Reachability (Body Validated)" "wait_for_health web 60 1 web_health_remote_with_body"
   fi
 
   run_check_timed "Database Seed Invariants" "db_seed_invariants"
+  run_check_timed "Database Migration Alignment" "db_migration_alignment"
+  run_check_timed "Bootstrap Pytest Lanes" "run_bootstrap_pytest_lanes"
 
   PHASE_STATUS="PASS"
   record "## Verdict"

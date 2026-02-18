@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Phase 5 competition platform validation.
-# Runs competition API and scoring lanes for contract fields, scoring, caps, and leaderboard rules.
+# Phase 5 competition platform + browser validation.
+# Runs competition API, scoring, browser/websocket E2E, stuck scoring recovery,
+# and dataset isolation lanes.
 
 set -euo pipefail
 
@@ -20,7 +21,18 @@ VALIDATE_PARALLEL="${VALIDATE_PARALLEL:-1}"
 PYTEST_WORKERS="${PYTEST_WORKERS:-2}"
 PYTEST_DIST_MODE="${PYTEST_DIST_MODE:-loadscope}"
 
+# Browser / Playwright settings (absorbed from Phase 4)
+E2E_USER_EMAIL="${E2E_USER_EMAIL:-e2e-$(date +%s)@medforge.test}"
+E2E_USER_PASSWORD="${E2E_USER_PASSWORD:-Password123!}"
+E2E_RESULT_FILE="${E2E_RESULT_FILE:-/tmp/medforge-e2e-result.json}"
+PHASE5_PLAYWRIGHT_INSTALL_MODE="${PHASE5_PLAYWRIGHT_INSTALL_MODE:-auto}"
+
 PHASE_STATUS="INCONCLUSIVE"
+EXTERNAL_WEB_HOST=""
+EXTERNAL_API_HOST=""
+EXTERNAL_WEB_BASE_URL=""
+EXTERNAL_API_BASE_URL=""
+SECTION_TIMER_STARTED_AT=0
 
 usage() {
   cat <<'USAGE'
@@ -35,6 +47,10 @@ Optional env:
   EVIDENCE_DIR=docs/evidence/<date>
   EVIDENCE_FILE=<explicit markdown path>
   LOG_FILE=<explicit log path>
+  PHASE5_PLAYWRIGHT_INSTALL_MODE=auto|always (default: auto)
+  E2E_USER_EMAIL=<override>
+  E2E_USER_PASSWORD=<override>
+  E2E_RESULT_FILE=/tmp/medforge-e2e-result.json
 USAGE
 }
 
@@ -49,6 +65,22 @@ require_cmd() {
 record() {
   local line="$1"
   printf "%s\n" "${line}" >>"${EVIDENCE_FILE}"
+}
+
+section() {
+  local name="$1"
+  printf "\n### %s\n\n" "${name}" | tee -a "${EVIDENCE_FILE}"
+}
+
+section_timing_begin() {
+  SECTION_TIMER_STARTED_AT="$(date +%s)"
+}
+
+section_timing_end() {
+  local ended_at elapsed
+  ended_at="$(date +%s)"
+  elapsed=$((ended_at - SECTION_TIMER_STARTED_AT))
+  record "- duration_s: \`${elapsed}\`"
 }
 
 cleanup() {
@@ -81,6 +113,17 @@ validate_parallel_env() {
   fi
 }
 
+validate_playwright_env() {
+  case "${PHASE5_PLAYWRIGHT_INSTALL_MODE}" in
+    auto|always)
+      ;;
+    *)
+      echo "ERROR: PHASE5_PLAYWRIGHT_INSTALL_MODE must be 'auto' or 'always'."
+      exit 1
+      ;;
+  esac
+}
+
 run_pytest_with_optional_parallel() {
   local -a test_paths=("$@")
   local -a pytest_args
@@ -96,6 +139,54 @@ run_pytest_with_optional_parallel() {
 
   pytest "${pytest_args[@]}" "${test_paths[@]}"
 }
+
+# ---------------------------------------------------------------------------
+# Playwright / Browser helpers (absorbed from Phase 4)
+# ---------------------------------------------------------------------------
+
+resolve_playwright_browser_path() {
+  local configured=""
+  configured="${PLAYWRIGHT_BROWSERS_PATH:-}"
+
+  if [ -z "${configured}" ]; then
+    printf "%s/apps/web/node_modules/playwright-core/.local-browsers\n" "${ROOT_DIR}"
+    return
+  fi
+
+  if [ "${configured}" = "0" ]; then
+    printf "%s/apps/web/node_modules/playwright-core/.local-browsers\n" "${ROOT_DIR}"
+    return
+  fi
+
+  printf "%s\n" "${configured}"
+}
+
+playwright_chromium_installed() {
+  local browser_path
+  browser_path="$(resolve_playwright_browser_path)"
+  compgen -G "${browser_path}/chromium-*" >/dev/null
+}
+
+ensure_playwright_browser_ready() {
+  case "${PHASE5_PLAYWRIGHT_INSTALL_MODE}" in
+    always)
+      npm run test:e2e:install >/dev/null
+      record "- playwright chromium install: executed (mode=\`${PHASE5_PLAYWRIGHT_INSTALL_MODE}\`)"
+      ;;
+    auto)
+      if playwright_chromium_installed; then
+        record "- playwright chromium install: skipped (mode=\`${PHASE5_PLAYWRIGHT_INSTALL_MODE}\`)"
+      else
+        npm run test:e2e:install >/dev/null
+        record "- playwright chromium install: executed (mode=\`${PHASE5_PLAYWRIGHT_INSTALL_MODE}\`)"
+      fi
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# Competition API tests
+# ---------------------------------------------------------------------------
 
 run_competition_api_tests() {
   cd "${ROOT_DIR}/apps/api"
@@ -129,14 +220,24 @@ run_competition_api_tests() {
     tests/test_api.py::test_submission_upload_size_limit_returns_structured_422
 }
 
+# ---------------------------------------------------------------------------
+# Scoring + stuck recovery tests
+# ---------------------------------------------------------------------------
+
 run_scoring_tests() {
   cd "${ROOT_DIR}/apps/api"
 
   # shellcheck source=/dev/null
   . .venv/bin/activate
 
-  pytest -q tests/test_scoring.py
+  run_pytest_with_optional_parallel \
+    tests/test_scoring.py \
+    tests/test_scoring.py::test_worker_requeues_stuck_scoring_submissions
 }
+
+# ---------------------------------------------------------------------------
+# Dataset isolation contract checks
+# ---------------------------------------------------------------------------
 
 run_dataset_isolation_contract_checks() {
   cd "${ROOT_DIR}"
@@ -161,13 +262,17 @@ run_dataset_isolation_contract_checks() {
   fi
 }
 
+# ---------------------------------------------------------------------------
+# Remote competition smoke with body validation
+# ---------------------------------------------------------------------------
+
 run_remote_competitions_smoke() {
   local api_base web_base
   local email cookie_jar signup_code login_code list_code detail_code leaderboard_code
   local list_json slug
 
-  api_base="https://$(remote_external_api_host "${DOMAIN}")"
-  web_base="https://$(remote_external_web_host "${DOMAIN}")"
+  api_base="${EXTERNAL_API_BASE_URL}"
+  web_base="${EXTERNAL_WEB_BASE_URL}"
   email="phase5-remote-${RUN_ID}@medforge.test"
   cookie_jar="$(mktemp /tmp/phase5-remote-cookie.XXXXXX)"
   list_json="$(mktemp /tmp/phase5-remote-list.XXXXXX)"
@@ -196,12 +301,18 @@ run_remote_competitions_smoke() {
     return 1
   fi
 
+  # ---- Competition catalog with body validation ----
   list_code="$(curl -sS -o "${list_json}" -w '%{http_code}' "${api_base}/api/v2/external/competitions")"
   if [ "${list_code}" != "200" ]; then
     echo "ERROR: phase5 remote competitions list failed (code=${list_code})"
     rm -f "${cookie_jar}" "${list_json}"
     return 1
   fi
+
+  # Body validation: verify catalog items have slug, title, status
+  assert_body_contains "${list_json}" \
+    "isinstance(data.get('data', []), list) and len(data['data']) > 0 and all(k in data['data'][0] for k in ('slug', 'title', 'status'))" \
+    "competition catalog body"
 
   slug="$(python3 - <<'PY' "${list_json}"
 import json, sys
@@ -223,6 +334,7 @@ PY
     return 1
   fi
 
+  # ---- Competition detail with body validation ----
   detail_code="$(curl -sS -o /tmp/phase5-remote-detail.out -w '%{http_code}' "${api_base}/api/v2/external/competitions/${slug}")"
   if [ "${detail_code}" != "200" ]; then
     echo "ERROR: phase5 remote competition detail failed (code=${detail_code})"
@@ -230,6 +342,12 @@ PY
     return 1
   fi
 
+  # Body validation: verify detail has rules and metric fields
+  assert_body_contains /tmp/phase5-remote-detail.out \
+    "'rules' in data.get('data', {}) and 'metric' in data.get('data', {})" \
+    "competition detail body"
+
+  # ---- Leaderboard with body validation ----
   leaderboard_code="$(curl -sS -o /tmp/phase5-remote-leaderboard.out -w '%{http_code}' "${api_base}/api/v2/external/competitions/${slug}/leaderboard")"
   if [ "${leaderboard_code}" != "200" ]; then
     echo "ERROR: phase5 remote leaderboard failed (code=${leaderboard_code})"
@@ -237,8 +355,70 @@ PY
     return 1
   fi
 
+  # Body validation: verify leaderboard response has items array
+  assert_body_contains /tmp/phase5-remote-leaderboard.out \
+    "isinstance(data.get('data', {}).get('items', None), list)" \
+    "leaderboard response body"
+
+  echo "Remote competition smoke: catalog (${slug}), detail (rules+metric), leaderboard (items array) validated"
   rm -f "${cookie_jar}" "${list_json}"
 }
+
+# ---------------------------------------------------------------------------
+# Browser + Websocket lane (absorbed from Phase 4)
+# ---------------------------------------------------------------------------
+
+run_browser_smoke() {
+  section "Browser + Websocket Lane"
+  section_timing_begin
+
+  cd "${ROOT_DIR}/apps/web"
+  if [ ! -d node_modules ]; then
+    npm install
+  fi
+  rm -f "${E2E_RESULT_FILE}"
+  ensure_playwright_browser_ready
+
+  E2E_BASE_URL="${EXTERNAL_WEB_BASE_URL}" \
+  E2E_DOMAIN="${DOMAIN}" \
+  E2E_USER_EMAIL="${E2E_USER_EMAIL}" \
+  E2E_USER_PASSWORD="${E2E_USER_PASSWORD}" \
+  E2E_RESULT_FILE="${E2E_RESULT_FILE}" \
+  E2E_IGNORE_HTTPS_ERRORS=false \
+  npm run test:e2e -- e2e/session-smoke.spec.ts --reporter=line
+
+  if [ ! -f "${E2E_RESULT_FILE}" ]; then
+    echo "ERROR: browser smoke passed but no result file was written: ${E2E_RESULT_FILE}"
+    return 1
+  fi
+
+  local session_url websocket_attempted websocket_with_frames slug
+  session_url="$(json_file_key "${E2E_RESULT_FILE}" "session_url")"
+  websocket_attempted="$(json_file_key "${E2E_RESULT_FILE}" "websocket_attempted")"
+  websocket_with_frames="$(json_file_key "${E2E_RESULT_FILE}" "websocket_with_frames")"
+  slug="$(json_file_key "${E2E_RESULT_FILE}" "slug")"
+
+  if ! [[ "${websocket_attempted}" =~ ^[0-9]+$ ]] || [ "${websocket_attempted}" -lt 1 ]; then
+    echo "ERROR: expected at least one websocket attempt, got '${websocket_attempted}'."
+    return 1
+  fi
+  if ! [[ "${websocket_with_frames}" =~ ^[0-9]+$ ]] || [ "${websocket_with_frames}" -lt 1 ]; then
+    echo "ERROR: expected at least one websocket with frame traffic, got '${websocket_with_frames}'."
+    return 1
+  fi
+
+  record "- browser base URL: \`${EXTERNAL_WEB_BASE_URL}\`"
+  record "- e2e user: \`${E2E_USER_EMAIL}\`"
+  record "- wildcard session URL: \`${session_url}\`"
+  record "- wildcard slug: \`${slug}\`"
+  record "- websocket attempts observed: \`${websocket_attempted}\`"
+  record "- websocket connections with frame traffic: \`${websocket_with_frames}\`"
+  section_timing_end
+}
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
 
 main() {
   if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
@@ -251,7 +431,15 @@ main() {
   fi
   remote_require_domain "${DOMAIN}"
   validate_parallel_env
+  validate_playwright_env
+
+  EXTERNAL_WEB_HOST="$(remote_external_web_host "${DOMAIN}")"
+  EXTERNAL_API_HOST="$(remote_external_api_host "${DOMAIN}")"
+  EXTERNAL_WEB_BASE_URL="https://${EXTERNAL_WEB_HOST}"
+  EXTERNAL_API_BASE_URL="https://${EXTERNAL_API_HOST}"
+
   require_cmd curl
+  require_cmd npm
   require_cmd python3
   require_cmd rg
 
@@ -259,7 +447,7 @@ main() {
   : >"${LOG_FILE}"
 
   {
-    echo "## Phase 5 Competition Platform Evidence ($(date -u +%F))"
+    echo "## Phase 5 Competition Platform + Browser Evidence ($(date -u +%F))"
     echo ""
     echo "Generated by: \`ops/host/validate-phase5-competitions.sh\`"
     echo ""
@@ -271,10 +459,11 @@ main() {
       echo "- pytest workers: \`${PYTEST_WORKERS}\`"
       echo "- pytest dist mode: \`${PYTEST_DIST_MODE}\`"
     fi
+    echo "- playwright install mode: \`${PHASE5_PLAYWRIGHT_INSTALL_MODE}\`"
     echo ""
   } >"${EVIDENCE_FILE}"
 
-  run_check_timed "Remote-External Competition Smoke" "run_remote_competitions_smoke"
+  run_check_timed "Remote-External Competition Smoke (Body Validated)" "run_remote_competitions_smoke"
 
   if [ "${VALIDATE_PARALLEL}" = "1" ]; then
     run_parallel_checks \
@@ -285,7 +474,8 @@ main() {
     run_check_timed "Competition API Contract Lanes" "run_competition_api_tests"
   fi
 
-  run_check_timed "Competition Scoring Determinism Lanes" "run_scoring_tests"
+  run_check_timed "Competition Scoring + Stuck Recovery Lanes" "run_scoring_tests"
+  run_check_timed "Browser + Websocket E2E" "run_browser_smoke"
 
   PHASE_STATUS="PASS"
   record "## Verdict"

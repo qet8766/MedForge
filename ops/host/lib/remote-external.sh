@@ -95,3 +95,96 @@ remote_health_check() {
   curl -fsS "https://${web_host}" >/dev/null
   curl -fsS "https://${api_host}/healthz" >/dev/null
 }
+
+# ---------------------------------------------------------------------------
+# Shared assertion and JSON helpers (promoted from Phase 4)
+# ---------------------------------------------------------------------------
+
+json_field() {
+  local payload="$1"
+  local expr="$2"
+  python3 -c "import json,sys; data=json.load(sys.stdin); print(${expr})" <<<"${payload}"
+}
+
+json_file_key() {
+  local path="$1"
+  local key="$2"
+  python3 - "$path" "$key" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    data = json.load(handle)
+print(data.get(sys.argv[2], ""))
+PY
+}
+
+assert_eq() {
+  local got="$1"
+  local expected="$2"
+  local context="$3"
+  if [ "${got}" != "${expected}" ]; then
+    echo "ERROR: ${context}: expected '${expected}', got '${got}'"
+    return 1
+  fi
+}
+
+assert_body_contains() {
+  local file="$1"
+  local expr="$2"
+  local context="$3"
+  if ! python3 -c "
+import json, sys
+with open(sys.argv[1], encoding='utf-8') as f:
+    data = json.load(f)
+assert ${expr}
+" "${file}" 2>/dev/null; then
+    echo "ERROR: ${context}: body assertion failed (${expr})"
+    return 1
+  fi
+}
+
+cookie_token_from_jar() {
+  local jar="$1"
+  awk '$6 == "medforge_session" {print $7; exit}' "${jar}"
+}
+
+ensure_cookie_session() {
+  local email="$1"
+  local password="$2"
+  local jar="$3"
+  local label="$4"
+  local api_base="${5:-${EXTERNAL_API_BASE_URL}}"
+  local web_base="${6:-${EXTERNAL_WEB_BASE_URL}}"
+  local signup_code login_code
+
+  signup_code="$(curl -sS -o "/tmp/${PHASE_ID:-phase}-signup-${label}.out" -w '%{http_code}' \
+    -X POST "${api_base}/api/v2/auth/signup" \
+    -H 'content-type: application/json' \
+    -H "Origin: ${web_base}" \
+    -c "${jar}" -b "${jar}" \
+    -d "{\"email\":\"${email}\",\"password\":\"${password}\"}")"
+
+  if [ "${signup_code}" = "201" ]; then
+    return
+  fi
+
+  if [ "${signup_code}" != "409" ]; then
+    echo "ERROR: failed to sign up ${label} user (code=${signup_code})"
+    cat "/tmp/${PHASE_ID:-phase}-signup-${label}.out" || true
+    return 1
+  fi
+
+  login_code="$(curl -sS -o "/tmp/${PHASE_ID:-phase}-login-${label}.out" -w '%{http_code}' \
+    -X POST "${api_base}/api/v2/auth/login" \
+    -H 'content-type: application/json' \
+    -H "Origin: ${web_base}" \
+    -c "${jar}" -b "${jar}" \
+    -d "{\"email\":\"${email}\",\"password\":\"${password}\"}")"
+
+  if [ "${login_code}" != "200" ]; then
+    echo "ERROR: failed to log in ${label} user (code=${login_code})"
+    cat "/tmp/${PHASE_ID:-phase}-login-${label}.out" || true
+    return 1
+  fi
+}

@@ -710,3 +710,107 @@ def test_submit_and_score_cifar100(client, auth_tokens) -> None:
     assert len(entries) == 1
     assert entries[0]["rank"] == 1
     assert entries[0]["primary_score"] == 1.0
+
+
+# ---------------------------------------------------------------------------
+# Admin pagination + session-by-ID tests
+# ---------------------------------------------------------------------------
+
+
+def test_admin_list_users_pagination(client, db_engine, auth_tokens) -> None:
+    """Create 3 users, list with limit=1, verify cursor round-trip, verify pages differ."""
+    response = client.get(
+        "/api/v2/admin/users?limit=1",
+        headers=_auth_headers(auth_tokens, ADMIN_USER),
+    )
+    data, meta = _assert_success(response, status_code=200)
+    assert isinstance(data, list)
+    assert len(data) == 1
+
+    next_cursor = meta.get("next_cursor")
+    assert next_cursor is not None, "Expected next_cursor for first page with limit=1"
+
+    response2 = client.get(
+        f"/api/v2/admin/users?limit=1&cursor={next_cursor}",
+        headers=_auth_headers(auth_tokens, ADMIN_USER),
+    )
+    data2, _ = _assert_success(response2, status_code=200)
+    assert isinstance(data2, list)
+    assert len(data2) == 1
+    assert data2[0]["user_id"] != data[0]["user_id"], "Second page should have a different user"
+
+
+def test_admin_list_sessions_filter_by_exposure(client, db_engine, auth_tokens) -> None:
+    """Create EXTERNAL session, filter by exposure, verify correct filtering."""
+    create_resp = client.post(
+        "/api/v2/external/sessions",
+        json={},
+        headers=_auth_headers(auth_tokens, USER_A),
+    )
+    assert create_resp.status_code == 201
+
+    response = client.get(
+        "/api/v2/admin/sessions?exposure=EXTERNAL",
+        headers=_auth_headers(auth_tokens, ADMIN_USER),
+    )
+    data, _ = _assert_success(response, status_code=200)
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert all(s["exposure"] == "external" for s in data)
+
+    response_internal = client.get(
+        "/api/v2/admin/sessions?exposure=INTERNAL",
+        headers=_auth_headers(auth_tokens, ADMIN_USER),
+    )
+    data_internal, _ = _assert_success(response_internal, status_code=200)
+    assert isinstance(data_internal, list)
+    external_ids = {s["id"] for s in data}
+    internal_ids = {s["id"] for s in data_internal}
+    assert external_ids.isdisjoint(internal_ids), "EXTERNAL and INTERNAL sets must be disjoint"
+
+
+def test_session_by_id_returns_owner_session(client, auth_tokens) -> None:
+    """Create session, fetch by ID, verify response body."""
+    create_resp = client.post(
+        "/api/v2/external/sessions",
+        json={},
+        headers=_auth_headers(auth_tokens, USER_A),
+    )
+    data, _ = _assert_success(create_resp, status_code=201)
+    session_id = data["session"]["id"]
+
+    get_resp = client.get(
+        f"/api/v2/external/sessions/{session_id}",
+        headers=_auth_headers(auth_tokens, USER_A),
+    )
+    get_data, _ = _assert_success(get_resp, status_code=200)
+    assert get_data["id"] == session_id
+    assert get_data["user_id"] == USER_A
+    assert get_data["exposure"] == "external"
+
+
+def test_session_by_id_forbidden_for_other_user(client, auth_tokens) -> None:
+    """Create session as user A, fetch as user B, expect 403."""
+    create_resp = client.post(
+        "/api/v2/external/sessions",
+        json={},
+        headers=_auth_headers(auth_tokens, USER_A),
+    )
+    data, _ = _assert_success(create_resp, status_code=201)
+    session_id = data["session"]["id"]
+
+    get_resp = client.get(
+        f"/api/v2/external/sessions/{session_id}",
+        headers=_auth_headers(auth_tokens, USER_B),
+    )
+    _assert_problem(get_resp, status_code=403, type_suffix="http/403")
+
+
+def test_session_by_id_missing_returns_404(client, auth_tokens) -> None:
+    """Fetch non-existent session ID, expect 404."""
+    fake_id = "00000000-0000-0000-0000-ffffffffffff"
+    get_resp = client.get(
+        f"/api/v2/external/sessions/{fake_id}",
+        headers=_auth_headers(auth_tokens, USER_A),
+    )
+    _assert_problem(get_resp, status_code=404, type_suffix="http/404")

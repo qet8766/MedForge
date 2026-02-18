@@ -57,7 +57,7 @@ main() {
   run_phase "Phase 1" bash "${ROOT_DIR}/ops/host/validate-phase1-bootstrap.sh"
   run_phase "Phase 2" bash "${ROOT_DIR}/ops/host/validate-phase2-auth-api.sh"
   run_phase "Phase 3" bash "${ROOT_DIR}/ops/host/validate-phase3-lifecycle-recovery.sh"
-  run_phase "Phase 4" bash "${ROOT_DIR}/ops/host/validate-phase4-routing-e2e.sh"
+  run_phase "Phase 4" bash "${ROOT_DIR}/ops/host/validate-phase4-routing-isolation.sh"
   run_phase "Phase 5" bash "${ROOT_DIR}/ops/host/validate-phase5-competitions.sh"
 
   echo ""
