@@ -19,6 +19,7 @@ from app.http_contract import (
     include_api_routers,
 )
 from app.problem_details import register_problem_exception_handler
+from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router as competitions_router
 from app.routers.control_plane import router as control_plane_router
@@ -117,7 +118,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=settings.cors_origin_regex or None,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 include_api_routers(
@@ -125,6 +126,7 @@ include_api_routers(
     auth_router=auth_router,
     competitions_router=competitions_router,
     control_plane_router=control_plane_router,
+    admin_router=admin_router,
 )
 register_problem_exception_handler(app)
 

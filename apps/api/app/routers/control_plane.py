@@ -4,7 +4,7 @@ import re
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, Request, status
 from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
 
@@ -12,15 +12,18 @@ from app.api_contract import ApiEnvelope, envelope
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.deps import AuthPrincipal, get_current_user, require_allowed_origin, require_internal_access
-from app.models import Exposure, Role, SessionRecord, SessionStatus
+from app.models import Exposure, Role, SessionRecord, SessionStatus, User
+from app.pagination import decode_offset_cursor, encode_offset_cursor, validate_limit
 from app.schemas import (
     MeResponse,
+    MeUpdateRequest,
     SessionActionResponse,
     SessionCreateRequest,
     SessionCreateResponse,
     SessionCurrentResponse,
     SessionRead,
 )
+from app.security import hash_password, normalize_email, verify_password
 from app.session_lifecycle import create_session_for_principal, stop_session_for_principal
 from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
 
@@ -190,6 +193,137 @@ def stop_internal_session(
         exposure=Exposure.INTERNAL,
     )
     return envelope(request, result)
+
+
+@router.patch("/me", response_model=ApiEnvelope[MeResponse])
+def update_me(
+    request: Request,
+    payload: MeUpdateRequest,
+    principal: AuthPrincipal = Depends(get_current_user),
+    session: Session = Depends(get_session),
+    _origin_guard: None = Depends(require_allowed_origin),
+) -> ApiEnvelope[MeResponse]:
+    user = session.get(User, principal.user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    if payload.email is not None:
+        normalized = normalize_email(payload.email)
+        if normalized != user.email:
+            existing = session.exec(select(User).where(User.email == normalized)).first()
+            if existing is not None:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use.")
+            user.email = normalized
+
+    if payload.new_password is not None:
+        if payload.current_password is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Current password is required to set a new password.",
+            )
+        if not verify_password(payload.current_password, user.password_hash):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Current password is incorrect.")
+        user.password_hash = hash_password(payload.new_password)
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return envelope(
+        request,
+        MeResponse(
+            user_id=user.id,
+            role=user.role,
+            email=user.email,
+            can_use_internal=user.can_use_internal,
+        ),
+    )
+
+
+@router.get("/external/sessions", response_model=ApiEnvelope[list[SessionRead]])
+def list_external_sessions(
+    request: Request,
+    limit: int = Query(default=20, ge=1, le=500),
+    cursor: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    principal: AuthPrincipal = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> ApiEnvelope[list[SessionRead]]:
+    return _list_sessions_for_exposure(
+        request=request,
+        principal=principal,
+        session=session,
+        exposure=Exposure.EXTERNAL,
+        limit=limit,
+        cursor=cursor,
+        status_filter=status_filter,
+    )
+
+
+@router.get("/internal/sessions", response_model=ApiEnvelope[list[SessionRead]])
+def list_internal_sessions(
+    request: Request,
+    limit: int = Query(default=20, ge=1, le=500),
+    cursor: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    principal: AuthPrincipal = Depends(require_internal_access),
+    session: Session = Depends(get_session),
+) -> ApiEnvelope[list[SessionRead]]:
+    return _list_sessions_for_exposure(
+        request=request,
+        principal=principal,
+        session=session,
+        exposure=Exposure.INTERNAL,
+        limit=limit,
+        cursor=cursor,
+        status_filter=status_filter,
+    )
+
+
+def _list_sessions_for_exposure(
+    *,
+    request: Request,
+    principal: AuthPrincipal,
+    session: Session,
+    exposure: Exposure,
+    limit: int,
+    cursor: str | None,
+    status_filter: str | None,
+) -> ApiEnvelope[list[SessionRead]]:
+    validated_limit = validate_limit(limit)
+    offset = decode_offset_cursor(cursor)
+
+    statuses: tuple[SessionStatus, ...] | None = None
+    if status_filter:
+        parsed = []
+        for s in status_filter.split(","):
+            s = s.strip()
+            try:
+                parsed.append(SessionStatus(s))
+            except ValueError:
+                pass
+        statuses = tuple(parsed) if parsed else None
+
+    all_rows = list_sessions_for_user(
+        session,
+        user_id=principal.user_id,
+        statuses=statuses,
+        exposure=exposure,
+    )
+
+    page = all_rows[offset : offset + validated_limit]
+    has_more = offset + validated_limit < len(all_rows)
+    next_cursor = encode_offset_cursor(offset + validated_limit) if has_more else None
+
+    results = [SessionRead.model_validate(row) for row in page]
+
+    return envelope(
+        request,
+        results,
+        limit=validated_limit,
+        next_cursor=next_cursor,
+        has_more=has_more,
+    )
 
 
 @router.get("/auth/session-proxy", response_model=ApiEnvelope[SessionActionResponse])

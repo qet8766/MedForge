@@ -174,3 +174,29 @@ class AuthUserResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: Literal["ok", "degraded"]
+
+
+class UserAdminRead(BaseModel):
+    user_id: UUID
+    email: str
+    role: Role
+    can_use_internal: bool
+    max_concurrent_sessions: int
+    created_at: datetime
+    active_session_count: int
+
+
+class UserAdminUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Role | None = None
+    can_use_internal: bool | None = None
+    max_concurrent_sessions: int | None = Field(default=None, ge=1, le=8)
+
+
+class MeUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: str | None = Field(default=None, max_length=320)
+    current_password: str | None = Field(default=None, max_length=128)
+    new_password: str | None = Field(default=None, min_length=8, max_length=128)

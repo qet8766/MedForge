@@ -14,7 +14,7 @@ export type CompetitionSummary = {
 
 export type CompetitionDetail = CompetitionSummary & {
   description: string;
-  status: string;
+  status: "active";
   dataset_slug: string;
   dataset_title: string;
 };
@@ -28,6 +28,11 @@ export type LeaderboardEntry = {
   metric_version: string;
   evaluation_split_version: string;
   scored_at: string | null;
+};
+
+export type LeaderboardResponse = {
+  competition_slug: string;
+  entries: LeaderboardEntry[];
 };
 
 export type DatasetSummary = {
@@ -48,6 +53,7 @@ export type AuthUser = {
   user_id: string;
   email: string;
   role: "user" | "admin";
+  can_use_internal: boolean;
 };
 
 export type MeResponse = {
@@ -113,4 +119,65 @@ export type ApiProblem = {
   code: string;
   request_id: string;
   errors?: ApiProblemValidationError[];
+};
+
+export type ScoreStatus = "queued" | "scoring" | "scored" | "failed";
+
+export type SubmissionScoreRead = {
+  id: string;
+  primary_score: number;
+  score_components: Record<string, number>;
+  scorer_version: string;
+  metric_version: string;
+  evaluation_split_version: string;
+  manifest_sha256: string;
+  created_at: string;
+};
+
+export type SubmissionRead = {
+  id: string;
+  competition_slug: string;
+  user_id: string;
+  filename: string;
+  score_status: ScoreStatus;
+  score_error: string | null;
+  created_at: string;
+  scored_at: string | null;
+  official_score: SubmissionScoreRead | null;
+};
+
+export type SubmissionCreateResponse = {
+  submission: SubmissionRead;
+  daily_cap: number;
+  remaining_today: number;
+};
+
+export type HealthResponse = {
+  status: "ok" | "degraded";
+};
+
+export type UserAdminRead = {
+  user_id: string;
+  email: string;
+  role: "user" | "admin";
+  can_use_internal: boolean;
+  max_concurrent_sessions: number;
+  created_at: string;
+  active_session_count: number;
+};
+
+export type UserUpdateRequest = {
+  role?: "user" | "admin";
+  can_use_internal?: boolean;
+  max_concurrent_sessions?: number;
+};
+
+export type MeUpdateRequest = {
+  email?: string;
+  current_password?: string;
+  new_password?: string;
+};
+
+export type SessionListItem = SessionRead & {
+  user_email?: string;
 };

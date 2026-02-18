@@ -1,14 +1,37 @@
 import Link from "next/link";
-import { BarChart3, Monitor, Upload } from "lucide-react";
 
 import { apiGet, type CompetitionDetail } from "@/lib/api";
 import { inferServerSurface } from "@/lib/server-surface";
 import { apiPathForSurface } from "@/lib/surface";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CompetitionDetailView } from "@/components/competitions/competition-detail";
 
 export const dynamic = "force-dynamic";
+
+type MetricField = {
+  label: string;
+  value: React.ReactNode;
+};
+
+function buildMetricFields(competition: CompetitionDetail): MetricField[] {
+  return [
+    { label: "Metric", value: `${competition.metric} v${competition.metric_version}` },
+    { label: "Scoring Mode", value: competition.scoring_mode },
+    { label: "Leaderboard Rule", value: competition.leaderboard_rule },
+    { label: "Evaluation Policy", value: competition.evaluation_policy },
+    { label: "Daily Cap", value: `${competition.submission_cap_per_day} submissions` },
+    {
+      label: "Dataset",
+      value: (
+        <Link
+          href={`/datasets/${competition.dataset_slug}`}
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
+        >
+          {competition.dataset_title}
+        </Link>
+      ),
+    },
+  ];
+}
 
 export default async function CompetitionDetailPage({
   params,
@@ -21,31 +44,32 @@ export default async function CompetitionDetailPage({
     apiPathForSurface(surface, `/competitions/${slug}`),
   );
 
+  const fields = buildMetricFields(competition);
+
   return (
-    <div className="container mx-auto space-y-8 px-4 py-8">
-      <CompetitionDetailView competition={competition} />
+    <div className="space-y-8">
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Competition Details</h2>
+        <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {fields.map((field) => (
+            <div key={field.label} className="space-y-1">
+              <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {field.label}
+              </dt>
+              <dd className="font-mono text-sm">{field.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
       <Separator />
 
-      <section className="flex flex-wrap gap-3">
-        <Button asChild>
-          <Link href={`/competitions/${slug}/leaderboard`}>
-            <BarChart3 className="size-4" />
-            Leaderboard
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href={`/competitions/${slug}/submit`}>
-            <Upload className="size-4" />
-            Submit
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/sessions">
-            <Monitor className="size-4" />
-            Sessions
-          </Link>
-        </Button>
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold tracking-tight">Spec</h2>
+        <p className="text-xs text-muted-foreground">
+          Competition spec version:{" "}
+          <span className="font-mono">{competition.competition_spec_version}</span>
+        </p>
       </section>
     </div>
   );

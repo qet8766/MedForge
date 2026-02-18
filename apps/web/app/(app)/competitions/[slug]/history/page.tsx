@@ -1,36 +1,39 @@
-import { PageHeader } from "@/components/layout/page-header";
+"use client";
+
+import { useCallback, useState } from "react";
+import { useParams } from "next/navigation";
+
+import type { SubmissionRead } from "@/lib/api";
 import { SubmissionHistory } from "@/components/submissions/submission-history";
 import { ScoreChart } from "@/components/submissions/score-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface HistoryPageProps {
-  params: Promise<{ slug: string }>;
-}
+export default function CompetitionHistoryPage(): React.JSX.Element {
+  const params = useParams();
+  const rawSlug = params.slug;
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
 
-export default async function CompetitionHistoryPage({
-  params,
-}: HistoryPageProps): Promise<React.JSX.Element> {
-  const { slug } = await params;
+  const [submissions, setSubmissions] = useState<SubmissionRead[]>([]);
+
+  const handleSubmissionsLoaded = useCallback((data: SubmissionRead[]): void => {
+    setSubmissions(data);
+  }, []);
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Submission History"
-        description={`Review your past submissions for ${slug}.`}
-      />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Past Submissions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SubmissionHistory
+            slug={slug ?? ""}
+            onSubmissionsLoaded={handleSubmissionsLoaded}
+          />
+        </CardContent>
+      </Card>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Past Submissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SubmissionHistory slug={slug} />
-          </CardContent>
-        </Card>
-
-        <ScoreChart slug={slug} />
-      </div>
+      <ScoreChart submissions={submissions} />
     </div>
   );
 }

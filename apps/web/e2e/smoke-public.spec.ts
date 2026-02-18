@@ -8,10 +8,10 @@ test.describe("public pages", () => {
     await expect(page.locator("h1")).toContainText("MedForge");
     await expect(page.getByText("GPU Sessions")).toBeVisible();
     await expect(page.getByText("Competitions").first()).toBeVisible();
-    await expect(page.getByText("Leaderboards")).toBeVisible();
+    await expect(page.getByText("Leaderboards").first()).toBeVisible();
 
-    await expect(page.locator('a[href="/auth/signup"]')).toBeVisible();
-    await expect(page.locator('a[href="/competitions"]')).toBeVisible();
+    await expect(page.locator('a[href="/auth/signup"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/competitions"]').first()).toBeVisible();
   });
 
   test("login page renders form", async ({ page }) => {
@@ -20,7 +20,7 @@ test.describe("public pages", () => {
 
     await expect(page.getByText("Welcome back")).toBeVisible();
     await expect(page.getByText("Sign in to your MedForge account")).toBeVisible();
-    await expect(page.locator('a[href="/auth/signup"]')).toBeVisible();
+    await expect(page.locator('a[href="/auth/signup"]').first()).toBeVisible();
   });
 
   test("signup page renders form", async ({ page }) => {
@@ -29,6 +29,6 @@ test.describe("public pages", () => {
 
     await expect(page.getByText("Create account").first()).toBeVisible();
     await expect(page.getByText("Get started with MedForge")).toBeVisible();
-    await expect(page.locator('a[href="/auth/login"]')).toBeVisible();
+    await expect(page.locator('a[href="/auth/login"]').first()).toBeVisible();
   });
 });

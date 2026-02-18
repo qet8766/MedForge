@@ -26,6 +26,7 @@ from app.http_contract import (
 )
 from app.models import AuthSession, Competition, Role, User
 from app.problem_details import register_problem_exception_handler
+from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router
 from app.routers.control_plane import router as control_plane_router
@@ -234,6 +235,7 @@ def client(test_settings: Settings, db_engine) -> Iterator[TestClient]:
         auth_router=auth_router,
         competitions_router=router,
         control_plane_router=control_plane_router,
+        admin_router=admin_router,
     )
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_settings] = lambda: test_settings

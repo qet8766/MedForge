@@ -14,11 +14,16 @@ function resolveApiBase(): string {
   return NEXT_PUBLIC_API_URL || API_BASE_FALLBACK;
 }
 
+const ROOT_LEVEL_PATHS = ["/healthz"];
+
 function normalizeApiPath(path: string): string {
   if (!path.startsWith("/")) {
     throw new Error(`API path must start with '/': ${path}`);
   }
   if (path === "/api/v2" || path.startsWith("/api/v2/")) {
+    return path;
+  }
+  if (ROOT_LEVEL_PATHS.includes(path)) {
     return path;
   }
   throw new Error(`API path must start with '/api/v2': ${path}`);

@@ -1,41 +1,57 @@
+"use client";
+
+import { Square } from "lucide-react";
+
+import { isTransitioning } from "@/lib/status";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { SessionCreateDialog } from "@/components/sessions/session-create-dialog";
+import type { SessionCreateResponse } from "@/lib/contracts";
 
 type SessionControlsProps = {
-  surfaceLabel: string;
-  hasSession: boolean;
-  onCreateSession: () => void;
-  onStopSession: () => void;
-  onWhoAmI: () => void;
-  onLogout: () => void;
+  hasActiveSession: boolean;
+  activeSessionSlug: string | null;
+  activeSessionStatus: string | null;
+  onStopSession: () => Promise<void>;
+  onSessionCreated?: (response: SessionCreateResponse) => void;
 };
 
 export function SessionControls({
-  surfaceLabel,
-  hasSession,
-  onCreateSession,
+  hasActiveSession,
+  activeSessionSlug,
+  activeSessionStatus,
   onStopSession,
-  onWhoAmI,
-  onLogout,
+  onSessionCreated,
 }: SessionControlsProps): React.JSX.Element {
+  const transitioning = activeSessionStatus
+    ? isTransitioning(activeSessionStatus)
+    : false;
+
   return (
     <div className="flex flex-wrap gap-3">
-      <Button onClick={onCreateSession} data-testid="session-create">
-        Create {surfaceLabel} Session
-      </Button>
-      <Button
-        variant="outline"
-        onClick={onStopSession}
-        disabled={!hasSession}
-        data-testid="session-stop"
-      >
-        Stop Current Session
-      </Button>
-      <Button variant="secondary" onClick={onWhoAmI} data-testid="session-whoami">
-        Check /api/v2/me
-      </Button>
-      <Button variant="ghost" onClick={onLogout} data-testid="session-logout">
-        Sign out
-      </Button>
+      <SessionCreateDialog
+        onCreated={onSessionCreated}
+        disabled={hasActiveSession}
+      />
+
+      {hasActiveSession ? (
+        <ConfirmDialog
+          title="Stop Session"
+          description={`This will stop session ${activeSessionSlug ?? "current"}. Any unsaved work in the IDE may be lost.`}
+          confirmLabel="Stop Session"
+          onConfirm={onStopSession}
+          trigger={
+            <Button
+              variant="destructive"
+              disabled={transitioning}
+              data-testid="session-stop"
+            >
+              <Square className="size-4" />
+              Stop Session
+            </Button>
+          }
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { resolveCredentials } from "./helpers";
+import { resolveCredentials, submitLogin } from "./helpers";
 
 test.describe("data-testid contracts", () => {
   test("login form testids", async ({ browser }) => {
@@ -37,27 +37,23 @@ test.describe("data-testid contracts", () => {
   test("session controls testids", async ({ page }) => {
     await page.goto("/sessions");
     await expect(page.getByTestId("session-create")).toBeVisible();
-    await expect(page.getByTestId("session-stop")).toBeVisible();
-    await expect(page.getByTestId("session-whoami")).toBeVisible();
-    await expect(page.getByTestId("session-logout")).toBeVisible();
-    await expect(page.getByTestId("session-status")).toBeVisible();
+  });
 
-    expect(await page.getByTestId("session-error").count()).toBeLessThanOrEqual(1);
+  test("user menu signout testid", async ({ page }) => {
+    await page.goto("/sessions");
+    await page.getByRole("button", { name: /user menu/i }).click();
+    await expect(page.getByTestId("user-menu-signout")).toBeVisible();
   });
 
   test("auth flow redirects to /sessions after login", async ({ browser }) => {
-    const email = process.env.E2E_USER_EMAIL?.trim();
-    const password = process.env.E2E_USER_PASSWORD?.trim();
-    test.skip(!email || !password, "E2E_USER_EMAIL and E2E_USER_PASSWORD required");
+    const { email, password } = resolveCredentials();
+    test.skip(!process.env.E2E_USER_EMAIL?.trim(), "E2E_USER_EMAIL required");
 
     const ctx = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await ctx.newPage();
 
-    await page.goto("/auth/login");
-    await page.getByTestId("login-email").fill(email!);
-    await page.getByTestId("login-password").fill(password!);
-    await page.getByTestId("login-submit").click();
-    await page.getByTestId("login-success").waitFor({ state: "visible", timeout: 8_000 });
+    const result = await submitLogin(page, email, password);
+    expect(result).toBe("success");
 
     await page.waitForURL("**/sessions", { timeout: 10_000 });
     await expect(page.getByTestId("session-create")).toBeVisible();

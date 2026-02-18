@@ -1,58 +1,72 @@
-import type { SessionRead } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+
+import { ExternalLink } from "lucide-react";
+
+import type { SessionRead } from "@/lib/contracts";
+import { formatTimestamp } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { GpuIndicator } from "@/components/sessions/gpu-indicator";
 
 type SessionCardProps = {
   session: SessionRead;
 };
 
-function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "running":
-      return "default";
-    case "starting":
-      return "outline";
-    case "stopped":
-    case "stopping":
-      return "secondary";
-    case "error":
-      return "destructive";
-    default:
-      return "outline";
-  }
-}
-
-function formatTimestamp(value: string | null): string {
-  if (value === null) {
-    return "--";
-  }
-  return new Date(value).toLocaleString();
-}
-
 export function SessionCard({ session }: SessionCardProps): React.JSX.Element {
+  const isRunning = session.status === "running";
+  const sessionUrl = `https://${session.slug}.sessions.medforge.dev`;
+
   return (
-    <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <p className="text-sm" data-testid="session-current">
-          <span className="text-muted-foreground">Session:</span>{" "}
-          <span className="font-mono">{session.id}</span>
-          {" | slug: "}
-          <span className="font-mono">{session.slug}</span>
-          {" | status: "}
-          <Badge variant={statusVariant(session.status)}>{session.status}</Badge>
-        </p>
-        <GpuIndicator gpuId={session.gpu_id} status={session.status} />
-      </div>
-      <p className="font-mono text-sm" data-testid="session-slug">
-        {session.slug}
-      </p>
-      <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground sm:grid-cols-3">
-        <span>Created: {formatTimestamp(session.created_at)}</span>
-        <span>Started: {formatTimestamp(session.started_at)}</span>
-        <span>Stopped: {formatTimestamp(session.stopped_at)}</span>
-      </div>
-    </div>
+    <Card data-testid="session-current">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/sessions/${session.id}`}
+              className="hover:underline"
+            >
+              <CardTitle className="font-mono">{session.slug}</CardTitle>
+            </Link>
+            <StatusBadge status={session.status} />
+          </div>
+          <GpuIndicator gpuId={session.gpu_id} status={session.status} />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground sm:grid-cols-3">
+          <span>Created: {formatTimestamp(session.created_at)}</span>
+          <span>Started: {formatTimestamp(session.started_at)}</span>
+          <span>Stopped: {formatTimestamp(session.stopped_at)}</span>
+        </div>
+
+        {isRunning ? (
+          <div className="flex gap-2">
+            <Button size="sm" asChild>
+              <a href={sessionUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="size-4" />
+                Open IDE
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/sessions/${session.id}`}>
+                Details
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/sessions/${session.id}`}>
+              View Details
+            </Link>
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
-
-export { statusVariant };

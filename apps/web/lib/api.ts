@@ -12,13 +12,23 @@ export type {
   CompetitionSummary,
   DatasetDetail,
   DatasetSummary,
+  HealthResponse,
   LeaderboardEntry,
+  LeaderboardResponse,
   MeResponse,
+  MeUpdateRequest,
+  ScoreStatus,
   SessionActionResponse,
   SessionCreateResponse,
   SessionCurrentResponse,
+  SessionListItem,
   SessionRead,
-  SessionStatus
+  SessionStatus,
+  SubmissionCreateResponse,
+  SubmissionRead,
+  SubmissionScoreRead,
+  UserAdminRead,
+  UserUpdateRequest,
 } from "@/lib/contracts";
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -34,6 +44,16 @@ export async function apiSubmitFile<TResponse>(path: string, file: File): Promis
 export async function apiPostJson<TResponse>(path: string, payload: unknown): Promise<TResponse> {
   return requestEnvelope<TResponse>(path, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function apiPatchJson<TResponse>(path: string, payload: unknown): Promise<TResponse> {
+  return requestEnvelope<TResponse>(path, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json"
     },

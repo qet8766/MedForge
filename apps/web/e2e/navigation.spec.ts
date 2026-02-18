@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 
 test.describe("sidebar navigation", () => {
   const sidebarLinks = [
+    { label: "Sessions", path: "/sessions" },
     { label: "Dashboard", path: "/dashboard" },
     { label: "Competitions", path: "/competitions" },
     { label: "Datasets", path: "/datasets" },
-    { label: "Sessions", path: "/sessions" },
-    { label: "Settings", path: "/settings" },
+    { label: "Rankings", path: "/rankings" },
   ] as const;
 
   for (const { label, path } of sidebarLinks) {
@@ -51,7 +51,7 @@ test.describe("admin tab navigation", () => {
   for (const { label, path } of adminTabs) {
     test(`admin tab -> ${label}`, async ({ page }) => {
       await page.goto("/admin/users");
-      await page.getByRole("link", { name: label, exact: true }).click();
+      await page.locator(`a[href="${path}"]`).click();
       await page.waitForURL(`**${path}`);
       expect(new URL(page.url()).pathname).toBe(path);
     });

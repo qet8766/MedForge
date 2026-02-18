@@ -2,171 +2,187 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { Monitor } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   apiGet,
-  apiPostJson,
-  type MeResponse,
-  type SessionActionResponse,
   type SessionCreateResponse,
-  type SessionCurrentResponse,
-  type SessionRead,
+  type SessionListItem,
 } from "@/lib/api";
+import { formatRelativeTime, formatTimestamp } from "@/lib/format";
 import { apiPathForSurface, inferClientSurface } from "@/lib/surface";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSessionContext } from "@/components/providers/session-provider";
 import { SessionCard } from "@/components/sessions/session-card";
 import { SessionControls } from "@/components/sessions/session-controls";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
+type SessionsApiResponse = {
+  sessions: SessionListItem[];
+};
+
+const STATUS_FILTERS = ["all", "running", "starting", "stopped", "stopping", "error"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+const SESSION_COLUMNS: DataTableColumn<SessionListItem>[] = [
+  {
+    key: "slug",
+    header: "Slug",
+    render: (row) => (
+      <a
+        href={`/sessions/${row.id}`}
+        className="font-mono text-primary hover:underline"
+      >
+        {row.slug}
+      </a>
+    ),
+  },
+  {
+    key: "status",
+    header: "Status",
+    render: (row) => <StatusBadge status={row.status} />,
+  },
+  {
+    key: "gpu",
+    header: "GPU",
+    render: (row) => <span className="font-mono">{row.gpu_id}</span>,
+  },
+  {
+    key: "exposure",
+    header: "Exposure",
+    render: (row) => (
+      <span className="text-xs uppercase">{row.exposure}</span>
+    ),
+  },
+  {
+    key: "created",
+    header: "Created",
+    render: (row) => (
+      <span title={formatTimestamp(row.created_at)}>
+        {formatRelativeTime(row.created_at)}
+      </span>
+    ),
+  },
+  {
+    key: "started",
+    header: "Started",
+    render: (row) => formatTimestamp(row.started_at),
+  },
+  {
+    key: "stopped",
+    header: "Stopped",
+    render: (row) => formatTimestamp(row.stopped_at),
+  },
+];
 
 export default function SessionsPage(): React.JSX.Element {
-  const surface = inferClientSurface();
-  const [status, setStatus] = useState<string>("No session action yet.");
-  const [error, setError] = useState<string>("");
-  const [currentSession, setCurrentSession] = useState<SessionRead | null>(null);
+  const { session: activeSession, stopSession, refresh } = useSessionContext();
+  const [sessions, setSessions] = useState<SessionListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  const rehydrateCurrentSession = useCallback(async (announce: boolean): Promise<void> => {
+  const surface = inferClientSurface();
+
+  const fetchSessions = useCallback(async (): Promise<void> => {
+    setLoading(true);
     try {
-      const response = await apiGet<SessionCurrentResponse>(
-        apiPathForSurface(surface, "/sessions/current")
+      const queryParams =
+        statusFilter === "all" ? "" : `?status=${statusFilter}`;
+      const response = await apiGet<SessionsApiResponse>(
+        apiPathForSurface(surface, `/sessions${queryParams}`)
       );
-      setCurrentSession(response.session);
-      if (!announce) return;
-      if (response.session) {
-        setStatus(
-          `Recovered active session ${response.session.slug} (${response.session.status}).`
-        );
-      } else {
-        setStatus("No active session.");
-      }
-    } catch (requestError) {
-      if (announce) setStatus("Not authenticated.");
-      setCurrentSession(null);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to fetch session state."
-      );
+      setSessions(response.sessions);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load sessions.";
+      toast.error(message);
+      setSessions([]);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [surface, statusFilter]);
 
   useEffect(() => {
-    setError("");
-    void rehydrateCurrentSession(true);
-  }, [rehydrateCurrentSession]);
-
-  async function handleWhoAmI(): Promise<void> {
-    setError("");
-    try {
-      const me = await apiGet<MeResponse>("/api/v2/me");
-      setStatus(
-        `Signed in as ${me.email ?? me.user_id} (${me.role}). Internal access: ${me.can_use_internal ? "yes" : "no"}.`
-      );
-      await rehydrateCurrentSession(false);
-    } catch (requestError) {
-      setStatus("Not authenticated.");
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to fetch session state."
-      );
-    }
-  }
-
-  async function handleCreateSession(): Promise<void> {
-    setError("");
-    try {
-      const response = await apiPostJson<SessionCreateResponse>(
-        apiPathForSurface(surface, "/sessions"),
-        {}
-      );
-      setStatus(
-        `${response.message} Slug: ${response.session.slug}, GPU: ${response.session.gpu_id}, status: ${response.session.status}.`
-      );
-      await rehydrateCurrentSession(false);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Session creation failed."
-      );
-    }
-  }
+    void fetchSessions();
+  }, [fetchSessions]);
 
   async function handleStopSession(): Promise<void> {
-    setError("");
-    if (!currentSession) {
-      setError("No session selected to stop.");
-      return;
-    }
-    try {
-      const response = await apiPostJson<SessionActionResponse>(
-        apiPathForSurface(surface, `/sessions/${currentSession.id}/stop`),
-        {}
-      );
-      setStatus(response.message);
-      await rehydrateCurrentSession(false);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Session stop failed."
-      );
-    }
+    await stopSession();
+    toast.success("Session stop requested.");
+    refresh();
+    await fetchSessions();
   }
 
-  async function handleLogout(): Promise<void> {
-    setError("");
-    try {
-      await apiPostJson<SessionActionResponse>("/api/v2/auth/logout", {});
-      setStatus("Signed out.");
-      setCurrentSession(null);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Sign out failed."
-      );
-    }
+  function handleSessionCreated(_response: SessionCreateResponse): void {
+    refresh();
+    void fetchSessions();
   }
+
+  const filteredSessions =
+    statusFilter === "all"
+      ? sessions
+      : sessions.filter((s) => s.status === statusFilter);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Sessions</h1>
-        <p className="text-muted-foreground">
-          Create an {surface.toUpperCase()} session, then request stop.
-        </p>
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Monitor className="size-6" />
+            Sessions
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your GPU-backed development sessions.
+          </p>
+        </div>
+        <SessionControls
+          hasActiveSession={activeSession !== null}
+          activeSessionSlug={activeSession?.slug ?? null}
+          activeSessionStatus={activeSession?.status ?? null}
+          onStopSession={handleStopSession}
+          onSessionCreated={handleSessionCreated}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Session Controls</CardTitle>
-          <CardDescription>Manage your GPU-backed development sessions</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <SessionControls
-            surfaceLabel={surface.toUpperCase()}
-            hasSession={currentSession !== null}
-            onCreateSession={handleCreateSession}
-            onStopSession={handleStopSession}
-            onWhoAmI={handleWhoAmI}
-            onLogout={handleLogout}
-          />
-
-          <p className="text-sm text-muted-foreground" data-testid="session-status">
-            {status}
-          </p>
-
-          {currentSession ? (
-            <SessionCard session={currentSession} />
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {error ? (
-        <Alert variant="destructive" data-testid="session-error">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      {activeSession ? (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Active Session</h2>
+          <SessionCard session={activeSession} />
+        </section>
       ) : null}
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h2 className="text-lg font-semibold">Session History</h2>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={statusFilter}
+            onValueChange={(value) => {
+              if (value) {
+                setStatusFilter(value as StatusFilter);
+              }
+            }}
+          >
+            {STATUS_FILTERS.map((filter) => (
+              <ToggleGroupItem key={filter} value={filter} className="text-xs capitalize">
+                {filter}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        <DataTable<SessionListItem>
+          columns={SESSION_COLUMNS}
+          data={filteredSessions}
+          loading={loading}
+          emptyMessage="No sessions found."
+          pageSize={20}
+          keyExtractor={(row) => row.id}
+        />
+      </section>
     </div>
   );
 }

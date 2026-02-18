@@ -12,7 +12,7 @@ test.describe("authenticated app pages", () => {
   test("sessions", async ({ page }) => {
     await page.goto("/sessions");
     await expect(page.locator("h1")).toContainText("Sessions");
-    await expect(page.getByText("Session Controls")).toBeVisible();
+    await expect(page.getByText("Session History")).toBeVisible();
   });
 
   test("competitions listing", async ({ page }) => {
@@ -77,7 +77,7 @@ test.describe("authenticated app pages", () => {
     test.skip(!slug, "could not extract competition slug");
 
     await page.goto(`/competitions/${slug}/history`);
-    await expect(page.getByText("Submission History")).toBeVisible();
+    await expect(page.getByText("History").first()).toBeVisible();
   });
 
   test("datasets listing", async ({ page }) => {
@@ -103,10 +103,9 @@ test.describe("authenticated app pages", () => {
     await expect(page.locator("h1, h2").first()).toBeVisible();
   });
 
-  test("user profile", async ({ page }) => {
-    await page.goto("/profile/testuser");
-    await expect(page.getByText("Member Profile")).toBeVisible();
-    await expect(page.getByText("testuser").first()).toBeVisible();
+  test("rankings", async ({ page }) => {
+    await page.goto("/rankings");
+    await expect(page.getByText("Rankings").first()).toBeVisible();
   });
 
   test("onboarding", async ({ page }) => {
@@ -118,27 +117,54 @@ test.describe("authenticated app pages", () => {
   test("settings", async ({ page }) => {
     await page.goto("/settings");
     await expect(page.getByText("Settings").first()).toBeVisible();
-    await expect(page.getByText("Settings features coming soon")).toBeVisible();
+  });
+
+  test("settings profile sub-route", async ({ page }) => {
+    await page.goto("/settings/profile");
+    await expect(page.getByText("Settings").first()).toBeVisible();
+  });
+
+  test("settings account sub-route", async ({ page }) => {
+    await page.goto("/settings/account");
+    await expect(page.getByText("Settings").first()).toBeVisible();
+  });
+
+  test("settings appearance sub-route", async ({ page }) => {
+    await page.goto("/settings/appearance");
+    await expect(page.getByText("Settings").first()).toBeVisible();
   });
 
   test("admin redirects to /admin/users", async ({ page }) => {
     await page.goto("/admin");
     await page.waitForURL("**/admin/users");
-    await expect(page.getByText("User Management")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
   });
 
   test("admin users", async ({ page }) => {
     await page.goto("/admin/users");
-    await expect(page.getByText("User Management")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
   });
 
   test("admin sessions", async ({ page }) => {
     await page.goto("/admin/sessions");
-    await expect(page.getByText("Session Monitoring")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Session Monitoring" })).toBeVisible();
   });
 
   test("admin competitions", async ({ page }) => {
     await page.goto("/admin/competitions");
     await expect(page.getByText("Competition Management")).toBeVisible();
+  });
+
+  test("logout invalidates the session", async ({ page }) => {
+    await page.goto("/sessions");
+    await page.waitForURL(/\/sessions/);
+
+    // Perform logout
+    const res = await page.request.post("/api/v2/auth/logout", { data: {} });
+    expect(res.ok()).toBeTruthy();
+
+    // Protected route should now redirect to login
+    await page.goto("/sessions");
+    await page.waitForURL(/\/login/, { timeout: 5_000 });
   });
 });

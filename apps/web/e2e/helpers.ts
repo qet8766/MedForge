@@ -38,11 +38,16 @@ export function resolveDomain(baseURL: string): string {
   throw new Error("Unable to infer E2E domain. Set E2E_DOMAIN explicitly.");
 }
 
+function stripBackslashEscapes(value: string): string {
+  return value.replace(/\\(.)/g, "$1");
+}
+
 export function resolveCredentials(): { email: string; password: string } {
   const defaultEmail = `e2e-${Date.now()}@medforge.test`;
+  const rawPassword = process.env.E2E_USER_PASSWORD?.trim() || DEFAULT_PASSWORD;
   return {
     email: process.env.E2E_USER_EMAIL?.trim() || defaultEmail,
-    password: process.env.E2E_USER_PASSWORD?.trim() || DEFAULT_PASSWORD,
+    password: stripBackslashEscapes(rawPassword),
   };
 }
 
@@ -52,13 +57,17 @@ export async function submitLogin(page: Page, email: string, password: string): 
   await page.getByTestId("login-password").fill(password);
   await page.getByTestId("login-submit").click();
 
-  try {
-    await page.getByTestId("login-success").waitFor({ state: "visible", timeout: 8_000 });
-    return "success";
-  } catch {
-    await page.getByTestId("login-error").waitFor({ state: "visible", timeout: 8_000 });
-    return "error";
-  }
+  const success = page.getByTestId("login-success");
+  const error = page.getByTestId("login-error");
+  const sessionsURL = /\/sessions/;
+
+  const result = await Promise.race([
+    success.waitFor({ state: "visible", timeout: 15_000 }).then(() => "success" as const),
+    error.waitFor({ state: "visible", timeout: 15_000 }).then(() => "error" as const),
+    page.waitForURL(sessionsURL, { timeout: 15_000 }).then(() => "success" as const),
+  ]);
+
+  return result;
 }
 
 export async function ensureSignedIn(page: Page, email: string, password: string): Promise<void> {
@@ -73,9 +82,7 @@ export async function ensureSignedIn(page: Page, email: string, password: string
   await page.getByTestId("signup-submit").click();
   await page.getByTestId("signup-success").waitFor({ state: "visible", timeout: 8_000 });
 
-  await page.goto("/sessions");
-  await page.getByTestId("session-logout").click();
-  await expect(page.getByTestId("session-status")).toContainText("Signed out.");
+  await page.request.post("/api/v2/auth/logout", { data: {} });
 
   const postSignupLogin = await submitLogin(page, email, password);
   expect(postSignupLogin).toBe("success");
