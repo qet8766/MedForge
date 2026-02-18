@@ -228,3 +228,58 @@ class DatasetFileEntry(BaseModel):
     name: str
     size: int
     type: Literal["file", "directory"]
+
+
+class GpuStatus(BaseModel):
+    id: int
+    name: str
+    memory_total_mib: int
+    memory_used_mib: int
+    utilization_percent: int
+    temperature_celsius: int
+    power_draw_watts: float
+    power_limit_watts: float
+    session_status: str | None
+
+
+class SystemInfo(BaseModel):
+    hostname: str
+    cpu_model: str
+    cpu_count: int
+    cpu_cores: int
+    cpu_usage_percent: float
+    ram_total_gib: float
+    ram_used_gib: float
+    ram_usage_percent: float
+    uptime_seconds: int
+
+
+class StorageInfo(BaseModel):
+    pool_name: str
+    total_bytes: int
+    used_bytes: int
+    free_bytes: int
+    usage_percent: float
+    health: str
+
+
+class SessionSummary(BaseModel):
+    active_sessions: int
+    total_gpus: int
+    gpus_in_use: int
+    allocated_gpu_ids: list[int]
+
+
+class PlatformStats(BaseModel):
+    total_users: int
+    total_competitions: int
+    total_submissions: int
+
+
+class StatusResponse(BaseModel):
+    gpus: list[GpuStatus]
+    system: SystemInfo
+    storage: StorageInfo
+    sessions: SessionSummary
+    platform: PlatformStats
+    health_status: Literal["ok", "degraded"]

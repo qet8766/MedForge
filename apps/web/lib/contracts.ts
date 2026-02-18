@@ -192,3 +192,58 @@ export type DatasetFileEntry = {
 export type SessionListItem = SessionRead & {
   user_email?: string;
 };
+
+export type GpuStatusData = {
+  id: number;
+  name: string;
+  memory_total_mib: number;
+  memory_used_mib: number;
+  utilization_percent: number;
+  temperature_celsius: number;
+  power_draw_watts: number;
+  power_limit_watts: number;
+  session_status: string | null;
+};
+
+export type SystemInfoData = {
+  hostname: string;
+  cpu_model: string;
+  cpu_count: number;
+  cpu_cores: number;
+  cpu_usage_percent: number;
+  ram_total_gib: number;
+  ram_used_gib: number;
+  ram_usage_percent: number;
+  uptime_seconds: number;
+};
+
+export type StorageInfoData = {
+  pool_name: string;
+  total_bytes: number;
+  used_bytes: number;
+  free_bytes: number;
+  usage_percent: number;
+  health: string;
+};
+
+export type SessionSummaryData = {
+  active_sessions: number;
+  total_gpus: number;
+  gpus_in_use: number;
+  allocated_gpu_ids: number[];
+};
+
+export type PlatformStatsData = {
+  total_users: number;
+  total_competitions: number;
+  total_submissions: number;
+};
+
+export type ServerStatusResponse = {
+  gpus: GpuStatusData[];
+  system: SystemInfoData;
+  storage: StorageInfoData;
+  sessions: SessionSummaryData;
+  platform: PlatformStatsData;
+  health_status: "ok" | "degraded";
+};

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink, Plus, Monitor } from "lucide-react";
+import { Copy, Plus, Monitor } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useSessionContext } from "@/components/providers/session-provider";
@@ -73,21 +74,19 @@ export function SessionIndicator({ collapsed = false }: SessionIndicatorProps): 
         <StatusBadge status={session.status} className="text-[10px] px-1.5 py-0" />
       </div>
       <p className="mt-1 truncate font-mono text-sm">{session.slug}</p>
-      {session.status === "running" && (
+      {session.status === "running" && session.ssh_port > 0 && (
         <Button
           variant="outline"
           size="sm"
           className="mt-2 w-full gap-1.5"
-          asChild
+          onClick={() => {
+            const cmd = `ssh coder@${session.ssh_host} -p ${session.ssh_port}`;
+            void navigator.clipboard.writeText(cmd);
+            toast.success("SSH command copied to clipboard.");
+          }}
         >
-          <a
-            href={`/ide/${session.slug}/`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <ExternalLink className="size-3.5" />
-            Open IDE
-          </a>
+          <Copy className="size-3.5" />
+          Copy SSH
         </Button>
       )}
     </div>

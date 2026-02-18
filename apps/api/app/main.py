@@ -23,9 +23,11 @@ from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.competitions import router as competitions_router
 from app.routers.control_plane import router as control_plane_router
+from app.routers.status import router as status_router
 from app.schemas import HealthResponse
 from app.seed import seed_defaults
 from app.session_recovery import poll_active_sessions_once, reconcile_on_startup
+from app.system_metrics import metrics_collector
 
 settings = get_settings()
 logger = structlog.get_logger(__name__)
@@ -93,6 +95,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     init_db()
     with Session(engine) as session:
         seed_defaults(session)
+    metrics_collector.warmup()
 
     if settings.session_recovery_enabled:
         try:
@@ -127,6 +130,7 @@ include_api_routers(
     competitions_router=competitions_router,
     control_plane_router=control_plane_router,
     admin_router=admin_router,
+    status_router=status_router,
 )
 register_problem_exception_handler(app)
 

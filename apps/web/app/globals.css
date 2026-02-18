@@ -150,6 +150,31 @@
   }
 }
 
+@keyframes gpu-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px #ef4444); opacity: 0.6; }
+  50% { filter: drop-shadow(0 0 12px #ef4444); opacity: 1; }
+}
+
+@keyframes gpu-glow-amber {
+  0%, 100% { filter: drop-shadow(0 0 4px #f59e0b); opacity: 0.5; }
+  50% { filter: drop-shadow(0 0 10px #f59e0b); opacity: 0.9; }
+}
+
+@keyframes cpu-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.03); }
+}
+
+@keyframes data-flow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes led-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -197,5 +222,27 @@
       oklch(0.72 0.19 195),
       oklch(0.55 0.12 230)
     ) 1;
+  }
+
+  .animate-gpu-glow {
+    animation: gpu-glow 2s ease-in-out infinite;
+  }
+
+  .animate-gpu-glow-amber {
+    animation: gpu-glow-amber 1.5s ease-in-out infinite;
+  }
+
+  .animate-cpu-pulse {
+    animation: cpu-pulse 2s ease-in-out infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  .animate-data-flow {
+    animation: data-flow 1.5s linear infinite;
+  }
+
+  .animate-led-blink {
+    animation: led-blink 2s ease-in-out infinite;
   }
 }

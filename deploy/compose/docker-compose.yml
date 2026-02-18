@@ -81,6 +81,14 @@ services:
         target: /tank                              # Workspace mountpoints for chown/quota operations.
         bind:
           propagation: rshared
+      - type: bind
+        source: /usr/bin/nvidia-smi
+        target: /usr/bin/nvidia-smi
+        read_only: true
+      - type: bind
+        source: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
+        target: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
+        read_only: true
     # ZFS snapshot commands require host-level access.
     # The API shells out to `zfs snapshot`; mount the binary + device.
     devices:

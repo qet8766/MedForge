@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Gpu, Trophy, BarChart3 } from "lucide-react";
+import { ArrowRight, Gpu, Trophy, BarChart3, Activity } from "lucide-react";
 
 import { apiGet, type CompetitionSummary } from "@/lib/api";
 import { inferServerSurface } from "@/lib/server-surface";
@@ -71,6 +71,12 @@ export default async function LandingPage(): Promise<React.JSX.Element> {
                     {competitionCount}
                   </span>
                 ) : null}
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <Link href="/status">
+                <Activity className="mr-2 size-4" />
+                Server Status
               </Link>
             </Button>
           </div>

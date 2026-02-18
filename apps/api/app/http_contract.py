@@ -35,10 +35,12 @@ def include_api_routers(
     competitions_router: APIRouter,
     control_plane_router: APIRouter,
     admin_router: APIRouter,
+    status_router: APIRouter,
 ) -> None:
     app.include_router(auth_router, prefix=CANONICAL_API_PREFIX)
     app.include_router(control_plane_router, prefix=CANONICAL_API_PREFIX)
     app.include_router(admin_router, prefix=CANONICAL_API_PREFIX)
+    app.include_router(status_router, prefix=CANONICAL_API_PREFIX)
     app.include_router(
         competitions_router,
         prefix=f"{CANONICAL_API_PREFIX}/external",

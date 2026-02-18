@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, User, LogOut, Trophy, Database, Monitor } from "lucide-react";
+import { Menu, User, LogOut, Trophy, Database, Monitor, Activity } from "lucide-react";
 
 import { apiGet, apiPostJson, type MeResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ const NAV_LINKS = [
   { href: "/competitions", label: "Competitions", icon: Trophy },
   { href: "/datasets", label: "Datasets", icon: Database },
   { href: "/sessions", label: "Sessions", icon: Monitor },
+  { href: "/status", label: "Status", icon: Activity },
 ] as const;
 
 export function Navbar(): React.JSX.Element {
