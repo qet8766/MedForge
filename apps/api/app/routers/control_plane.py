@@ -33,11 +33,18 @@ router = APIRouter(tags=["control-plane"])
 _SESSION_HOST_RE = re.compile(r"^s-([a-z0-9]{8})\.(external|internal)\.medforge\..+$")
 
 
+def _session_read_with_ssh_host(row: SessionRecord, settings: Settings) -> SessionRead:
+    data = SessionRead.model_validate(row)
+    data.ssh_host = settings.ssh_host
+    return data
+
+
 def _current_session_for_exposure(
     *,
     request: Request,
     principal: AuthPrincipal,
     session: Session,
+    settings: Settings,
     exposure: Exposure,
 ) -> ApiEnvelope[SessionCurrentResponse]:
     active_rows = list_sessions_for_user(
@@ -49,7 +56,7 @@ def _current_session_for_exposure(
     current = active_rows[0] if active_rows else None
     return envelope(
         request,
-        SessionCurrentResponse(session=SessionRead.model_validate(current) if current is not None else None),
+        SessionCurrentResponse(session=_session_read_with_ssh_host(current, settings) if current is not None else None),
     )
 
 
@@ -84,6 +91,7 @@ def get_me(
             role=principal.role,
             email=principal.email,
             can_use_internal=principal.can_use_internal,
+            ssh_public_key=principal.ssh_public_key,
         ),
     )
 
@@ -93,11 +101,13 @@ def get_current_external_session(
     request: Request,
     principal: AuthPrincipal = Depends(get_current_user),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[SessionCurrentResponse]:
     return _current_session_for_exposure(
         request=request,
         principal=principal,
         session=session,
+        settings=settings,
         exposure=Exposure.EXTERNAL,
     )
 
@@ -107,11 +117,13 @@ def get_current_internal_session(
     request: Request,
     principal: AuthPrincipal = Depends(require_internal_access),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[SessionCurrentResponse]:
     return _current_session_for_exposure(
         request=request,
         principal=principal,
         session=session,
+        settings=settings,
         exposure=Exposure.INTERNAL,
     )
 
@@ -164,6 +176,7 @@ def get_external_session(
     session_id: UUID = Path(alias="id"),
     principal: AuthPrincipal = Depends(get_current_user),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[SessionRead]:
     result = get_session_for_principal(
         session_id=session_id,
@@ -171,6 +184,7 @@ def get_external_session(
         session=session,
         exposure=Exposure.EXTERNAL,
     )
+    result.ssh_host = settings.ssh_host
     return envelope(request, result)
 
 
@@ -180,6 +194,7 @@ def get_internal_session(
     session_id: UUID = Path(alias="id"),
     principal: AuthPrincipal = Depends(require_internal_access),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[SessionRead]:
     result = get_session_for_principal(
         session_id=session_id,
@@ -187,6 +202,7 @@ def get_internal_session(
         session=session,
         exposure=Exposure.INTERNAL,
     )
+    result.ssh_host = settings.ssh_host
     return envelope(request, result)
 
 
@@ -262,6 +278,19 @@ def update_me(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Current password is incorrect.")
         user.password_hash = hash_password(payload.new_password)
 
+    if payload.ssh_public_key is not None:
+        trimmed = payload.ssh_public_key.strip()
+        if trimmed == "":
+            user.ssh_public_key = None
+        else:
+            _SSH_KEY_PREFIXES = ("ssh-rsa ", "ssh-ed25519 ", "ecdsa-sha2-", "sk-ssh-")
+            if not trimmed.startswith(_SSH_KEY_PREFIXES):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Invalid SSH public key format.",
+                )
+            user.ssh_public_key = trimmed
+
     commit_and_refresh(session, user)
 
     return envelope(
@@ -271,6 +300,7 @@ def update_me(
             role=user.role,
             email=user.email,
             can_use_internal=user.can_use_internal,
+            ssh_public_key=user.ssh_public_key,
         ),
     )
 
@@ -283,11 +313,13 @@ def list_external_sessions(
     status_filter: str | None = Query(default=None, alias="status"),
     principal: AuthPrincipal = Depends(get_current_user),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[list[SessionRead]]:
     return _list_sessions_for_exposure(
         request=request,
         principal=principal,
         session=session,
+        settings=settings,
         exposure=Exposure.EXTERNAL,
         limit=limit,
         cursor=cursor,
@@ -303,11 +335,13 @@ def list_internal_sessions(
     status_filter: str | None = Query(default=None, alias="status"),
     principal: AuthPrincipal = Depends(require_internal_access),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[list[SessionRead]]:
     return _list_sessions_for_exposure(
         request=request,
         principal=principal,
         session=session,
+        settings=settings,
         exposure=Exposure.INTERNAL,
         limit=limit,
         cursor=cursor,
@@ -320,6 +354,7 @@ def _list_sessions_for_exposure(
     request: Request,
     principal: AuthPrincipal,
     session: Session,
+    settings: Settings,
     exposure: Exposure,
     limit: int,
     cursor: str | None,
@@ -345,7 +380,7 @@ def _list_sessions_for_exposure(
         page = page[:validated_limit]
     next_cursor = encode_offset_cursor(offset + validated_limit) if has_more else None
 
-    results = [SessionRead.model_validate(row) for row in page]
+    results = [_session_read_with_ssh_host(row, settings) for row in page]
 
     return envelope(
         request,

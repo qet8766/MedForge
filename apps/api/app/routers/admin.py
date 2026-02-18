@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api_contract import ApiEnvelope, envelope
+from app.config import Settings, get_settings
 from app.database import get_session
 from app.deps import AuthPrincipal, get_current_user, require_admin_access, require_allowed_origin
 from app.models import Exposure, SessionRecord, SessionStatus, User
@@ -133,6 +134,7 @@ def list_all_sessions(
     exposure: str | None = Query(default=None),
     principal: AuthPrincipal = Depends(get_current_user),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> ApiEnvelope[list[SessionRead]]:
     validated_limit = validate_limit(limit)
     offset = decode_offset_cursor(cursor)
@@ -170,7 +172,12 @@ def list_all_sessions(
         rows = rows[:validated_limit]
     next_cursor = encode_offset_cursor(offset + validated_limit) if has_more else None
 
-    results = [SessionRead.model_validate(row) for row in rows]
+    ssh_host = settings.ssh_host
+    results = []
+    for row in rows:
+        sr = SessionRead.model_validate(row)
+        sr.ssh_host = ssh_host
+        results.append(sr)
 
     return envelope(
         request,

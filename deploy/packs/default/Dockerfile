@@ -1,6 +1,5 @@
 FROM nvidia/cuda:13.1.1-runtime-ubuntu24.04
 
-ARG CODE_SERVER_VERSION=4.109.2
 ARG USER_UID=1000
 ARG USER_GID=1000
 ARG UV_VERSION=0.10.2
@@ -19,10 +18,9 @@ RUN apt-get update \
         curl ca-certificates git git-lfs wget unzip \
         python3 python3-venv \
         build-essential python3-dev pkg-config \
-        less openssh-client jq htop tmux \
+        less openssh-client openssh-server jq htop tmux \
         libfontconfig1 fonts-dejavu-core \
     && git lfs install \
-    && curl -fsSL https://code-server.dev/install.sh | sh -s -- --version=${CODE_SERVER_VERSION} \
     && curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh \
     && install -m 0755 /root/.local/bin/uv /usr/local/bin/uv \
     && install -m 0755 /root/.local/bin/uvx /usr/local/bin/uvx \
@@ -34,10 +32,13 @@ RUN apt-get update \
 
 RUN groupadd -o -g ${USER_GID} coder || true \
     && useradd -o -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash coder || true \
-    && mkdir -p /workspace && chown ${USER_UID}:${USER_GID} /workspace
+    && mkdir -p /workspace && chown ${USER_UID}:${USER_GID} /workspace \
+    && mkdir -p /run/sshd
 
-USER coder
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 755 /usr/local/bin/entrypoint.sh
+
 WORKDIR /workspace
-EXPOSE 8080
+EXPOSE 22
 
-ENTRYPOINT ["code-server", "--auth", "none", "--bind-addr", "0.0.0.0:8080", "--disable-telemetry", "/workspace"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

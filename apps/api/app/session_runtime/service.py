@@ -53,6 +53,8 @@ class SessionRuntimeService(SessionRuntime):
             workspace_mount=mountpoint,
             start_timeout_seconds=request.start_timeout_seconds,
             resource_limits=request.resource_limits,
+            ssh_port=request.ssh_port,
+            ssh_public_key=request.ssh_public_key,
         )
         return self._container.start_container(container_request)
 

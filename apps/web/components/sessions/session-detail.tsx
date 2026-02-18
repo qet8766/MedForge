@@ -3,17 +3,18 @@
 import Link from "next/link";
 
 import {
+  AlertTriangle,
   ArrowLeft,
   Copy,
-  ExternalLink,
   Square,
+  Terminal,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { SessionRead } from "@/lib/contracts";
 import { formatTimestamp } from "@/lib/format";
 import { isTransitioning } from "@/lib/status";
-import { sessionUrl } from "@/lib/surface";
+import { useAuthContext } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,13 +50,20 @@ export function SessionDetail({
   session,
   onStop,
 }: SessionDetailProps): React.JSX.Element {
+  const { user } = useAuthContext();
   const isActive =
     session.status === "running" || session.status === "starting";
-  const ideUrl = sessionUrl(session.slug);
+  const sshCommand = `ssh coder@${session.ssh_host} -p ${session.ssh_port}`;
+  const vscodeUri = `vscode://vscode-remote/ssh-remote+coder@${session.ssh_host}:${session.ssh_port}/workspace`;
+  const hasNoSshKey = !user?.ssh_public_key;
 
-  function handleCopyUrl(): void {
-    void navigator.clipboard.writeText(ideUrl);
-    toast.success("Session URL copied to clipboard.");
+  function handleCopySshCommand(): void {
+    void navigator.clipboard.writeText(sshCommand);
+    toast.success("SSH command copied to clipboard.");
+  }
+
+  function handleOpenVSCode(): void {
+    window.open(vscodeUri, "_self");
   }
 
   return (
@@ -81,6 +89,51 @@ export function SessionDetail({
             {session.error_message}
           </p>
         </div>
+      ) : null}
+
+      {isActive && hasNoSshKey ? (
+        <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="size-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-700">No SSH key configured</p>
+            <p className="text-sm text-yellow-600 mt-1">
+              Add your SSH public key in{" "}
+              <Link href="/settings/profile" className="underline underline-offset-4 hover:text-yellow-700">
+                Settings
+              </Link>{" "}
+              to connect to this session.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {isActive && session.ssh_port > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Terminal className="size-4" />
+              SSH Connection
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 font-mono text-sm">
+              <span className="flex-1 truncate">{sshCommand}</span>
+              <Button variant="ghost" size="icon" className="shrink-0 size-7" onClick={handleCopySshCommand}>
+                <Copy className="size-3.5" />
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleCopySshCommand}>
+                <Copy className="size-4" />
+                Copy SSH Command
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleOpenVSCode}>
+                <Terminal className="size-4" />
+                Open in VS Code
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -114,6 +167,11 @@ export function SessionDetail({
               <MetadataRow label="Workspace">
                 {session.workspace_zfs}
               </MetadataRow>
+              {session.ssh_port > 0 ? (
+                <MetadataRow label="SSH Port">
+                  {session.ssh_port}
+                </MetadataRow>
+              ) : null}
               {session.container_id ? (
                 <MetadataRow label="Container">
                   {session.container_id.slice(0, 12)}
@@ -134,24 +192,10 @@ export function SessionDetail({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {isActive ? (
-          <Button asChild>
-            <a href={ideUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="size-4" />
-              Open IDE
-            </a>
-          </Button>
-        ) : null}
-
-        <Button variant="outline" onClick={handleCopyUrl}>
-          <Copy className="size-4" />
-          Copy URL
-        </Button>
-
         {isActive && onStop ? (
           <ConfirmDialog
             title="Stop Session"
-            description={`This will stop session ${session.slug}. Any unsaved work in the IDE may be lost.`}
+            description={`This will stop session ${session.slug}. Any unsaved work may be lost.`}
             confirmLabel="Stop Session"
             onConfirm={onStop}
             trigger={

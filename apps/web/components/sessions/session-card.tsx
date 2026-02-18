@@ -1,10 +1,10 @@
 import Link from "next/link";
 
-import { ExternalLink } from "lucide-react";
+import { Copy, Terminal } from "lucide-react";
+import { toast } from "sonner";
 
 import type { SessionRead } from "@/lib/contracts";
 import { formatTimestamp } from "@/lib/format";
-import { sessionUrl } from "@/lib/surface";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +21,12 @@ type SessionCardProps = {
 
 export function SessionCard({ session }: SessionCardProps): React.JSX.Element {
   const isRunning = session.status === "running";
-  const ideUrl = sessionUrl(session.slug);
+  const sshCommand = `ssh coder@${session.ssh_host} -p ${session.ssh_port}`;
+
+  function handleCopySsh(): void {
+    void navigator.clipboard.writeText(sshCommand);
+    toast.success("SSH command copied.");
+  }
 
   return (
     <Card data-testid="session-current">
@@ -46,13 +51,15 @@ export function SessionCard({ session }: SessionCardProps): React.JSX.Element {
           <span>Stopped: {formatTimestamp(session.stopped_at)}</span>
         </div>
 
-        {isRunning ? (
+        {isRunning && session.ssh_port > 0 ? (
           <div className="flex gap-2">
-            <Button size="sm" asChild>
-              <a href={ideUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="size-4" />
-                Open IDE
-              </a>
+            <Button size="sm" onClick={handleCopySsh}>
+              <Copy className="size-4" />
+              Copy SSH
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.open(`vscode://vscode-remote/ssh-remote+coder@${session.ssh_host}:${session.ssh_port}/workspace`, "_self")}>
+              <Terminal className="size-4" />
+              VS Code
             </Button>
             <Button variant="outline" size="sm" asChild>
               <Link href={`/sessions/${session.id}`}>

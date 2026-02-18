@@ -116,6 +116,7 @@ class MeResponse(BaseModel):
     role: Role
     email: str | None = None
     can_use_internal: bool
+    ssh_public_key: str | None = None
 
 
 class SessionCreateRequest(BaseModel):
@@ -138,6 +139,8 @@ class SessionRead(BaseModel):
     status: SessionStatus
     container_id: str | None
     gpu_id: int
+    ssh_port: int
+    ssh_host: str = ""
     slug: str
     workspace_zfs: str
     created_at: datetime
@@ -200,3 +203,4 @@ class MeUpdateRequest(BaseModel):
     email: str | None = Field(default=None, max_length=320)
     current_password: str | None = Field(default=None, max_length=128)
     new_password: str | None = Field(default=None, min_length=8, max_length=128)
+    ssh_public_key: str | None = Field(default=None, max_length=4096)

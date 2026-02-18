@@ -47,6 +47,8 @@ def create_session_for_principal(
         pack_id=pack.id,
         workspace_zfs_root=settings.workspace_zfs_root,
         max_retries=settings.session_allocation_max_retries,
+        ssh_port_range_start=settings.ssh_port_range_start,
+        ssh_port_range_end=settings.ssh_port_range_end,
     )
 
     runtime = get_session_runtime(settings)
@@ -82,6 +84,8 @@ def create_session_for_principal(
                     shm_size=settings.session_shm_size,
                     pids_limit=settings.session_pids_limit,
                 ),
+                ssh_port=row.ssh_port,
+                ssh_public_key=user.ssh_public_key,
             )
         )
         row = finalize_running(session, row=row, container_id=start_result.container_id)
@@ -108,7 +112,9 @@ def create_session_for_principal(
         pack_id=str(row.pack_id),
         slug=row.slug,
     )
-    return SessionCreateResponse(message="Session started.", session=SessionRead.model_validate(row))
+    session_read = SessionRead.model_validate(row)
+    session_read.ssh_host = settings.ssh_host
+    return SessionCreateResponse(message="Session started.", session=session_read)
 
 
 def _get_owned_or_admin_session(

@@ -61,6 +61,7 @@ export type MeResponse = {
   role: "user" | "admin";
   email: string | null;
   can_use_internal: boolean;
+  ssh_public_key: string | null;
 };
 
 export type SessionStatus = "starting" | "running" | "stopping" | "stopped" | "error";
@@ -73,6 +74,8 @@ export type SessionRead = {
   status: SessionStatus;
   container_id: string | null;
   gpu_id: number;
+  ssh_port: number;
+  ssh_host: string;
   slug: string;
   workspace_zfs: string;
   created_at: string;
@@ -176,6 +179,7 @@ export type MeUpdateRequest = {
   email?: string;
   current_password?: string;
   new_password?: string;
+  ssh_public_key?: string | null;
 };
 
 export type SessionListItem = SessionRead & {

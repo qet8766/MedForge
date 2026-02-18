@@ -42,11 +42,3 @@ export function domainFromHostname(hostname: string): string {
   return normalized;
 }
 
-export function sessionUrl(slug: string): string {
-  if (typeof window === "undefined") {
-    return "#";
-  }
-  const domain = domainFromHostname(window.location.hostname);
-  const surface = inferClientSurface();
-  return `https://s-${slug}.${surface}.medforge.${domain}`;
-}

@@ -90,6 +90,8 @@ class SessionStartRequest:
     sessions_network: str
     start_timeout_seconds: int
     resource_limits: SessionResourceLimits
+    ssh_port: int = 0
+    ssh_public_key: str | None = None
 
 
 @dataclass(frozen=True)
@@ -127,6 +129,8 @@ class ContainerStartRequest:
     workspace_mount: str
     start_timeout_seconds: int
     resource_limits: SessionResourceLimits
+    ssh_port: int = 0
+    ssh_public_key: str | None = None
 
 
 @dataclass(frozen=True)

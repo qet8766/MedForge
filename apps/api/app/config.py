@@ -159,6 +159,10 @@ class Settings:
     session_mem_reservation: str | None = _env_opt_str("SESSION_MEM_RESERVATION", "8g")
     session_shm_size: str | None = _env_opt_str("SESSION_SHM_SIZE", "4g")
     session_pids_limit: int | None = _env_opt_int("SESSION_PIDS_LIMIT")
+    # SSH access settings.
+    ssh_port_range_start: int = _env_int("SSH_PORT_RANGE_START", 10000)
+    ssh_port_range_end: int = _env_int("SSH_PORT_RANGE_END", 10999)
+    ssh_host: str = _env("SSH_HOST", "")
 
     def __post_init__(self) -> None:
         legacy_env_map = {
@@ -186,6 +190,9 @@ class Settings:
         object.__setattr__(self, "training_data_root", resolved_training)
         object.__setattr__(self, "public_eval_data_root", resolved_public_eval)
         object.__setattr__(self, "test_holdouts_dir", resolved_holdouts)
+
+        if not self.ssh_host:
+            object.__setattr__(self, "ssh_host", self.domain)
 
 
 _SETTINGS: Settings | None = None

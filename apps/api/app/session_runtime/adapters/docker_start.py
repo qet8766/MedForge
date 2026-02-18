@@ -73,7 +73,7 @@ def _resource_kwargs(request: ContainerStartRequest) -> dict[str, object]:
 
 
 def run_container(client: docker.DockerClient, request: ContainerStartRequest) -> str:
-    env = {
+    env: dict[str, str] = {
         "MEDFORGE_SESSION_ID": str(request.session_id),
         "MEDFORGE_USER_ID": str(request.user_id),
         "MEDFORGE_EXPOSURE": request.exposure,
@@ -81,24 +81,30 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
         "NVIDIA_VISIBLE_DEVICES": str(request.gpu_id),
         "CUDA_VISIBLE_DEVICES": "0",
     }
+    if request.ssh_public_key:
+        env["MEDFORGE_SSH_PUBLIC_KEY"] = request.ssh_public_key
+
     device_request = docker.types.DeviceRequest(
         device_ids=[str(request.gpu_id)],
         capabilities=[["gpu"]],
     )
 
-    is_external = request.exposure == "EXTERNAL"
+    ports: dict[str, tuple[str, int]] | None = None
+    if request.ssh_port:
+        ports = {"22/tcp": ("0.0.0.0", request.ssh_port)}
+
+    sshd_caps = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "FSETID", "KILL"]
 
     container = client.containers.run(
         request.image_ref,
         name=request.container_name,
         detach=True,
         network=request.sessions_network,
-        user="1000:1000",
         cap_drop=["ALL"],
-        cap_add=["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "FSETID", "KILL"] if is_external else None,
+        cap_add=sshd_caps,
         privileged=False,
-        security_opt=None if is_external else ["no-new-privileges:true"],
         environment=env,
+        ports=ports,
         volumes={request.workspace_mount: {"bind": "/workspace", "mode": "rw"}},
         device_requests=[device_request],
         **_resource_kwargs(request),

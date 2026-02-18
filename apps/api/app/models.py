@@ -66,6 +66,7 @@ class User(SQLModel, table=True):
     role: Role = Field(default=Role.USER, sa_column=Column(SAEnum(Role, name="role"), nullable=False))
     can_use_internal: bool = Field(default=False)
     max_concurrent_sessions: int = Field(default=1)
+    ssh_public_key: str | None = Field(default=None, max_length=4096)
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -113,6 +114,7 @@ class SessionRecord(SQLModel, table=True):
     status: SessionStatus = Field(sa_column=Column(SAEnum(SessionStatus, name="session_status"), nullable=False))
     container_id: str | None = Field(default=None, max_length=128)
     gpu_id: int = Field(foreign_key="gpu_devices.id", index=True)
+    ssh_port: int = Field(default=0)
     slug: str = Field(index=True, unique=True, min_length=8, max_length=8)
     workspace_zfs: str = Field(unique=True, max_length=255)
     created_at: datetime = Field(default_factory=utcnow)

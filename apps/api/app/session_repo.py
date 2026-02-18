@@ -113,6 +113,18 @@ def _select_free_gpu(session: Session) -> int | None:
     return cast(int | None, session.exec(statement).first())
 
 
+def _select_free_ssh_port(session: Session, *, port_start: int, port_end: int) -> int | None:
+    status_col = cast(Any, SessionRecord.status)
+    active_ports = (
+        select(SessionRecord.ssh_port).where(status_col.in_(ACTIVE_SESSION_STATUSES)).where(SessionRecord.ssh_port > 0)
+    )
+    used = {int(p) for p in session.exec(active_ports).all()}
+    for port in range(port_start, port_end + 1):
+        if port not in used:
+            return port
+    return None
+
+
 def allocate_starting_session(
     session: Session,
     *,
@@ -121,6 +133,8 @@ def allocate_starting_session(
     pack_id: UUID,
     workspace_zfs_root: str,
     max_retries: int,
+    ssh_port_range_start: int = 10000,
+    ssh_port_range_end: int = 10999,
 ) -> SessionRecord:
     retries = max(max_retries, 1)
 
@@ -144,6 +158,13 @@ def allocate_starting_session(
                     detail="No GPUs available.",
                 )
 
+            ssh_port = _select_free_ssh_port(session, port_start=ssh_port_range_start, port_end=ssh_port_range_end)
+            if ssh_port is None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="No SSH ports available.",
+                )
+
             session_id = uuid.uuid4()
             row = SessionRecord(
                 id=session_id,
@@ -152,6 +173,7 @@ def allocate_starting_session(
                 pack_id=pack_id,
                 status=SessionStatus.STARTING,
                 gpu_id=gpu_id,
+                ssh_port=ssh_port,
                 slug=_slug_token(),
                 workspace_zfs=_workspace_path(workspace_zfs_root, user_id=user.id, session_id=session_id),
             )

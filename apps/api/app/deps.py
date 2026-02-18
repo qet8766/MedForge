@@ -23,6 +23,7 @@ class AuthPrincipal:
     email: str | None
     can_use_internal: bool
     source: str
+    ssh_public_key: str | None = None
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -104,6 +105,7 @@ def _principal_from_cookie(
         email=user.email,
         can_use_internal=user.can_use_internal,
         source="cookie",
+        ssh_public_key=user.ssh_public_key,
     )
 
 
