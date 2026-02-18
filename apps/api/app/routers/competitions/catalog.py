@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
@@ -11,12 +13,15 @@ from app.schemas import (
     CompetitionDetail,
     CompetitionSummary,
     DatasetDetail,
+    DatasetFileEntry,
     DatasetSummary,
     LeaderboardEntry,
     LeaderboardResponse,
+    markdown_to_preview,
 )
 
 from .dependencies import get_bound_exposure
+from .errors import dataset_path_outside_root
 from .leaderboard import fetch_leaderboard_rows
 from .queries import (
     competition_or_404,
@@ -27,6 +32,11 @@ from .queries import (
 )
 
 router = APIRouter()
+
+
+def _with_preview(summary: CompetitionSummary, description: str) -> CompetitionSummary:
+    summary.description_preview = markdown_to_preview(description)
+    return summary
 
 
 @router.get("/competitions", response_model=ApiEnvelope[list[CompetitionSummary]])
@@ -45,7 +55,10 @@ def list_competitions(
     next_cursor = encode_offset_cursor(offset + limit) if has_more else None
     return envelope(
         request,
-        [CompetitionSummary.model_validate(competition) for competition in page],
+        [
+            _with_preview(CompetitionSummary.model_validate(competition), competition.description)
+            for competition in page
+        ],
         limit=limit,
         next_cursor=next_cursor,
         has_more=has_more,
@@ -150,3 +163,31 @@ def get_dataset(
 ) -> ApiEnvelope[DatasetDetail]:
     dataset = dataset_by_slug_or_404(session, slug, exposure=exposure)
     return envelope(request, DatasetDetail.model_validate(dataset))
+
+
+@router.get("/datasets/{slug}/files", response_model=ApiEnvelope[list[DatasetFileEntry]])
+def list_dataset_files(
+    request: Request,
+    slug: str,
+    session: Session = Depends(get_session),
+    exposure: Exposure = Depends(get_bound_exposure),
+) -> ApiEnvelope[list[DatasetFileEntry]]:
+    dataset = dataset_by_slug_or_404(session, slug, exposure=exposure)
+    training_root = Path(dataset.storage_path)
+    training_root_resolved = training_root.resolve()
+
+    if not training_root_resolved.is_dir():
+        return envelope(request, [])
+
+    entries: list[DatasetFileEntry] = []
+    for child in sorted(training_root_resolved.iterdir(), key=lambda p: (p.is_file(), p.name)):
+        try:
+            child.resolve().relative_to(training_root_resolved)
+        except ValueError:
+            raise dataset_path_outside_root(slug)
+        if child.is_file():
+            entries.append(DatasetFileEntry(name=child.name, size=child.stat().st_size, type="file"))
+        elif child.is_dir():
+            dir_size = sum(f.stat().st_size for f in child.rglob("*") if f.is_file())
+            entries.append(DatasetFileEntry(name=child.name, size=dir_size, type="directory"))
+    return envelope(request, entries)

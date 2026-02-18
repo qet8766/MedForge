@@ -31,7 +31,7 @@ export default async function CompetitionsPage(): Promise<React.JSX.Element> {
           description="There are no competitions available on this surface yet."
         />
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
           {competitions.map((competition) => (
             <CompetitionCard key={competition.slug} competition={competition} />
           ))}

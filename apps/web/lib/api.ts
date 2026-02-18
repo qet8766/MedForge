@@ -11,6 +11,7 @@ export type {
   CompetitionDetail,
   CompetitionSummary,
   DatasetDetail,
+  DatasetFileEntry,
   DatasetSummary,
   HealthResponse,
   LeaderboardEntry,

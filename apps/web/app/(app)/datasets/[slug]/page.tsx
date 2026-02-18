@@ -1,4 +1,5 @@
 import { apiGet, type DatasetDetail as DatasetDetailType } from "@/lib/api";
+import { formatBytes } from "@/lib/format";
 import { inferServerSurface } from "@/lib/server-surface";
 import { apiPathForSurface } from "@/lib/surface";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,21 +9,6 @@ import { DatasetExplorer } from "@/components/datasets/dataset-explorer";
 import { PageHeader } from "@/components/layout/page-header";
 
 export const dynamic = "force-dynamic";
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unitIndex = -1;
-
-  do {
-    value /= 1024;
-    unitIndex++;
-  } while (value >= 1024 && unitIndex < units.length - 1);
-
-  return `${value.toFixed(1)} ${units[unitIndex]}`;
-}
 
 export default async function DatasetSlugPage({
   params,
@@ -50,7 +36,7 @@ export default async function DatasetSlugPage({
         </CardContent>
       </Card>
 
-      <DatasetExplorer />
+      <DatasetExplorer slug={slug} />
     </div>
   );
 }

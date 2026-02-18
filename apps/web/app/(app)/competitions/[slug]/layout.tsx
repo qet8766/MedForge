@@ -1,9 +1,10 @@
+import Link from "next/link";
+
 import { apiGet, type CompetitionDetail } from "@/lib/api";
 import { inferServerSurface } from "@/lib/server-surface";
 import { apiPathForSurface } from "@/lib/surface";
 import { Badge } from "@/components/ui/badge";
 import { CompetitionTabs } from "@/components/competitions/competition-tabs";
-import { CompetitionStatsBar } from "@/components/competitions/competition-stats-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +36,26 @@ export default async function CompetitionSlugLayout({
           ) : null}
           <Badge variant="secondary">{competition.status}</Badge>
         </div>
-        <p className="max-w-prose text-muted-foreground leading-relaxed">
-          {competition.description}
-        </p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <span>
+            <span className="font-medium text-foreground">Metric:</span>{" "}
+            {competition.metric} {competition.metric_version}
+          </span>
+          <span>
+            <span className="font-medium text-foreground">Daily cap:</span>{" "}
+            {competition.submission_cap_per_day} submissions
+          </span>
+          <span>
+            <span className="font-medium text-foreground">Dataset:</span>{" "}
+            <Link
+              href={`/datasets/${competition.dataset_slug}`}
+              className="text-primary underline underline-offset-4 hover:text-primary/80"
+            >
+              {competition.dataset_title}
+            </Link>
+          </span>
+        </div>
       </section>
-
-      <CompetitionStatsBar competition={competition} />
 
       <CompetitionTabs slug={slug} />
 

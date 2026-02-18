@@ -115,3 +115,12 @@ def corrupted_score_components(score_id: UUID) -> ProblemError:
         title="Corrupted Score Components",
         detail=f"Submission score '{score_id}' has invalid score component data.",
     )
+
+
+def dataset_path_outside_root(slug: str) -> ProblemError:
+    return _problem(
+        status_code=status.HTTP_403_FORBIDDEN,
+        type_slug="dataset-path-outside-root",
+        title="Path Outside Root",
+        detail=f"Requested path is outside dataset '{slug}' root.",
+    )

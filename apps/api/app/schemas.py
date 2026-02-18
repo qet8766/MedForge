@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
@@ -17,6 +18,22 @@ def _lower_enum_value(value: object) -> str:
     return value.lower()
 
 
+def markdown_to_preview(description: str, max_len: int = 200) -> str:
+    """Strip markdown syntax and truncate for card previews."""
+    text = re.sub(r"#{1,6}\s+", "", description)  # headings
+    text = re.sub(r"\*{1,2}([^*]+)\*{1,2}", r"\1", text)  # bold/italic
+    text = re.sub(r"`([^`]+)`", r"\1", text)  # inline code
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)  # links
+    text = re.sub(r"[-*+]\s+", "", text)  # list markers
+    text = re.sub(r"\d+\.\s+", "", text)  # numbered lists
+    text = re.sub(r"\n+", " ", text)  # newlines to spaces
+    text = re.sub(r"\s+", " ", text).strip()  # collapse whitespace
+    if len(text) <= max_len:
+        return text
+    truncated = text[:max_len].rsplit(" ", 1)[0]
+    return truncated + "..." if truncated else text[:max_len] + "..."
+
+
 class CompetitionSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,6 +48,7 @@ class CompetitionSummary(BaseModel):
     competition_spec_version: str
     is_permanent: bool
     submission_cap_per_day: int
+    description_preview: str = ""
 
     @field_validator("competition_exposure", mode="before")
     @classmethod
@@ -204,3 +222,9 @@ class MeUpdateRequest(BaseModel):
     current_password: str | None = Field(default=None, max_length=128)
     new_password: str | None = Field(default=None, min_length=8, max_length=128)
     ssh_public_key: str | None = Field(default=None, max_length=4096)
+
+
+class DatasetFileEntry(BaseModel):
+    name: str
+    size: int
+    type: Literal["file", "directory"]

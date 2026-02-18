@@ -10,6 +10,7 @@ export type CompetitionSummary = {
   competition_spec_version: string;
   is_permanent: boolean;
   submission_cap_per_day: number;
+  description_preview: string;
 };
 
 export type CompetitionDetail = CompetitionSummary & {
@@ -180,6 +181,12 @@ export type MeUpdateRequest = {
   current_password?: string;
   new_password?: string;
   ssh_public_key?: string | null;
+};
+
+export type DatasetFileEntry = {
+  name: string;
+  size: number;
+  type: "file" | "directory";
 };
 
 export type SessionListItem = SessionRead & {

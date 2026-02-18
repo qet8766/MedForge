@@ -1,47 +1,31 @@
+import Link from "next/link";
+
 import type { CompetitionDetail } from "@/lib/api";
-import { MetricDisplay } from "@/components/shared/metric-display";
 
 type CompetitionStatsBarProps = {
   competition: CompetitionDetail;
-  submissionCount?: number;
-  rank?: number;
 };
 
-export function CompetitionStatsBar({
-  competition,
-  submissionCount,
-  rank,
-}: CompetitionStatsBarProps): React.JSX.Element {
+export function CompetitionStatsBar({ competition }: CompetitionStatsBarProps): React.JSX.Element {
   return (
-    <div className="grid grid-cols-2 gap-6 rounded-lg border p-6 sm:grid-cols-3 lg:grid-cols-6">
-      <MetricDisplay
-        label="Metric"
-        value={`${competition.metric} v${competition.metric_version}`}
-      />
-      <MetricDisplay
-        label="Daily Cap"
-        value={`${competition.submission_cap_per_day}/day`}
-      />
-      <MetricDisplay
-        label="Scoring Mode"
-        value={competition.scoring_mode}
-      />
-      <MetricDisplay
-        label="Evaluation"
-        value={competition.evaluation_policy}
-      />
-      {submissionCount !== undefined ? (
-        <MetricDisplay
-          label="My Submissions"
-          value={submissionCount}
-        />
-      ) : null}
-      {rank !== undefined ? (
-        <MetricDisplay
-          label="My Rank"
-          value={`#${rank}`}
-        />
-      ) : null}
+    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+      <span>
+        <span className="font-medium text-foreground">Metric:</span>{" "}
+        {competition.metric} {competition.metric_version}
+      </span>
+      <span>
+        <span className="font-medium text-foreground">Daily cap:</span>{" "}
+        {competition.submission_cap_per_day} submissions
+      </span>
+      <span>
+        <span className="font-medium text-foreground">Dataset:</span>{" "}
+        <Link
+          href={`/datasets/${competition.dataset_slug}`}
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
+        >
+          {competition.dataset_title}
+        </Link>
+      </span>
     </div>
   );
 }

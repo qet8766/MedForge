@@ -146,7 +146,7 @@ class Competition(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(index=True, unique=True, max_length=120)
     title: str = Field(max_length=255)
-    description: str = Field(default="", max_length=4000)
+    description: str = Field(default="", sa_column=Column(Text, nullable=False, server_default=""))
     competition_exposure: CompetitionExposure = Field(
         sa_column=Column(SAEnum(CompetitionExposure, name="competition_exposure"), nullable=False)
     )
