@@ -23,7 +23,7 @@
 
 ## Packs
 
-One default Pack, pinned by image digest. code-server version pinned globally. The target model includes `packs` and `sessions.pack_id`; UI does not expose pack selection.
+One default Pack, pinned by image digest. The target model includes `packs` and `sessions.pack_id`; UI does not expose pack selection.
 
 ## Container Spec
 
@@ -31,10 +31,10 @@ Image definition: `deploy/packs/default/Dockerfile`
 
 Runtime constraints (applied by the session manager when creating the container):
 
-- `--auth none` on code-server (Caddy is the access boundary).
+- SSH server with public-key authentication (port 22 mapped to host SSH port).
 - Non-root user (UID/GID 1000).
 - `cap-drop=ALL`, not privileged, no Docker socket.
-- EXTERNAL: `cap_add=[CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, FSETID, KILL]`, no `no-new-privileges` (allows sudo/setuid inside session).
+- EXTERNAL: `cap_add=[CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, FSETID, KILL]`, no `no-new-privileges` (allows sudo/setuid inside session; required for sshd privilege separation).
 - INTERNAL: no capabilities added back, `security_opt=["no-new-privileges:true"]`.
 - Container name: `mf-session-<slug>`
 - Network: `medforge-external-sessions` or `medforge-internal-sessions` (by exposure)
@@ -52,6 +52,7 @@ MEDFORGE_SESSION_ID=<uuid>
 MEDFORGE_USER_ID=<uuid>
 MEDFORGE_EXPOSURE=EXTERNAL|INTERNAL
 MEDFORGE_GPU_ID=<gpu_id>
+MEDFORGE_SSH_PUBLIC_KEY=<user ssh public key, if configured>
 NVIDIA_VISIBLE_DEVICES=<gpu_idx>
 CUDA_VISIBLE_DEVICES=0
 ```
@@ -75,9 +76,10 @@ Inputs: optional `pack_id` (defaults to seeded pack).
 2. Lock user row: `SELECT * FROM users WHERE id=:user_id FOR UPDATE`
 3. Count user active sessions (`starting | running | stopping`). If >= `max_concurrent_sessions`, reject.
 4. Select a free enabled GPU and lock it (`FOR UPDATE`). Pick an enabled `gpu_devices.id` not assigned to an active session.
-5. Insert session row: `status='starting'`, chosen `gpu_id`, `slug`, `pack_id`, and `workspace_zfs=tank/medforge/workspaces/<user_id>/<session_id>`.
-6. If insert fails due to an integrity conflict (for example slug/workspace uniqueness), roll back and retry a fixed number of times.
-7. `COMMIT`
+5. Allocate an SSH port from the configured range (10000–10999).
+6. Insert session row: `status='starting'`, chosen `gpu_id`, `slug`, `ssh_port`, `pack_id`, and `workspace_zfs=tank/medforge/workspaces/<user_id>/<session_id>`.
+7. If insert fails due to an integrity conflict (for example slug/workspace uniqueness), roll back and retry a fixed number of times.
+8. `COMMIT`
 
 **After commit, spawn container:**
 
@@ -110,12 +112,6 @@ If an `Origin` header is present, it must match an allowed MedForge remote-exter
   - `{ "data": { "session": SessionRead | null }, "meta": { ... } }`
 - Only the caller's own sessions are considered.
 - The selected row is the newest active session (`starting|running|stopping`) by `created_at DESC`.
-
-### Session Proxy Contract -- `GET /api/v2/auth/session-proxy`
-
-- This endpoint is internal control-plane plumbing for Caddy `forward_auth`.
-- External wildcard callers to `https://s-<slug>.medforge.<domain>/api/v2/auth/session-proxy` are blocked with **403**.
-- Real owner-access validation should target wildcard session root (`https://s-<slug>.medforge.<domain>/`) rather than calling this internal path directly.
 
 ### Container State Poller (`SESSION_POLL_INTERVAL_SECONDS` base interval)
 

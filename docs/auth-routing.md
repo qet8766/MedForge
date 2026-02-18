@@ -2,14 +2,13 @@
 
 ### Scope
 
-Authentication and wildcard routing contract for external MedForge hosts.
+Authentication and routing contract for external MedForge hosts.
 
 ### In Scope
 
 - cookie session authentication for API principals
 - origin allowlist checks on state-changing API routes
-- wildcard routing trust chain (`Caddy forward_auth -> API session-proxy -> upstream`)
-- upstream spoof-resistance and internal-path blocking on wildcard hosts
+- session access model (SSH with public-key auth, port range 10000–10999)
 
 ### Out of Scope
 
@@ -58,36 +57,11 @@ Authentication and wildcard routing contract for external MedForge hosts.
   - `POST /api/v2/external/admin/submissions/{submission_id}/score`
   - `POST /api/v2/internal/admin/submissions/{submission_id}/score`
 
-## Wildcard Routing Contract (Caddy + forward_auth)
+## Session Access Model
 
-Full config: `deploy/caddy/Caddyfile`
+Session containers run sshd on port 22. The API allocates a host SSH port (range 10000–10999) per session and maps it to the container's port 22. Users connect via `ssh -p <port> coder@<domain>`.
 
-Internal authorization endpoint:
-
-- `GET /api/v2/auth/session-proxy` (API host path used by Caddy `forward_auth`)
-
-Wildcard host protections:
-
-- External callers to `https://s-<slug>.external.medforge.<domain>/api/v2/auth/session-proxy` and
-  `https://s-<slug>.internal.medforge.<domain>/api/v2/auth/session-proxy` are blocked with `403` by Caddy.
-- Client-supplied `X-Upstream` is stripped before auth.
-
-`session-proxy` authorization matrix:
-
-| Code | Condition                                                  | Header                               |
-| ---- | ---------------------------------------------------------- | ------------------------------------ |
-| 200  | Authenticated, owner/admin, and session is `running`      | `X-Upstream: mf-session-<slug>:8080` |
-| 401  | Not authenticated                                          |                                      |
-| 403  | Authenticated but not owner/admin                          |                                      |
-| 404  | Invalid session host, unknown slug, or session not running |                                      |
-
-Caddy trust chain:
-
-- forwards `Host` and cookie context to `session-proxy`
-- copies API-generated `X-Upstream` to internal header `X-Medforge-Upstream`
-- fails closed with `502` if upstream header is missing
-- reverse proxies to `X-Medforge-Upstream`; websocket transport is supported
-- upstream choice is authoritative only from API-generated header, never client input
+There is no wildcard HTTP routing to session containers — Caddy does not proxy to sessions. Access control is enforced by SSH public-key authentication: the user's configured SSH public key is injected into the container at startup.
 
 ## Response Contract
 

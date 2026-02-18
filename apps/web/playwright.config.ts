@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const domain = process.env.E2E_DOMAIN?.trim() || process.env.DOMAIN?.trim() || "";
-const baseURL = process.env.E2E_BASE_URL?.trim() || (domain ? `https://medforge.${domain}` : "");
+const baseURL = process.env.E2E_BASE_URL?.trim() || (domain ? `https://${domain}` : "");
 const ignoreHTTPSErrors = (process.env.E2E_IGNORE_HTTPS_ERRORS ?? "true").toLowerCase() === "true";
 const hostRules = process.env.E2E_CHROMIUM_HOST_RULES?.trim();
 

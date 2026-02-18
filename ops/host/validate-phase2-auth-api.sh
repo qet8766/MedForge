@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Phase 2 auth + API contract gate validation.
-# Runs targeted test lanes for cookie auth, origin checks, session proxy rules,
+# Runs targeted test lanes for cookie auth, origin checks,
 # admin pagination, config/log contracts, and remote body validation.
 
 set -euo pipefail
@@ -111,10 +111,6 @@ run_auth_contract_tests() {
   run_pytest_with_optional_parallel \
     tests/test_api.py::test_signup_login_logout_cookie_flow \
     tests/test_api.py::test_me_requires_auth \
-    tests/test_api.py::test_session_proxy_requires_auth \
-    tests/test_api.py::test_session_proxy_returns_404_for_invalid_host \
-    tests/test_api.py::test_session_proxy_enforces_owner_and_running \
-    tests/test_auth_hardening.py::test_session_proxy_strips_spoofed_x_upstream \
     tests/test_auth_hardening.py::test_origin_matrix_allowed_origins \
     tests/test_auth_hardening.py::test_origin_matrix_rejected_origins \
     tests/test_auth_hardening.py::test_auth_signup_rate_limit_429 \

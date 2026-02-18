@@ -10,7 +10,6 @@ Current alpha scope:
 - `POST /api/v2/auth/login`
 - `POST /api/v2/auth/logout`
 - `GET /api/v2/me` (cookie auth + `can_use_internal`)
-- `GET /api/v2/auth/session-proxy` (owner/admin + running-session check)
 - Session lifecycle routes are exposure-split in v2:
   - `POST /api/v2/external/sessions`
   - `POST /api/v2/internal/sessions` (requires `can_use_internal`)

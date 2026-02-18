@@ -115,7 +115,7 @@ services:
     build:
       context: ../../apps/web
       args:
-        NEXT_PUBLIC_API_URL: https://api.medforge.${DOMAIN}
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}
         NEXT_PUBLIC_DOMAIN: ${DOMAIN}
         DOMAIN: ${DOMAIN}
     container_name: medforge-web
@@ -124,7 +124,7 @@ services:
       - medforge-api
     environment:
       API_URL: http://medforge-api:8000
-      NEXT_PUBLIC_API_URL: https://api.medforge.${DOMAIN}
+      NEXT_PUBLIC_API_URL: https://api.${DOMAIN}
       NEXT_PUBLIC_DOMAIN: ${DOMAIN}
     networks:
       - medforge-control

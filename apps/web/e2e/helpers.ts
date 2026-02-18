@@ -12,7 +12,7 @@ export function resolveBaseURL(): string {
 
   const domain = process.env.E2E_DOMAIN?.trim() || process.env.DOMAIN?.trim() || "";
   if (domain) {
-    return `https://medforge.${domain}`;
+    return `https://${domain}`;
   }
 
   throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-external e2e.");
@@ -21,7 +21,7 @@ export function resolveBaseURL(): string {
 export function resolveApiBaseURL(): string {
   const baseURL = resolveBaseURL();
   const domain = resolveDomain(baseURL);
-  return `https://api.medforge.${domain}`;
+  return `https://api.${domain}`;
 }
 
 export function resolveDomain(baseURL: string): string {
@@ -31,14 +31,9 @@ export function resolveDomain(baseURL: string): string {
   }
 
   const hostname = new URL(baseURL).hostname;
-  if (hostname.startsWith("external.medforge.")) {
-    return hostname.slice("external.medforge.".length);
-  }
-  if (hostname.startsWith("internal.medforge.")) {
-    return hostname.slice("internal.medforge.".length);
-  }
-  if (hostname.startsWith("medforge.")) {
-    return hostname.slice("medforge.".length);
+  const match = hostname.match(/medforge\.[a-z0-9.-]+$/);
+  if (match) {
+    return match[0];
   }
 
   throw new Error("Unable to infer E2E domain. Set E2E_DOMAIN explicitly.");

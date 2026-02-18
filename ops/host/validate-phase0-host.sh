@@ -180,21 +180,6 @@ tls_probe() {
   curl -fsS "https://${web_host}" >/dev/null
   curl -fsS "https://${api_host}/healthz" >/dev/null
 
-  local status
-  status="$(curl -sS -o /tmp/${PHASE_ID}-session-proxy.out -w '%{http_code}' \
-    "https://${api_host}/api/v2/auth/session-proxy" \
-    -H "Host: $(remote_external_session_host "phase0check" "${DOMAIN}")")"
-
-  case "${status}" in
-    401|403|404)
-      echo "Session proxy probe: ${status} (expected)"
-      ;;
-    *)
-      echo "ERROR: unexpected wildcard session-proxy status: ${status}"
-      return 1
-      ;;
-  esac
-
   remote_tls_verify_host "${web_host}"
   remote_tls_verify_host "${api_host}"
 }

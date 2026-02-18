@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-import re
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from sqlmodel import Session, select
 
 from app.api_contract import ApiEnvelope, envelope
 from app.config import Settings, get_settings
 from app.database import get_session
 from app.deps import AuthPrincipal, get_current_user, require_allowed_origin, require_internal_access
-from app.models import Exposure, Role, SessionRecord, SessionStatus, User
+from app.models import Exposure, SessionRecord, SessionStatus, User
 from app.pagination import decode_offset_cursor, encode_offset_cursor, validate_limit
 from app.schemas import (
     MeResponse,
@@ -29,8 +26,6 @@ from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
 from app.util import commit_and_refresh, parse_enum_filter
 
 router = APIRouter(tags=["control-plane"])
-
-_SESSION_HOST_RE = re.compile(r"^s-([a-z0-9]{8})\.(external|internal)\.medforge\..+$")
 
 
 def _session_read_with_ssh_host(row: SessionRecord, settings: Settings) -> SessionRead:
@@ -388,42 +383,4 @@ def _list_sessions_for_exposure(
         limit=validated_limit,
         next_cursor=next_cursor,
         has_more=has_more,
-    )
-
-
-@router.get("/auth/session-proxy", response_model=ApiEnvelope[SessionActionResponse])
-def session_proxy(
-    request: Request,
-    host: Annotated[str | None, Header(alias="Host")] = None,
-    principal: AuthPrincipal = Depends(get_current_user),
-    session: Session = Depends(get_session),
-) -> JSONResponse:
-    if host is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session host not found.")
-
-    hostname = host.split(":", 1)[0].lower()
-    match = _SESSION_HOST_RE.match(hostname)
-    if match is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session host not found.")
-
-    slug = match.group(1)
-    host_exposure = Exposure.INTERNAL if match.group(2) == "internal" else Exposure.EXTERNAL
-
-    session_row = session.exec(select(SessionRecord).where(SessionRecord.slug == slug)).first()
-    if session_row is None or session_row.status != SessionStatus.RUNNING:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
-    if session_row.exposure != host_exposure:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
-
-    if host_exposure == Exposure.INTERNAL and principal.role != Role.ADMIN and not principal.can_use_internal:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Internal access denied.")
-
-    if principal.role != Role.ADMIN and session_row.user_id != principal.user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Session access denied.")
-
-    body = envelope(request, SessionActionResponse(message="Session proxy authorized.")).model_dump(mode="json")
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        headers={"X-Upstream": f"mf-session-{slug}:8080"},
-        content=body,
     )

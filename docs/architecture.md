@@ -32,12 +32,12 @@ Canonical runtime claim precedence:
 ## Platform Scope
 
 Platform overview:
-- MedForge provisions EXTERNAL and INTERNAL GPU-backed browser development sessions (`code-server`) and permanent competitions on a single host.
+- MedForge provisions EXTERNAL and INTERNAL GPU-backed SSH-accessible development sessions and permanent competitions on a single host.
 
 Primary goals:
 - Stable exposure-scoped session lifecycle (create, run, stop, recover) with one physical GPU per active session.
 - Permanent EXTERNAL competitions with deterministic scoring/leaderboard behavior.
-- Wildcard owner-bound session routing and isolated per-session workspaces with stop snapshots.
+- Isolated per-session workspaces with stop snapshots and direct SSH access (port range 10000–10999).
 
 Constraints:
 - Single-host deployment target.
@@ -62,7 +62,7 @@ Non-goals:
 
 ### Data Plane
 - Runtime containers: `mf-session-<slug>` (one per active session).
-- Runtime IDE: `code-server --auth none`.
+- Runtime access: SSH (sshd, public-key auth, port 22 mapped to host 10000–10999).
 - Allocation model: one physical GPU per active session.
 - Workspace model: one per-session ZFS dataset mounted into each runtime.
 
@@ -86,16 +86,9 @@ Fixed IP contract on `medforge-external-sessions`: `medforge-caddy=172.30.0.2`, 
 | `external.medforge.<domain>` | `medforge-web` (EXTERNAL surface) |
 | `internal.medforge.<domain>` | `medforge-web` (INTERNAL surface) |
 | `api.medforge.<domain>` | `medforge-api` |
-| `s-<slug>.external.medforge.<domain>` | EXTERNAL session upstream |
-| `s-<slug>.internal.medforge.<domain>` | INTERNAL session upstream |
 | `dev.medforge.<domain>` | `medforge-web-dev` (dev overlay, hot-reload) |
 
-Routing invariants:
-- Caddy strips client `X-Upstream`; client hints cannot select session upstreams.
-- Upstream selection comes only from API `GET /api/v2/auth/session-proxy`.
-- Missing API-supplied upstream fails closed (`502`).
-- External wildcard `.../api/v2/auth/session-proxy` is blocked (`403`).
-- Wildcard root matrix: `401` unauthenticated, `403` non-owner, `200` owner/admin for running session; after async stop finalization -> `404`.
+Session access: users connect via SSH directly to host ports (10000–10999). No wildcard HTTP routing to session containers.
 
 Reality gate for external claims:
 - `DOMAIN` must be consistent across Compose/API/web config.
@@ -145,11 +138,9 @@ Full contract: `docs/competitions.md`.
 
 ## Security Boundaries
 
-- Session runtime keeps `code-server --auth none`; Caddy + API enforce access control.
-- API-issued upstream headers are authoritative; client-supplied upstream headers are stripped.
-- Wildcard internal auth path is blocked externally (`403`).
+- Session runtime uses SSH public-key auth; API allocates per-session SSH ports.
 - State-changing endpoints enforce MedForge-domain origin allowlist checks.
-- East-west policy allows only Caddy fixed IP to reach session `:8080`.
+- East-west policy blocks direct inter-session SSH (port 22) on the sessions bridge.
 
 ## Data and Persistence Boundaries
 

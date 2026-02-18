@@ -25,20 +25,12 @@ export function apiPathForSurface(surface: Surface, path: string): string {
 }
 
 export function surfaceHost(surface: Surface, domain: string): string {
-  return `${surface}.medforge.${domain}`;
+  return `${surface}.${domain}`;
 }
 
 export function domainFromHostname(hostname: string): string {
   const normalized = hostname.toLowerCase();
-  for (const prefix of [
-    "external.medforge.",
-    "internal.medforge.",
-    "medforge.",
-  ]) {
-    if (normalized.startsWith(prefix)) {
-      return normalized.slice(prefix.length);
-    }
-  }
-  return normalized;
+  const match = normalized.match(/medforge\.[a-z0-9.-]+$/);
+  return match ? match[0] : normalized;
 }
 

@@ -1,7 +1,6 @@
 """MF-101 / MF-104: Auth hardening tests.
 
 Validates:
-- X-Upstream spoof rejection
 - Origin validation matrix
 - Rate limit 429 responses on auth endpoints
 - Session fixation (logout → reuse token → 401)
@@ -13,7 +12,6 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 
 import pytest
 from sqlmodel import Session, select
@@ -45,44 +43,6 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
     if extra:
         headers.update(extra)
     return headers
-
-
-# ── X-Upstream spoof rejection ──────────────────────────────────────
-
-
-def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens) -> None:
-    """Owner request with spoofed X-Upstream header → overwritten by server."""
-    from app.models import Exposure, Pack, SessionRecord, SessionStatus
-
-    with Session(db_engine) as session:
-        pack = session.exec(select(Pack)).first()
-        assert pack is not None
-        row = SessionRecord(
-            user_id=UUID(USER_A),
-            exposure=Exposure.EXTERNAL,
-            pack_id=pack.id,
-            status=SessionStatus.RUNNING,
-            gpu_id=0,
-            slug="spoof123",
-            workspace_zfs="tank/medforge/workspaces/test/spoof",
-        )
-        session.add(row)
-        session.commit()
-
-    response = client.get(
-        "/api/v2/auth/session-proxy",
-        headers=_auth_headers(
-            auth_tokens,
-            USER_A,
-            {
-                "Host": "s-spoof123.external.medforge.example.com",
-                "X-Upstream": "evil-target:9999",
-            },
-        ),
-    )
-    assert response.status_code == 200
-    assert response.headers["x-upstream"] == "mf-session-spoof123:8080"
-    assert "evil" not in response.headers["x-upstream"]
 
 
 # ── Origin validation matrix ────────────────────────────────────────

@@ -14,7 +14,7 @@ const FEATURES = [
     icon: Gpu,
     title: "GPU Sessions",
     description:
-      "Launch GPU-accelerated code-server environments on demand. Train models, run experiments, and iterate without managing infrastructure.",
+      "Launch GPU-accelerated SSH development environments on demand. Train models, run experiments, and iterate without managing infrastructure.",
   },
   {
     icon: Trophy,

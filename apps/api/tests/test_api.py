@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
-from app.models import Competition, Exposure, Pack, SessionRecord, SessionStatus, User
+from app.models import Competition, SessionRecord, SessionStatus, User
 from app.session_runtime import (
     MockSessionRuntime,
     RuntimeErrorCode,
@@ -416,74 +416,6 @@ def test_signup_login_logout_cookie_flow(client) -> None:
     me_after_login = client.get("/api/v2/me")
     me_after_login_data, _ = _assert_success(me_after_login, status_code=200)
     assert me_after_login_data["email"] == "dev@example.com"
-
-
-def test_session_proxy_requires_auth(client) -> None:
-    response = client.get(
-        "/api/v2/auth/session-proxy",
-        headers={"Host": "s-abc12345.external.medforge.example.com"},
-    )
-    _assert_problem(response, status_code=401, type_suffix="http/401")
-
-
-def test_session_proxy_returns_404_for_invalid_host(client, auth_tokens) -> None:
-    response = client.get(
-        "/api/v2/auth/session-proxy",
-        headers=_auth_headers(auth_tokens, USER_A, {"Host": "invalid.medforge.example.com"}),
-    )
-    _assert_problem(response, status_code=404, type_suffix="http/404")
-
-
-def test_session_proxy_enforces_owner_and_running(client, db_engine, auth_tokens) -> None:
-    owner_id = UUID(USER_A)
-
-    with Session(db_engine) as session:
-        default_pack = session.exec(select(Pack)).first()
-        assert default_pack is not None
-
-        session_row = SessionRecord(
-            user_id=owner_id,
-            exposure=Exposure.EXTERNAL,
-            pack_id=default_pack.id,
-            status=SessionStatus.RUNNING,
-            gpu_id=0,
-            slug="abc12345",
-            workspace_zfs="tank/medforge/workspaces/owner/session",
-        )
-        session.add(session_row)
-        session.commit()
-
-    unauthorized = client.get(
-        "/api/v2/auth/session-proxy",
-        headers=_auth_headers(auth_tokens, USER_B, {"Host": "s-abc12345.external.medforge.example.com"}),
-    )
-    _assert_problem(unauthorized, status_code=403, type_suffix="http/403")
-
-    authorized = client.get(
-        "/api/v2/auth/session-proxy",
-        headers=_auth_headers(
-            auth_tokens,
-            USER_A,
-            {
-                "Host": "s-abc12345.external.medforge.example.com",
-                "X-Upstream": "evil-target:8080",
-            },
-        ),
-    )
-    assert authorized.status_code == 200
-    assert authorized.headers.get("x-upstream") == "mf-session-abc12345:8080"
-
-    with Session(db_engine) as session:
-        session_row = session.exec(select(SessionRecord).where(SessionRecord.slug == "abc12345")).one()
-        session_row.status = SessionStatus.STOPPED
-        session.add(session_row)
-        session.commit()
-
-    stopped = client.get(
-        "/api/v2/auth/session-proxy",
-        headers=_auth_headers(auth_tokens, USER_A, {"Host": "s-abc12345.external.medforge.example.com"}),
-    )
-    _assert_problem(stopped, status_code=404, type_suffix="http/404")
 
 
 def test_session_create_rejects_client_supplied_exposure_field(client, auth_tokens) -> None:

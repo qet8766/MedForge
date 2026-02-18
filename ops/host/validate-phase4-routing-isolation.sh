@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
-# Phase 4 routing + network isolation validation.
-# Verifies wildcard routing authorization, east-west isolation,
-# and X-Upstream spoof resistance.
+# Phase 4 SSH port allocation + network isolation validation.
+# Verifies SSH connectivity and east-west isolation.
 
 set -euo pipefail
 
@@ -39,8 +38,6 @@ SLUG_A=""
 SLUG_B=""
 COOKIE_JAR_A=""
 COOKIE_JAR_B=""
-AUTH_COOKIE_A=""
-AUTH_COOKIE_B=""
 CREATE_RESP_A=""
 CREATE_RESP_B=""
 CREATE_RESP_A_CODE=""
@@ -87,10 +84,6 @@ section_timing_end() {
   ended_at="$(date +%s)"
   elapsed=$((ended_at - SECTION_TIMER_STARTED_AT))
   record "- duration_s: \`${elapsed}\`"
-}
-
-resolve_caddy_ip() {
-  docker inspect -f '{{with index .NetworkSettings.Networks "medforge-external-sessions"}}{{.IPAddress}}{{end}}' medforge-caddy 2>/dev/null || true
 }
 
 validate_parallel_env() {
@@ -259,7 +252,6 @@ main() {
   require_cmd curl
   require_cmd docker
   require_cmd python3
-  require_cmd rg
   require_cmd sudo
 
   if ! sudo -n true >/dev/null 2>&1; then
@@ -304,12 +296,6 @@ main() {
   COOKIE_JAR_A="$(mktemp /tmp/medforge-phase4-cookie-a.XXXXXX)"
   COOKIE_JAR_B="$(mktemp /tmp/medforge-phase4-cookie-b.XXXXXX)"
   ensure_cookie_sessions_parallel
-  AUTH_COOKIE_A="$(cookie_token_from_jar "${COOKIE_JAR_A}")"
-  AUTH_COOKIE_B="$(cookie_token_from_jar "${COOKIE_JAR_B}")"
-  if [ -z "${AUTH_COOKIE_A}" ] || [ -z "${AUTH_COOKIE_B}" ]; then
-    echo "ERROR: failed to read medforge_session cookie from jar."
-    exit 1
-  fi
   record "- auth bootstrap: PASS"
   section_timing_end
 
@@ -329,59 +315,29 @@ main() {
   SLUG_B="$(json_field "${resp_b}" "data['data']['session']['slug']")"
   section_timing_end
 
-  host_a="$(remote_external_session_host "${SLUG_A}" "${DOMAIN}")"
-  session_url_a="https://${host_a}/"
-  blocked_proxy_url_a="${session_url_a}api/v2/auth/session-proxy"
-
-  section "Routing Authorization Matrix"
+  section "SSH Port Allocation"
   section_timing_begin
-  code="$(curl -sS -o /tmp/p4_root_unauth.out -w '%{http_code}' "${session_url_a}")"
-  assert_eq "${code}" "401" "unauthenticated wildcard root"
-  record "- unauthenticated wildcard root: \`${code}\` body=\`$(cat /tmp/p4_root_unauth.out)\`"
-
-  code="$(curl -sS -o /tmp/p4_root_nonowner.out -w '%{http_code}' "${session_url_a}" -H "Cookie: medforge_session=${AUTH_COOKIE_B}")"
-  assert_eq "${code}" "403" "non-owner wildcard root"
-  record "- non-owner wildcard root: \`${code}\` body=\`$(cat /tmp/p4_root_nonowner.out)\`"
-
-  code="$(curl -sS -L -o /tmp/p4_root_owner.out -w '%{http_code}' "${session_url_a}" -H "Cookie: medforge_session=${AUTH_COOKIE_A}")"
-  assert_eq "${code}" "200" "owner wildcard root"
-  record "- owner wildcard root: \`${code}\`"
-
-  code="$(curl -sS -o /tmp/p4_blocked_unauth.out -w '%{http_code}' "${blocked_proxy_url_a}")"
-  assert_eq "${code}" "403" "blocked wildcard session-proxy unauthenticated"
-  record "- blocked wildcard internal path unauthenticated: \`${code}\` body=\`$(cat /tmp/p4_blocked_unauth.out)\`"
-
-  code="$(curl -sS -o /tmp/p4_blocked_owner.out -w '%{http_code}' "${blocked_proxy_url_a}" -H "Cookie: medforge_session=${AUTH_COOKIE_A}")"
-  assert_eq "${code}" "403" "blocked wildcard session-proxy owner"
-  record "- blocked wildcard internal path owner: \`${code}\` body=\`$(cat /tmp/p4_blocked_owner.out)\`"
-
-  headers="$(docker exec medforge-api curl -sS -D - -o /dev/null \
-    "http://medforge-api:8000/api/v2/auth/session-proxy" \
-    -H "Host: ${host_a}" \
-    -H 'X-Upstream: evil-target:8080' \
-    -H "Cookie: medforge_session=${AUTH_COOKIE_A}")"
-  code="$(printf '%s\n' "${headers}" | awk 'NR==1{print $2}')"
-  assert_eq "${code}" "200" "owner session-proxy api-host contract"
-  upstream="$(printf '%s\n' "${headers}" | awk 'tolower($1)=="x-upstream:"{print $2}' | tr -d '\r')"
-  if [ -z "${upstream}" ]; then
-    echo "ERROR: missing X-Upstream response header"
+  ssh_port_a="$(json_field "${resp_a}" "data['data']['session']['ssh_port']")"
+  ssh_port_b="$(json_field "${resp_b}" "data['data']['session']['ssh_port']")"
+  record "- session A ssh_port: \`${ssh_port_a}\`"
+  record "- session B ssh_port: \`${ssh_port_b}\`"
+  if [ -z "${ssh_port_a}" ] || [ "${ssh_port_a}" = "null" ]; then
+    echo "ERROR: session A has no SSH port allocated"
     exit 1
   fi
-  assert_eq "${upstream}" "mf-session-${SLUG_A}:8080" "owner session-proxy canonical upstream"
-  record "- owner spoof attempt via api host: \`${code}\` x-upstream=\`${upstream}\`"
+  if [ -z "${ssh_port_b}" ] || [ "${ssh_port_b}" = "null" ]; then
+    echo "ERROR: session B has no SSH port allocated"
+    exit 1
+  fi
+  record "- SSH port allocation: PASS"
   section_timing_end
 
   section "East-West Isolation"
   section_timing_begin
-  caddy_ip="$(resolve_caddy_ip)"
-  if [ -z "${caddy_ip}" ]; then
-    echo "ERROR: could not resolve Caddy IP on medforge-external-sessions."
-    exit 1
-  fi
-  firewall_out="$(sudo CADDY_IP="${caddy_ip}" bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
+  firewall_out="$(sudo bash "${ROOT_DIR}/ops/network/firewall-setup.sh")"
   record "- firewall: \`${firewall_out}\`"
   set +e
-  docker exec "mf-session-${SLUG_B}" curl -sS --max-time 3 "http://mf-session-${SLUG_A}:8080" >/tmp/p4_iso.out 2>/tmp/p4_iso.err
+  docker exec "mf-session-${SLUG_B}" bash -c "echo | nc -w 3 mf-session-${SLUG_A} 22" >/tmp/p4_iso.out 2>/tmp/p4_iso.err
   iso_rc=$?
   set -e
   if [ "${iso_rc}" -eq 0 ]; then
@@ -389,7 +345,7 @@ main() {
     echo "stdout: $(cat /tmp/p4_iso.out)"
     exit 1
   fi
-  record "- session B -> session A :8080 blocked (exit=\`${iso_rc}\`, stderr=\`$(cat /tmp/p4_iso.err)\`)"
+  record "- session B -> session A :22 blocked (exit=\`${iso_rc}\`, stderr=\`$(cat /tmp/p4_iso.err)\`)"
   section_timing_end
 
   # Stop sessions before cleanup

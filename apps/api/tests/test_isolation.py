@@ -1,7 +1,7 @@
 """MF-101: Session isolation tests.
 
 Validates that session containers cannot communicate with each other
-at the network level (east-west isolation).
+at the network level (east-west isolation via SSH port 22 blocking).
 
 Tests marked with @pytest.mark.docker require real Docker runtime.
 These are skipped in CI and run manually on the host.
@@ -45,8 +45,8 @@ def _list_session_containers() -> list[str]:
 
 
 @pytest.mark.usefixtures("_require_docker")
-def test_session_container_cannot_reach_other_session_http() -> None:
-    """From session A, attempt HTTP to session B's :8080 → must fail."""
+def test_session_container_cannot_reach_other_session_ssh() -> None:
+    """From session A, attempt SSH connection to session B's :22 → must fail."""
     containers = _list_session_containers()
     if len(containers) < 2:
         pytest.skip(f"Need >=2 running session containers, found {len(containers)}")
@@ -59,17 +59,15 @@ def test_session_container_cannot_reach_other_session_http() -> None:
             "docker",
             "exec",
             source,
-            "curl",
-            "-sS",
-            "--max-time",
-            "3",
-            f"http://{target}:8080",
+            "bash",
+            "-c",
+            f"echo | nc -w 3 {target} 22",
         ],
         capture_output=True,
         text=True,
         timeout=10,
     )
-    assert result.returncode != 0, f"Isolation violation: {source} reached {target}:8080. stdout={result.stdout!r}"
+    assert result.returncode != 0, f"Isolation violation: {source} reached {target}:22. stdout={result.stdout!r}"
 
 
 @pytest.mark.usefixtures("_require_docker")

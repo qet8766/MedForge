@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What Is MedForge
 
-MedForge is a single-host GPU-backed platform that provides code-server IDE sessions and medical-imaging competitions. The control plane (API, web, DB, reverse proxy) runs as Docker Compose services. The data plane is per-user Docker containers (`mf-session-<slug>`) each assigned one GPU, with ZFS-backed workspaces and stop-snapshots.
+MedForge is a single-host GPU-backed platform that provides SSH-accessible GPU sessions and medical-imaging competitions. The control plane (API, web, DB, reverse proxy) runs as Docker Compose services. The data plane is per-user Docker containers (`mf-session-<slug>`) each assigned one GPU, with ZFS-backed workspaces and stop-snapshots.
 
 ## Architecture Overview
 
@@ -16,10 +16,10 @@ Browser ──► Caddy (TLS, wildcard routing, forward-auth)
               │     ├─► Docker API   (session container lifecycle)
               │     └─► ZFS          (workspace provisioning, snapshots)
               ├─► medforge-api-worker  (async scoring worker)
-              └─► mf-session-<slug>   (code-server per user, one GPU)
+              └─► mf-session-<slug>   (SSH server per user, one GPU)
 ```
 
-**Networks**: `medforge-control` (control plane), `medforge-external-sessions` (172.30.0.0/24, internet-allowed), `medforge-internal-sessions` (no egress). Caddy=172.30.0.2, API=172.30.0.3. East-west isolation: only Caddy can reach session `:8080`.
+**Networks**: `medforge-control` (control plane), `medforge-external-sessions` (172.30.0.0/24, internet-allowed), `medforge-internal-sessions` (no egress). SSH ports 10000–10999 mapped directly to host.
 
 **Exposure model**: Routes split into EXTERNAL (`/api/v2/external/...`) and INTERNAL (`/api/v2/internal/...`). Internal session create requires `can_use_internal=true` on the user.
 
@@ -110,7 +110,7 @@ Runtime claims are stale until revalidated when platform-affecting files change:
 - Import order: stdlib -> third-party -> local, with blank lines between groups (Python and TypeScript).
 - Error handling: no graceful fallback masking; do not swallow errors with placeholder UI; show concrete failure messages.
 - Code hygiene: delete dead code; do not comment it out; no wildcard imports (`from x import *`, `import *`); type hints on all Python function signatures; TypeScript `strict` mode; API responses use a consistent structured error shape (RFC 7807).
-- Security/config: do not commit secrets (`deploy/compose/.env` for real values); hosts/ports/URLs from env/config (no hardcoded `localhost:8080`); keep `PACK_IMAGE` digest-pinned; preserve Caddy hardening `request_header -X-Upstream`; do not use `latest` Docker tags; prefer exact dependency pins and digest-pinned images; use `uv` over `pip`.
+- Security/config: do not commit secrets (`deploy/compose/.env` for real values); hosts/ports/URLs from env/config (no hardcoded `localhost:8080`); keep `PACK_IMAGE` digest-pinned; do not use `latest` Docker tags; prefer exact dependency pins and digest-pinned images; use `uv` over `pip`.
 - Logging: include context identifiers (`session_id`, `user_id`, `slug`) in lifecycle logs.
 - Testing: follow `docs/phase-checking-strategy.md` for canonical test lanes, runner commands, and evidence policy. Pytest markers: `docker` (needs real Docker), `load` (manual soak tests).
 

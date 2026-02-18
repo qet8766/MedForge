@@ -2,9 +2,9 @@
 #
 # Shared helpers for remote-external validation checks.
 # Canonical external hosts are derived from deploy/compose/.env DOMAIN:
-#   web: external.medforge.<DOMAIN>
-#   api: api.medforge.<DOMAIN>
-#   wildcard probe: s-<slug>.external.medforge.<DOMAIN>
+#   web: external.<DOMAIN>
+#   api: api.<DOMAIN>
+#   wildcard probe: s-<slug>.external.<DOMAIN>
 
 set -euo pipefail
 
@@ -19,18 +19,18 @@ remote_read_env_value() {
 
 remote_external_web_host() {
   local domain="$1"
-  printf "external.medforge.%s\n" "${domain}"
+  printf "external.%s\n" "${domain}"
 }
 
 remote_external_api_host() {
   local domain="$1"
-  printf "api.medforge.%s\n" "${domain}"
+  printf "api.%s\n" "${domain}"
 }
 
 remote_external_session_host() {
   local slug="$1"
   local domain="$2"
-  printf "s-%s.external.medforge.%s\n" "${slug}" "${domain}"
+  printf "s-%s.external.%s\n" "${slug}" "${domain}"
 }
 
 remote_require_domain() {

@@ -42,7 +42,7 @@ test("login -> create session -> open wildcard host -> websocket -> stop", async
   expect(slug).toMatch(/^[a-z0-9]{8}$/);
 
   const base = new URL(baseURL);
-  const sessionOrigin = `${base.protocol}//s-${slug}.external.medforge.${domain}${base.port ? `:${base.port}` : ""}`;
+  const sessionOrigin = `${base.protocol}//s-${slug}.external.${domain}${base.port ? `:${base.port}` : ""}`;
 
   const sessionPage = await page.context().newPage();
   const websocketState = {

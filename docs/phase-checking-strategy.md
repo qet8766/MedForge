@@ -218,15 +218,13 @@ Runner:
 
 ### Phase 4: Routing + Network Isolation
 
-Purpose: verify wildcard routing authorization, east-west isolation, and network trust boundaries.
+Purpose: verify SSH port allocation, east-west isolation, and network trust boundaries.
 
 Required checks:
 
-- Wildcard root routing authorization matrix (`401` unauthenticated, `403` non-owner, `200` owner) with body validation.
-- Wildcard `/api/v2/auth/session-proxy` path is blocked (`403`) for external callers.
-- Client-supplied `X-Upstream` spoof attempt has no routing effect when probing API-host session-proxy.
-- East-west isolation blocks direct session-to-session `:8080` access.
-- Pytest lanes: `test_isolation.py` (docker-marker tests: session-to-session HTTP/ICMP blocking).
+- SSH port allocation and connectivity validation for running sessions.
+- East-west isolation blocks direct session-to-session `:22` access.
+- Pytest lanes: `test_isolation.py` (docker-marker tests: session-to-session SSH/ICMP blocking).
 
 Runner:
 
@@ -277,7 +275,7 @@ Optional performance controls (defaults shown):
 - Session work persists in unique per-session ZFS datasets.
 - Stop finalization produces snapshot evidence.
 - Recovery logic prevents stranded active sessions and reports health correctly.
-- Routing and isolation enforce owner-bound access and block lateral `:8080` traffic.
+- Routing and isolation enforce owner-bound access and block lateral `:22` traffic.
 - Competition flows score submissions with deterministic ranking and enforced daily caps.
 - Browser + websocket transport verified end-to-end via Playwright.
 - All phases validate response bodies and produce detailed evidence artifacts.

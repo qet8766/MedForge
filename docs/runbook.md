@@ -47,8 +47,8 @@ Host mount prerequisite:
 - On `medforge-external-sessions`, reserve fixed IPs to avoid startup races: `medforge-caddy=172.30.0.2`, `medforge-api=172.30.0.3`.
 
 Routing operation note:
-- Validate session reachability against wildcard root (`https://s-<slug>.medforge.<domain>/`).
-- For normative wildcard auth behavior, use `docs/auth-routing.md`.
+- Validate session reachability by SSH connectivity test (`ssh -p <port> coder@<domain>`).
+- For auth and access model, see `docs/auth-routing.md`.
 
 ## Common Operations
 
@@ -231,6 +231,58 @@ After editing source files for a containerized service, rebuild and restart the 
 | `deploy/caddy/Caddyfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml restart medforge-caddy` |
 | `deploy/caddy/Dockerfile` | `medforge-caddy` | `docker compose -f deploy/compose/docker-compose.yml up -d --build medforge-caddy` |
 | `deploy/compose/docker-compose.yml` | affected service(s) | `docker compose -f deploy/compose/docker-compose.yml up -d <service>` |
+| `deploy/packs/**` | session containers (new sessions) | `docker build -t medforge-pack-default deploy/packs/default && docker images medforge-pack-default --digests` |
 
 - `medforge-web-dev` (dev compose) uses a live volume mount — no rebuild needed for `apps/web/**` changes.
 - Caddyfile is mounted read-only into the container — a restart (not rebuild) is sufficient for config changes.
+- Pack image rebuilds only affect newly created sessions. Existing running sessions continue with the previous image. Update `PACK_IMAGE` in `.env` with the new digest after rebuilding.
+
+## SSH Troubleshooting
+
+### Connection Refused
+
+**Symptoms:** `ssh -p <port> coder@<domain>` returns "Connection refused".
+
+**Diagnosis:**
+```bash
+# Check if the session container is running
+docker ps --filter "name=mf-session-<slug>"
+
+# Check if sshd is running inside the container
+docker exec mf-session-<slug> pgrep sshd
+
+# Check the allocated SSH port
+docker port mf-session-<slug> 22
+```
+
+**Resolution:**
+1. Verify the session is in `running` status via the API
+2. If sshd is not running, check container logs: `docker logs mf-session-<slug>`
+3. If the port mapping is missing, the container may need to be recreated
+
+### SSH Key Not Configured
+
+**Symptoms:** `Permission denied (publickey)` when connecting.
+
+**Diagnosis:**
+```bash
+# Check if the user has an SSH key configured
+curl -s https://api.medforge.<domain>/api/v2/me -b <cookie> | jq '.data.ssh_public_key'
+```
+
+**Resolution:**
+1. Configure an SSH public key via the settings page or `PATCH /api/v2/me`
+2. Restart the session (stop + create) to pick up the new key
+
+### SSH Port Not Allocated
+
+**Symptoms:** Session is running but no SSH port is shown in the UI.
+
+**Diagnosis:**
+```bash
+# Check the session's ssh_port field
+docker inspect mf-session-<slug> --format '{{range $k, $v := .NetworkSettings.Ports}}{{$k}} -> {{$v}}{{end}}'
+```
+
+**Resolution:**
+1. Stop and recreate the session — port allocation happens at create time

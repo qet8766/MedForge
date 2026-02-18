@@ -78,7 +78,7 @@ def _default_cookie_domain() -> str:
     domain = os.getenv("DOMAIN", "").strip().lower()
     if not domain:
         return ""
-    return f".medforge.{domain}"
+    return f".{domain}"
 
 
 def _default_cors_origin_regex() -> str:
@@ -86,7 +86,7 @@ def _default_cors_origin_regex() -> str:
     if not domain:
         return ""
     escaped = re.escape(domain)
-    return rf"https?://([a-z0-9-]+\.)*medforge\.{escaped}"
+    return rf"https?://([a-z0-9-]+\.)*{escaped}"
 
 
 def _is_env_set(name: str) -> bool:

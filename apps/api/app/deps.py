@@ -45,10 +45,10 @@ def _is_allowed_origin(origin: str, settings: Settings) -> bool:
     if not domain:
         return False
 
-    if hostname in {f"medforge.{domain}", f"api.medforge.{domain}"}:
+    if hostname == domain or hostname == f"api.{domain}":
         return True
 
-    return hostname.endswith(f".medforge.{domain}")
+    return hostname.endswith(f".{domain}")
 
 
 def require_allowed_origin(
