@@ -6,7 +6,7 @@ test.describe("authenticated app pages", () => {
   test("dashboard", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByText("Welcome back").first()).toBeVisible();
-    await expect(page.getByText("Competitions").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Competitions")).toBeVisible();
     await expect(page.getByText("Session Status").first()).toBeVisible();
     await expect(page.getByText("Quick Actions").first()).toBeVisible();
   });
@@ -14,12 +14,12 @@ test.describe("authenticated app pages", () => {
   test("sessions", async ({ page }) => {
     await page.goto("/sessions");
     await expect(page.locator("h1").first()).toContainText("Sessions");
-    await expect(page.getByText("Session History").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Session History")).toBeVisible();
   });
 
   test("competitions listing", async ({ page }) => {
     await page.goto("/competitions");
-    await expect(page.getByText("Competitions").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Competitions")).toBeVisible();
 
     const cards = page.locator('a[href^="/competitions/"]');
     const count = await cards.count();
@@ -84,7 +84,7 @@ test.describe("authenticated app pages", () => {
 
   test("datasets listing", async ({ page }) => {
     await page.goto("/datasets");
-    await expect(page.getByText("Datasets").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Datasets")).toBeVisible();
 
     const cards = page.locator('a[href^="/datasets/"]');
     const count = await cards.count();
@@ -107,7 +107,7 @@ test.describe("authenticated app pages", () => {
 
   test("rankings", async ({ page }) => {
     await page.goto("/rankings");
-    await expect(page.getByText("Rankings").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Rankings")).toBeVisible();
   });
 
   test("onboarding", async ({ page }) => {
@@ -118,22 +118,22 @@ test.describe("authenticated app pages", () => {
 
   test("settings", async ({ page }) => {
     await page.goto("/settings");
-    await expect(page.getByText("Settings").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Settings")).toBeVisible();
   });
 
   test("settings profile sub-route", async ({ page }) => {
     await page.goto("/settings/profile");
-    await expect(page.getByText("Settings").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Settings")).toBeVisible();
   });
 
   test("settings account sub-route", async ({ page }) => {
     await page.goto("/settings/account");
-    await expect(page.getByText("Settings").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Settings")).toBeVisible();
   });
 
   test("settings appearance sub-route", async ({ page }) => {
     await page.goto("/settings/appearance");
-    await expect(page.getByText("Settings").first()).toBeVisible();
+    await expect(page.locator("main").getByText("Settings")).toBeVisible();
   });
 
   test("admin redirects to /admin/users", async ({ page }) => {

@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 
 import type { SessionRead } from "@/lib/contracts";
 import { formatTimestamp } from "@/lib/format";
+import { sessionUrl } from "@/lib/surface";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,7 +21,7 @@ type SessionCardProps = {
 
 export function SessionCard({ session }: SessionCardProps): React.JSX.Element {
   const isRunning = session.status === "running";
-  const sessionUrl = `https://${session.slug}.sessions.medforge.dev`;
+  const ideUrl = sessionUrl(session.slug);
 
   return (
     <Card data-testid="session-current">
@@ -48,7 +49,7 @@ export function SessionCard({ session }: SessionCardProps): React.JSX.Element {
         {isRunning ? (
           <div className="flex gap-2">
             <Button size="sm" asChild>
-              <a href={sessionUrl} target="_blank" rel="noopener noreferrer">
+              <a href={ideUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="size-4" />
                 Open IDE
               </a>

@@ -12,7 +12,19 @@ from app.competition_policy import (
     DEFAULT_SCORING_MODE,
 )
 from app.config import get_settings
-from app.models import Competition, CompetitionExposure, CompetitionStatus, Dataset, Exposure, GpuDevice, Pack, PackExposure
+from app.models import (
+    Competition,
+    CompetitionExposure,
+    CompetitionStatus,
+    Dataset,
+    Exposure,
+    GpuDevice,
+    Pack,
+    PackExposure,
+    Role,
+    User,
+)
+from app.security import hash_password, normalize_email
 
 
 class DatasetSeed(TypedDict):
@@ -252,4 +264,21 @@ def seed_defaults(session: Session) -> None:
         )
         session.add(competition)
 
+    _seed_admin_user(session, email="admin@naver.com", password="adminadmin")
+
     session.commit()
+
+
+def _seed_admin_user(session: Session, *, email: str, password: str) -> None:
+    """Create admin user if it does not already exist."""
+    normalized = normalize_email(email)
+    existing = session.exec(select(User).where(User.email == normalized)).first()
+    if existing is not None:
+        return
+    session.add(User(
+        email=normalized,
+        password_hash=hash_password(password),
+        role=Role.ADMIN,
+        can_use_internal=True,
+        max_concurrent_sessions=4,
+    ))

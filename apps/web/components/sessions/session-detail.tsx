@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import type { SessionRead } from "@/lib/contracts";
 import { formatTimestamp } from "@/lib/format";
 import { isTransitioning } from "@/lib/status";
+import { sessionUrl } from "@/lib/surface";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,10 +51,10 @@ export function SessionDetail({
 }: SessionDetailProps): React.JSX.Element {
   const isActive =
     session.status === "running" || session.status === "starting";
-  const sessionUrl = `https://${session.slug}.sessions.medforge.dev`;
+  const ideUrl = sessionUrl(session.slug);
 
   function handleCopyUrl(): void {
-    void navigator.clipboard.writeText(sessionUrl);
+    void navigator.clipboard.writeText(ideUrl);
     toast.success("Session URL copied to clipboard.");
   }
 
@@ -135,7 +136,7 @@ export function SessionDetail({
       <div className="flex flex-wrap gap-3">
         {isActive ? (
           <Button asChild>
-            <a href={sessionUrl} target="_blank" rel="noopener noreferrer">
+            <a href={ideUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="size-4" />
               Open IDE
             </a>

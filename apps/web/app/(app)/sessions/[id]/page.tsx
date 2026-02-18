@@ -18,9 +18,7 @@ import { isTransitioning } from "@/lib/status";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SessionDetail } from "@/components/sessions/session-detail";
 
-type SessionsApiResponse = {
-  sessions: SessionListItem[];
-};
+type SessionsApiResponse = SessionListItem[];
 
 export default function SessionDetailPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
@@ -36,7 +34,7 @@ export default function SessionDetailPage(): React.JSX.Element {
       const response = await apiGet<SessionsApiResponse>(
         apiPathForSurface(surface, "/sessions")
       );
-      const match = response.sessions.find((s) => s.id === sessionId);
+      const match = response.find((s) => s.id === sessionId);
       if (match) {
         setSession(match);
         setError(null);
