@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import {
   apiGet,
-  type SessionCreateResponse,
   type SessionListItem,
 } from "@/lib/api";
 import { formatRelativeTime, formatTimestamp } from "@/lib/format";
@@ -113,7 +112,7 @@ export default function SessionsPage(): React.JSX.Element {
     await fetchSessions();
   }
 
-  function handleSessionCreated(_response: SessionCreateResponse): void {
+  function handleSessionCreated(): void {
     refresh();
     void fetchSessions();
   }

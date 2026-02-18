@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlmodel import Session, select
 
 from app.config import Settings
-from app.models import Pack, SessionRecord, SessionStatus, Exposure, User
+from app.models import Exposure, Pack, SessionRecord, SessionStatus, User
 from app.session_recovery import UNKNOWN_STATE_MAX_RETRIES, poll_active_sessions_once, reconcile_on_startup
 from app.session_runtime import (
     MockSessionRuntime,

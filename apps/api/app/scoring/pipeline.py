@@ -36,9 +36,7 @@ def score_submission_file(
 
     spec = get_competition_spec(competition.slug)
     if competition.metric != spec.metric:
-        raise ValueError(
-            f"Competition metric mismatch: competition={competition.metric}, scorer={spec.metric}"
-        )
+        raise ValueError(f"Competition metric mismatch: competition={competition.metric}, scorer={spec.metric}")
     spec.validate_submission_rows(submission_rows)
     spec.validate_label_columns(label_rows)
     _validate_manifest_contract(

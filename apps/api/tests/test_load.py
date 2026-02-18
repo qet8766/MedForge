@@ -5,6 +5,7 @@ using concurrent.futures.ThreadPoolExecutor.
 
 Marked @pytest.mark.load — run manually, not in CI.
 """
+
 from __future__ import annotations
 
 import time
@@ -103,9 +104,7 @@ def test_sequential_create_stop_cycles(client, db_engine, auth_tokens) -> None:
 
     create_successes = sum(1 for r in results if r.create_status == 201)
 
-    assert create_successes >= 45, (
-        f"Expected >=45 create successes out of 50, got {create_successes}"
-    )
+    assert create_successes >= 45, f"Expected >=45 create successes out of 50, got {create_successes}"
 
     create_latencies = [r.create_latency_ms for r in results if r.create_status == 201]
     if create_latencies:
@@ -126,10 +125,7 @@ def test_concurrent_create_stop_cycles(client, db_engine, auth_tokens) -> None:
 
     results: list[CycleResult] = []
     with ThreadPoolExecutor(max_workers=4) as pool:
-        futures = [
-            pool.submit(_run_create_stop_cycle, client, auth_tokens)
-            for _ in range(20)
-        ]
+        futures = [pool.submit(_run_create_stop_cycle, client, auth_tokens) for _ in range(20)]
         for f in as_completed(futures):
             results.append(f.result())
 

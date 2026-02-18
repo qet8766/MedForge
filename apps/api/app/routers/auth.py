@@ -157,9 +157,7 @@ def logout(
         token_hash = hash_session_token(token, settings.session_secret)
         revoked_at_col = cast(Any, AuthSession.revoked_at)
         auth_session = session.exec(
-            select(AuthSession)
-            .where(AuthSession.token_hash == token_hash)
-            .where(revoked_at_col.is_(None))
+            select(AuthSession).where(AuthSession.token_hash == token_hash).where(revoked_at_col.is_(None))
         ).first()
         if auth_session is not None:
             auth_session.revoked_at = utcnow()

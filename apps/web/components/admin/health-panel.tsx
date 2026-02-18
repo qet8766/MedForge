@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Activity } from "lucide-react";
 
@@ -55,31 +55,57 @@ export function HealthPanel(): React.JSX.Element {
     lastChecked: null,
   });
 
-  const fetchHealth = useCallback(async (): Promise<void> => {
-    try {
-      const health = await apiGet<HealthResponse>("/healthz");
-      setState({
-        health,
-        loading: false,
-        error: null,
-        lastChecked: new Date(),
-      });
-    } catch (err) {
-      const message = getErrorMessage(err, "Failed to check health.");
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: message,
-        lastChecked: new Date(),
-      }));
+  useEffect(() => {
+    let cancelled = false;
+    async function doFetch(): Promise<void> {
+      try {
+        const health = await apiGet<HealthResponse>("/healthz");
+        if (!cancelled) {
+          setState({
+            health,
+            loading: false,
+            error: null,
+            lastChecked: new Date(),
+          });
+        }
+      } catch (err) {
+        const message = getErrorMessage(err, "Failed to check health.");
+        if (!cancelled) {
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            error: message,
+            lastChecked: new Date(),
+          }));
+        }
+      }
     }
+    void doFetch();
+    return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    void fetchHealth();
-  }, [fetchHealth]);
-
-  usePolling(() => { void fetchHealth(); }, AUTO_REFRESH_MS, true);
+  usePolling(() => {
+    async function poll(): Promise<void> {
+      try {
+        const health = await apiGet<HealthResponse>("/healthz");
+        setState({
+          health,
+          loading: false,
+          error: null,
+          lastChecked: new Date(),
+        });
+      } catch (err) {
+        const message = getErrorMessage(err, "Failed to check health.");
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: message,
+          lastChecked: new Date(),
+        }));
+      }
+    }
+    void poll();
+  }, AUTO_REFRESH_MS, true);
 
   if (state.loading) {
     return <HealthPanelSkeleton />;

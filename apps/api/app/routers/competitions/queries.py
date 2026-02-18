@@ -7,7 +7,15 @@ from uuid import UUID
 from sqlalchemy import desc
 from sqlmodel import Session, select
 
-from app.models import Competition, CompetitionExposure, CompetitionStatus, Dataset, Exposure, Submission, SubmissionScore
+from app.models import (
+    Competition,
+    CompetitionExposure,
+    CompetitionStatus,
+    Dataset,
+    Exposure,
+    Submission,
+    SubmissionScore,
+)
 
 from .errors import competition_not_found, dataset_not_found
 
@@ -50,19 +58,13 @@ def dataset_or_404(session: Session, dataset_id: UUID, *, for_competition_slug: 
 def list_datasets_ordered(session: Session, *, exposure: Exposure, limit: int, offset: int) -> list[Dataset]:
     return list(
         session.exec(
-            select(Dataset)
-            .where(Dataset.exposure == exposure)
-            .order_by(Dataset.slug)
-            .offset(offset)
-            .limit(limit)
+            select(Dataset).where(Dataset.exposure == exposure).order_by(Dataset.slug).offset(offset).limit(limit)
         ).all()
     )
 
 
 def dataset_by_slug_or_404(session: Session, slug: str, *, exposure: Exposure) -> Dataset:
-    dataset = session.exec(
-        select(Dataset).where(Dataset.slug == slug).where(Dataset.exposure == exposure)
-    ).first()
+    dataset = session.exec(select(Dataset).where(Dataset.slug == slug).where(Dataset.exposure == exposure)).first()
     if dataset is None:
         raise dataset_not_found(slug)
     return dataset

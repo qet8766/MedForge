@@ -5,6 +5,7 @@ Validates system self-healing when runtime operations fail:
 - Snapshot errors: session marked ERROR with descriptive message
 - Mixed failures: system converges to consistent state
 """
+
 from __future__ import annotations
 
 from uuid import uuid4

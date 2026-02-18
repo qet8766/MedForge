@@ -71,9 +71,7 @@ def _principal_from_cookie(
 ) -> AuthPrincipal | None:
     token_hash = hash_session_token(token, settings.session_secret)
     statement = (
-        select(AuthSession, User)
-        .where(User.id == AuthSession.user_id)
-        .where(AuthSession.token_hash == token_hash)
+        select(AuthSession, User).where(User.id == AuthSession.user_id).where(AuthSession.token_hash == token_hash)
     )
 
     row = session.exec(statement).first()

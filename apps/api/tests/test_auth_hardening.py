@@ -8,6 +8,7 @@ Validates:
 - Idle TTL expiry
 - Max TTL expiry
 """
+
 from __future__ import annotations
 
 from dataclasses import replace
@@ -33,6 +34,7 @@ ALLOWED_API_ORIGIN = "https://api.medforge.example.com"
 def _reset_rate_limiter():
     """Reset the auth rate limiter singleton between tests."""
     import app.rate_limit as rl
+
     rl._auth_limiter._buckets.clear()
     yield
     rl._auth_limiter._buckets.clear()
@@ -50,7 +52,7 @@ def _auth_headers(auth_tokens: dict[str, str], user_id: str, extra: dict[str, st
 
 def test_session_proxy_strips_spoofed_x_upstream(client, db_engine, auth_tokens) -> None:
     """Owner request with spoofed X-Upstream header → overwritten by server."""
-    from app.models import Pack, SessionRecord, SessionStatus, Exposure
+    from app.models import Exposure, Pack, SessionRecord, SessionStatus
 
     with Session(db_engine) as session:
         pack = session.exec(select(Pack)).first()
@@ -96,7 +98,10 @@ def test_origin_matrix_allowed_origins(client, auth_tokens) -> None:
     for origin in good_origins:
         resp = client.post(
             "/api/v2/auth/signup",
-            json={"email": f"origin-test-{origin.replace(':', '-').replace('/', '-')}@example.com", "password": "sufficiently-strong"},
+            json={
+                "email": f"origin-test-{origin.replace(':', '-').replace('/', '-')}@example.com",
+                "password": "sufficiently-strong",
+            },
             headers={"Origin": origin},
         )
         assert resp.status_code in {201, 409}, f"Origin {origin} rejected unexpectedly: {resp.status_code}"
@@ -209,9 +214,7 @@ def test_idle_ttl_expires_session(client, db_engine, test_settings, auth_tokens)
 
     with Session(db_engine) as session:
         token_hash = hash_session_token(auth_tokens[USER_A], test_settings.session_secret)
-        auth_session = session.exec(
-            select(AuthSession).where(AuthSession.token_hash == token_hash)
-        ).first()
+        auth_session = session.exec(select(AuthSession).where(AuthSession.token_hash == token_hash)).first()
         assert auth_session is not None
         past = datetime.now(UTC) - timedelta(seconds=10)
         auth_session.expires_at = past
@@ -239,9 +242,7 @@ def test_max_ttl_expires_session(client, db_engine, test_settings, auth_tokens) 
 
     with Session(db_engine) as session:
         token_hash = hash_session_token(auth_tokens[USER_A], test_settings.session_secret)
-        auth_session = session.exec(
-            select(AuthSession).where(AuthSession.token_hash == token_hash)
-        ).first()
+        auth_session = session.exec(select(AuthSession).where(AuthSession.token_hash == token_hash)).first()
         assert auth_session is not None
         old_creation = datetime.now(UTC) - timedelta(seconds=10)
         auth_session.created_at = old_creation

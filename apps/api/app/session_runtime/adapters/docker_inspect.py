@@ -62,4 +62,3 @@ def inspect_container(client: docker.DockerClient, request: ContainerInspectRequ
     if status in {"dead", "exited"}:
         return SessionInspectResult(state=RuntimeContainerState.EXITED, container_id=container_id)
     return SessionInspectResult(state=RuntimeContainerState.UNKNOWN, container_id=container_id)
-

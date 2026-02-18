@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
 from sqlalchemy import func
 from sqlmodel import Session, select
 
@@ -98,7 +98,7 @@ def list_users(
 def update_user(
     request: Request,
     user_id: UUID = Path(),
-    payload: UserAdminUpdateRequest = ...,
+    payload: UserAdminUpdateRequest = Body(),
     principal: AuthPrincipal = Depends(get_current_user),
     session: Session = Depends(get_session),
     _origin_guard: None = Depends(require_allowed_origin),

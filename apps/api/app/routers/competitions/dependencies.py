@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
@@ -54,7 +55,7 @@ def require_admin_access_checked(
         raise from_http_exception(exc, type_slug="admin-access-denied") from exc
 
 
-def bind_exposure(exposure: Exposure):
+def bind_exposure(exposure: Exposure) -> Callable[[Request], None]:
     def _bind(request: Request) -> None:
         request.state.competition_exposure = exposure
 

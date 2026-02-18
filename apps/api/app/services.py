@@ -49,8 +49,7 @@ def enforce_submission_cap(session: Session, *, competition: Competition, user_i
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=(
-                f"Daily submission cap reached for {competition.slug}. "
-                f"Limit: {competition.submission_cap_per_day}/day."
+                f"Daily submission cap reached for {competition.slug}. Limit: {competition.submission_cap_per_day}/day."
             ),
         )
     return remaining

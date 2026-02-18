@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from app.config import Settings, get_settings
-from app.models import Competition, Pack, SessionRecord, SessionStatus, Exposure, User
+from app.models import Competition, Exposure, Pack, SessionRecord, SessionStatus, User
 from app.session_runtime import (
     MockSessionRuntime,
     RuntimeErrorCode,

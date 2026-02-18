@@ -6,6 +6,7 @@ at the network level (east-west isolation).
 Tests marked with @pytest.mark.docker require real Docker runtime.
 These are skipped in CI and run manually on the host.
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -55,18 +56,20 @@ def test_session_container_cannot_reach_other_session_http() -> None:
 
     result = subprocess.run(
         [
-            "docker", "exec", source,
-            "curl", "-sS", "--max-time", "3",
+            "docker",
+            "exec",
+            source,
+            "curl",
+            "-sS",
+            "--max-time",
+            "3",
             f"http://{target}:8080",
         ],
         capture_output=True,
         text=True,
         timeout=10,
     )
-    assert result.returncode != 0, (
-        f"Isolation violation: {source} reached {target}:8080. "
-        f"stdout={result.stdout!r}"
-    )
+    assert result.returncode != 0, f"Isolation violation: {source} reached {target}:8080. stdout={result.stdout!r}"
 
 
 @pytest.mark.usefixtures("_require_docker")
@@ -81,14 +84,18 @@ def test_session_container_cannot_ping_other_session() -> None:
 
     result = subprocess.run(
         [
-            "docker", "exec", source,
-            "ping", "-c", "1", "-W", "2", target,
+            "docker",
+            "exec",
+            source,
+            "ping",
+            "-c",
+            "1",
+            "-W",
+            "2",
+            target,
         ],
         capture_output=True,
         text=True,
         timeout=10,
     )
-    assert result.returncode != 0, (
-        f"Isolation violation: {source} can ping {target}. "
-        f"stdout={result.stdout!r}"
-    )
+    assert result.returncode != 0, f"Isolation violation: {source} can ping {target}. stdout={result.stdout!r}"

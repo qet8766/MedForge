@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Activity, Monitor, Users } from "lucide-react";
 
@@ -51,43 +51,46 @@ export function AdminStats(): React.JSX.Element {
     loading: true,
   });
 
-  const fetchStats = useCallback(async (): Promise<void> => {
-    const results: Partial<StatsState> = {};
-
-    try {
-      const users = await apiGet<UserAdminRead[]>("/api/v2/admin/users");
-      results.totalUsers = users.length;
-    } catch {
-      results.totalUsers = null;
-    }
-
-    try {
-      const sessions = await apiGet<SessionRead[]>("/api/v2/admin/sessions");
-      results.activeSessions = sessions.filter(
-        (s) => s.status === "running" || s.status === "starting"
-      ).length;
-    } catch {
-      results.activeSessions = null;
-    }
-
-    try {
-      const health = await apiGet<HealthResponse>("/healthz");
-      results.healthStatus = health.status;
-    } catch {
-      results.healthStatus = "error";
-    }
-
-    setStats({
-      totalUsers: results.totalUsers ?? null,
-      activeSessions: results.activeSessions ?? null,
-      healthStatus: results.healthStatus ?? null,
-      loading: false,
-    });
-  }, []);
-
   useEffect(() => {
+    let cancelled = false;
+    async function fetchStats(): Promise<void> {
+      const results: Partial<StatsState> = {};
+
+      try {
+        const users = await apiGet<UserAdminRead[]>("/api/v2/admin/users");
+        results.totalUsers = users.length;
+      } catch {
+        results.totalUsers = null;
+      }
+
+      try {
+        const sessions = await apiGet<SessionRead[]>("/api/v2/admin/sessions");
+        results.activeSessions = sessions.filter(
+          (s) => s.status === "running" || s.status === "starting"
+        ).length;
+      } catch {
+        results.activeSessions = null;
+      }
+
+      try {
+        const health = await apiGet<HealthResponse>("/healthz");
+        results.healthStatus = health.status;
+      } catch {
+        results.healthStatus = "error";
+      }
+
+      if (!cancelled) {
+        setStats({
+          totalUsers: results.totalUsers ?? null,
+          activeSessions: results.activeSessions ?? null,
+          healthStatus: results.healthStatus ?? null,
+          loading: false,
+        });
+      }
+    }
     void fetchStats();
-  }, [fetchStats]);
+    return () => { cancelled = true; };
+  }, []);
 
   function formatHealthStatus(status: "ok" | "degraded" | "error" | null): string {
     if (status === null) return "--";

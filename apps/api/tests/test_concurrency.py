@@ -5,6 +5,7 @@ Validates that GPU allocation respects capacity limits:
 - The 8th request must return a 409 GPU exhaustion error
 - All allocated GPU IDs must be unique
 """
+
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed

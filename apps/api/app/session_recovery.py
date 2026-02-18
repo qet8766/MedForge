@@ -108,11 +108,15 @@ class SessionRecoveryRunner:
                 updated += 1
                 continue
 
-            if startup and row.status == SessionStatus.STARTING and self._finalize_error(
-                row=row,
-                expected_statuses=(SessionStatus.STARTING,),
-                mutation="reconcile_starting_not_running",
-                error_message="container not running during reconcile",
+            if (
+                startup
+                and row.status == SessionStatus.STARTING
+                and self._finalize_error(
+                    row=row,
+                    expected_statuses=(SessionStatus.STARTING,),
+                    mutation="reconcile_starting_not_running",
+                    error_message="container not running during reconcile",
+                )
             ):
                 updated += 1
 
@@ -222,9 +226,7 @@ class SessionRecoveryRunner:
         return False
 
     def _inspect_state(self, *, row: SessionRecord) -> tuple[RuntimeContainerState, str | None]:
-        inspection = self._runtime.inspect_session(
-            SessionInspectRequest(container_id=row.container_id, slug=row.slug)
-        )
+        inspection = self._runtime.inspect_session(SessionInspectRequest(container_id=row.container_id, slug=row.slug))
         retries = 0
         while inspection.state == RuntimeContainerState.UNKNOWN and retries < UNKNOWN_STATE_MAX_RETRIES:
             retries += 1
@@ -308,7 +310,11 @@ class SessionRecoveryRunner:
                 slug=row.slug,
             )
             return False
-        if row.status == SessionStatus.RUNNING and row.container_id == resolved_container_id and row.started_at is not None:
+        if (
+            row.status == SessionStatus.RUNNING
+            and row.container_id == resolved_container_id
+            and row.started_at is not None
+        ):
             return False
 
         finalize_running(self._session, row=row, container_id=resolved_container_id)

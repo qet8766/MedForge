@@ -6,7 +6,9 @@ export function usePolling(
   enabled: boolean,
 ): void {
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+  useEffect(() => {
+    fnRef.current = fn;
+  });
 
   useEffect(() => {
     if (!enabled) return;

@@ -104,9 +104,7 @@ class GpuDevice(SQLModel, table=True):
 
 class SessionRecord(SQLModel, table=True):
     __tablename__ = "sessions"
-    __table_args__ = (
-        Index("ix_sessions_user_status", "user_id", "status"),
-    )
+    __table_args__ = (Index("ix_sessions_user_status", "user_id", "status"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
@@ -141,9 +139,7 @@ class Dataset(SQLModel, table=True):
 
 class Competition(SQLModel, table=True):
     __tablename__ = "competitions"
-    __table_args__ = (
-        CheckConstraint("submission_cap_per_day > 0", name="ck_competitions_submission_cap_positive"),
-    )
+    __table_args__ = (CheckConstraint("submission_cap_per_day > 0", name="ck_competitions_submission_cap_positive"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     slug: str = Field(index=True, unique=True, max_length=120)

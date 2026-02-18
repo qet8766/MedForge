@@ -4,7 +4,6 @@ import {
   Trophy,
   Database,
   Medal,
-  Settings,
   Users,
   ShieldCheck,
 } from "lucide-react"

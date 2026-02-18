@@ -5,6 +5,7 @@ Validates system-wide invariants that must hold after any load test:
 - GPU lock uniqueness holds
 - All STOPPING sessions eventually resolve
 """
+
 from __future__ import annotations
 
 from typing import Any, cast
@@ -22,18 +23,14 @@ from tests.test_session_recovery import RecoveryRuntime, _insert_session_row
 
 def _count_by_status(session: Session, status: SessionStatus) -> int:
     """Count sessions in a given status."""
-    count = session.exec(
-        select(SessionRecord).where(SessionRecord.status == status)
-    ).all()
+    count = session.exec(select(SessionRecord).where(SessionRecord.status == status)).all()
     return len(count)
 
 
 def _get_active_gpu_ids(session: Session) -> list[int]:
     """Get GPU IDs currently held by active sessions."""
     status_col = cast(Any, SessionRecord.status)
-    rows = session.exec(
-        select(SessionRecord).where(status_col.in_(ACTIVE_SESSION_STATUSES))
-    ).all()
+    rows = session.exec(select(SessionRecord).where(status_col.in_(ACTIVE_SESSION_STATUSES))).all()
     return [r.gpu_id for r in rows]
 
 
@@ -89,9 +86,7 @@ def test_gpu_lock_uniqueness_after_load(db_engine, test_settings: Settings) -> N
             )
 
         gpu_ids = _get_active_gpu_ids(session)
-        assert len(gpu_ids) == len(set(gpu_ids)), (
-            f"GPU uniqueness violated: {gpu_ids}"
-        )
+        assert len(gpu_ids) == len(set(gpu_ids)), f"GPU uniqueness violated: {gpu_ids}"
 
 
 def test_all_stopping_resolved_after_reconcile(db_engine, test_settings: Settings) -> None:

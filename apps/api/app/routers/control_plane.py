@@ -25,7 +25,7 @@ from app.schemas import (
 )
 from app.security import hash_password, normalize_email, verify_password
 from app.session_lifecycle import create_session_for_principal, get_session_for_principal, stop_session_for_principal
-from app.session_repo import ACTIVE_SESSION_STATUSES, count_sessions_for_user, list_sessions_for_user
+from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
 from app.util import commit_and_refresh, parse_enum_filter
 
 router = APIRouter(tags=["control-plane"])
@@ -116,7 +116,9 @@ def get_current_internal_session(
     )
 
 
-@router.post("/external/sessions", response_model=ApiEnvelope[SessionCreateResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/external/sessions", response_model=ApiEnvelope[SessionCreateResponse], status_code=status.HTTP_201_CREATED
+)
 def create_external_session(
     request: Request,
     payload: SessionCreateRequest,
@@ -135,7 +137,9 @@ def create_external_session(
     )
 
 
-@router.post("/internal/sessions", response_model=ApiEnvelope[SessionCreateResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/internal/sessions", response_model=ApiEnvelope[SessionCreateResponse], status_code=status.HTTP_201_CREATED
+)
 def create_internal_session(
     request: Request,
     payload: SessionCreateRequest,

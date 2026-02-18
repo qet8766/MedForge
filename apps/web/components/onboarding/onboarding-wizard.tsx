@@ -91,7 +91,7 @@ function CompleteStep(): React.JSX.Element {
         <Check className="size-8 text-primary" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">You're All Set!</h2>
+        <h2 className="text-3xl font-bold tracking-tight">You&apos;re All Set!</h2>
         <p className="text-muted-foreground max-w-md">
           Your account is ready. Head to the dashboard to explore competitions,
           datasets, and GPU sessions.

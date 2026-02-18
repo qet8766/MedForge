@@ -98,4 +98,3 @@ class ZfsWorkspaceAdapter:
             workspace_zfs=request.workspace_zfs,
             snapshot_name=request.snapshot_name,
         )
-

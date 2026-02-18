@@ -11,16 +11,19 @@ from pathlib import Path
 # Default-arg capture (_n=name, _d=default ...) prevents late-binding issues.
 # ---------------------------------------------------------------------------
 
+
 def _env(name: str, default: str, *, lower: bool = False) -> str:
     def _factory(_n: str = name, _d: str = default, _l: bool = lower) -> str:
         v = os.getenv(_n, _d).strip()
         return v.lower() if _l else v
+
     return field(default_factory=_factory)
 
 
 def _env_bool(name: str, default: str) -> bool:
     def _factory(_n: str = name, _d: str = default) -> bool:
         return os.getenv(_n, _d).strip().lower() in {"1", "true", "yes", "on"}
+
     return field(default_factory=_factory)
 
 
@@ -35,7 +38,9 @@ def _env_int(name: str, default: int, *, min: int | None = None) -> int:
             except ValueError:
                 v = _d
         return max(v, _m) if _m is not None else v
+
     return field(default_factory=_factory)
+
 
 def _env_opt_int(name: str) -> int | None:
     def _factory(_n: str = name) -> int | None:
@@ -49,6 +54,7 @@ def _env_opt_int(name: str) -> int | None:
             return int(value)
         except ValueError:
             return None
+
     return field(default_factory=_factory)
 
 
@@ -59,12 +65,14 @@ def _env_opt_str(name: str, default: str | None = None) -> str | None:
             return _d
         value = raw.strip()
         return value if value else _d
+
     return field(default_factory=_factory)
 
 
 # ---------------------------------------------------------------------------
 # Computed defaults that don't fit the one-liner helpers.
 # ---------------------------------------------------------------------------
+
 
 def _default_cookie_domain() -> str:
     domain = os.getenv("DOMAIN", "").strip().lower()
@@ -97,6 +105,7 @@ def _paths_overlap(a: Path, b: Path) -> bool:
 # Settings
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = _env("APP_NAME", "MedForge API")
@@ -110,10 +119,14 @@ class Settings:
         )
     )
     public_eval_data_root: Path = field(
-        default_factory=lambda: Path(os.getenv("PUBLIC_EVAL_DATA_ROOT", "data/public-eval").strip() or "data/public-eval")
+        default_factory=lambda: Path(
+            os.getenv("PUBLIC_EVAL_DATA_ROOT", "data/public-eval").strip() or "data/public-eval"
+        )
     )
     test_holdouts_dir: Path = field(
-        default_factory=lambda: Path(os.getenv("TEST_HOLDOUTS_DIR", "data/scoring-holdouts").strip() or "data/scoring-holdouts")
+        default_factory=lambda: Path(
+            os.getenv("TEST_HOLDOUTS_DIR", "data/scoring-holdouts").strip() or "data/scoring-holdouts"
+        )
     )
     submissions_dir: Path = field(default_factory=lambda: Path(os.getenv("SUBMISSIONS_DIR", "data/submissions")))
     auto_score_on_submit: bool = _env_bool("AUTO_SCORE_ON_SUBMIT", "true")
@@ -154,10 +167,7 @@ class Settings:
         }
         legacy_vars = [f"{old} -> {new}" for old, new in legacy_env_map.items() if _is_env_set(old)]
         if legacy_vars:
-            raise ValueError(
-                "Legacy dataset environment variables are not supported: "
-                + ", ".join(legacy_vars)
-            )
+            raise ValueError("Legacy dataset environment variables are not supported: " + ", ".join(legacy_vars))
 
         resolved_training = _resolve_path(self.training_data_root)
         resolved_public_eval = _resolve_path(self.public_eval_data_root)
@@ -171,10 +181,7 @@ class Settings:
         for idx, (name_a, path_a) in enumerate(roots):
             for name_b, path_b in roots[idx + 1 :]:
                 if _paths_overlap(path_a, path_b):
-                    raise ValueError(
-                        "Dataset path isolation violation: "
-                        f"{name_a}={path_a} overlaps {name_b}={path_b}."
-                    )
+                    raise ValueError(f"Dataset path isolation violation: {name_a}={path_a} overlaps {name_b}={path_b}.")
 
         object.__setattr__(self, "training_data_root", resolved_training)
         object.__setattr__(self, "public_eval_data_root", resolved_public_eval)

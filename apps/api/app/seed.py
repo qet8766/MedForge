@@ -224,9 +224,7 @@ def seed_defaults(session: Session) -> None:
 
     for dataset_payload in SEED_DATASETS:
         resolved_dataset_payload = _dataset_payload_with_storage_path(dataset_payload, training_data_root)
-        existing_dataset = session.exec(
-            select(Dataset).where(Dataset.slug == dataset_payload["slug"])
-        ).first()
+        existing_dataset = session.exec(select(Dataset).where(Dataset.slug == dataset_payload["slug"])).first()
         if existing_dataset is None:
             existing_dataset = Dataset(**resolved_dataset_payload)
             session.add(existing_dataset)
@@ -275,10 +273,12 @@ def _seed_admin_user(session: Session, *, email: str, password: str) -> None:
     existing = session.exec(select(User).where(User.email == normalized)).first()
     if existing is not None:
         return
-    session.add(User(
-        email=normalized,
-        password_hash=hash_password(password),
-        role=Role.ADMIN,
-        can_use_internal=True,
-        max_concurrent_sessions=4,
-    ))
+    session.add(
+        User(
+            email=normalized,
+            password_hash=hash_password(password),
+            role=Role.ADMIN,
+            can_use_internal=True,
+            max_concurrent_sessions=4,
+        )
+    )

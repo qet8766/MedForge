@@ -31,8 +31,7 @@ def process_once(limit: int) -> int:
             .where(
                 or_(
                     Submission.score_status == ScoreStatus.QUEUED,
-                    (Submission.score_status == ScoreStatus.SCORING)
-                    & (created_at_col < scoring_cutoff),
+                    (Submission.score_status == ScoreStatus.SCORING) & (created_at_col < scoring_cutoff),
                 )
             )
             .order_by(asc(created_at_col))

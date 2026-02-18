@@ -16,8 +16,7 @@ from app.scoring import validate_submission_schema
 from app.services import enforce_submission_cap, process_submission_by_id
 from app.storage import SubmissionUploadTooLargeError, store_submission_file
 
-from .dependencies import get_current_user_id_checked, require_allowed_origin_checked
-from .dependencies import get_bound_exposure
+from .dependencies import get_bound_exposure, get_current_user_id_checked, require_allowed_origin_checked
 from .errors import (
     from_http_exception,
     submission_processing_failed,

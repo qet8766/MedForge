@@ -6,9 +6,8 @@ from fastapi import APIRouter, Depends, FastAPI
 
 from app.deps import require_internal_access
 from app.models import Exposure
-from app.routers.competitions.dependencies import bind_exposure
-
 from app.problem_details import PROBLEM_CONTENT_TYPE, ProblemDocument, http_status_title
+from app.routers.competitions.dependencies import bind_exposure
 
 CANONICAL_API_PREFIX = "/api/v2"
 

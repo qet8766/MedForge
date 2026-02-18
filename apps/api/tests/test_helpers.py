@@ -100,11 +100,7 @@ def assert_problem(
 ) -> ProblemPayload:
     payload = _parse_problem_payload(response, status_code=status_code)
 
-    expected_type = (
-        f"https://medforge.dev/problems/{type_suffix}"
-        if include_type_prefix
-        else type_suffix
-    )
+    expected_type = f"https://medforge.dev/problems/{type_suffix}" if include_type_prefix else type_suffix
     assert payload.status == status_code
     assert payload.type == expected_type
 

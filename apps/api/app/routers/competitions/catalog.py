@@ -16,8 +16,8 @@ from app.schemas import (
     LeaderboardResponse,
 )
 
-from .leaderboard import fetch_leaderboard_rows
 from .dependencies import get_bound_exposure
+from .leaderboard import fetch_leaderboard_rows
 from .queries import (
     competition_or_404,
     dataset_by_slug_or_404,

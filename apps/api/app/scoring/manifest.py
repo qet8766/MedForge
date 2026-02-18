@@ -107,23 +107,20 @@ def _validate_manifest_contract(
     expected_target_columns: tuple[str, ...],
 ) -> None:
     if manifest.id_column != expected_id_column:
-        raise ValueError(
-            f"Manifest id_column mismatch: expected {expected_id_column}, got {manifest.id_column}"
-        )
+        raise ValueError(f"Manifest id_column mismatch: expected {expected_id_column}, got {manifest.id_column}")
     if tuple(manifest.target_columns) != expected_target_columns:
         raise ValueError(
             "Manifest target_columns mismatch: "
             f"expected {list(expected_target_columns)}, got {list(manifest.target_columns)}"
         )
     if manifest.scoring_mode != SCORING_MODE_SINGLE_REALTIME_HIDDEN:
-        raise ValueError("Manifest scoring_mode must be " f"'{SCORING_MODE_SINGLE_REALTIME_HIDDEN}'.")
+        raise ValueError(f"Manifest scoring_mode must be '{SCORING_MODE_SINGLE_REALTIME_HIDDEN}'.")
     if manifest.leaderboard_rule != LEADERBOARD_RULE_BEST_PER_USER:
-        raise ValueError("Manifest leaderboard_rule must be " f"'{LEADERBOARD_RULE_BEST_PER_USER}'.")
+        raise ValueError(f"Manifest leaderboard_rule must be '{LEADERBOARD_RULE_BEST_PER_USER}'.")
 
 
 def _validate_label_row_count(label_rows: list[dict[str, str]], manifest: ManifestMetadata) -> None:
     if len(label_rows) != manifest.expected_row_count:
         raise ValueError(
-            "Holdout label row count mismatch: "
-            f"expected {manifest.expected_row_count}, got {len(label_rows)}."
+            f"Holdout label row count mismatch: expected {manifest.expected_row_count}, got {len(label_rows)}."
         )

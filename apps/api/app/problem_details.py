@@ -177,4 +177,3 @@ def register_problem_exception_handler(app: FastAPI) -> None:
     app.add_exception_handler(HTTPException, cast(Any, _http_exception_handler))
     app.add_exception_handler(RequestValidationError, cast(Any, _validation_exception_handler))
     app.add_exception_handler(Exception, cast(Any, _unhandled_exception_handler))
-

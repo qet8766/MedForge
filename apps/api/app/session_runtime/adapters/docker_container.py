@@ -4,8 +4,6 @@ import logging
 
 import docker
 
-log = logging.getLogger(__name__)
-
 from app.session_runtime.adapters.docker_inspect import inspect_container
 from app.session_runtime.adapters.docker_start import run_container, wait_until_running
 from app.session_runtime.adapters.docker_stop import stop_container
@@ -18,6 +16,8 @@ from app.session_runtime.types import (
     SessionStartResult,
     SessionStopRequest,
 )
+
+log = logging.getLogger(__name__)
 
 
 class DockerContainerAdapter:

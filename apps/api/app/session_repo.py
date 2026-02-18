@@ -249,11 +249,7 @@ def count_sessions_for_user(
     statuses: Iterable[SessionStatus] | None = None,
     exposure: Exposure | None = None,
 ) -> int:
-    statement = (
-        select(func.count())
-        .select_from(SessionRecord)
-        .where(SessionRecord.user_id == user_id)
-    )
+    statement = select(func.count()).select_from(SessionRecord).where(SessionRecord.user_id == user_id)
     if statuses is not None:
         status_col = cast(Any, SessionRecord.status)
         statement = statement.where(status_col.in_(tuple(statuses)))

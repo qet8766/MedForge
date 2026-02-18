@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.models import Competition, CompetitionStatus, CompetitionExposure
+from app.models import Competition, CompetitionExposure, CompetitionStatus
 from app.scoring import (
     _MAP_IOU_THRESHOLDS,
     Box,
@@ -159,16 +159,12 @@ def test_rsna_scoring_perfect_match(tmp_path: Path) -> None:
         expected_row_count=2,
     )
     labels.write_text(
-        "patientId,x,y,width,height,Target\n"
-        "p1,100.0,150.0,200.0,250.0,1\n"
-        "p2,,,,,0\n",
+        "patientId,x,y,width,height,Target\np1,100.0,150.0,200.0,250.0,1\np2,,,,,0\n",
         encoding="utf-8",
     )
     # Perfect prediction: exact match for p1, no detection for p2
     submission.write_text(
-        "patientId,confidence,x,y,width,height\n"
-        "p1,0.99,100.0,150.0,200.0,250.0\n"
-        "p2,,,,,\n",
+        "patientId,confidence,x,y,width,height\np1,0.99,100.0,150.0,200.0,250.0\np2,,,,,\n",
         encoding="utf-8",
     )
 
@@ -195,18 +191,12 @@ def test_rsna_scoring_no_predictions(tmp_path: Path) -> None:
         expected_row_count=3,
     )
     labels.write_text(
-        "patientId,x,y,width,height,Target\n"
-        "p1,100.0,150.0,200.0,250.0,1\n"
-        "p2,,,,,0\n"
-        "p3,50.0,60.0,150.0,160.0,1\n",
+        "patientId,x,y,width,height,Target\np1,100.0,150.0,200.0,250.0,1\np2,,,,,0\np3,50.0,60.0,150.0,160.0,1\n",
         encoding="utf-8",
     )
     # No detections at all
     submission.write_text(
-        "patientId,confidence,x,y,width,height\n"
-        "p1,,,,,\n"
-        "p2,,,,,\n"
-        "p3,,,,,\n",
+        "patientId,confidence,x,y,width,height\np1,,,,,\np2,,,,,\np3,,,,,\n",
         encoding="utf-8",
     )
 
@@ -234,15 +224,11 @@ def test_rsna_scoring_deterministic(tmp_path: Path) -> None:
         expected_row_count=2,
     )
     labels.write_text(
-        "patientId,x,y,width,height,Target\n"
-        "p1,100.0,150.0,200.0,250.0,1\n"
-        "p2,,,,,0\n",
+        "patientId,x,y,width,height,Target\np1,100.0,150.0,200.0,250.0,1\np2,,,,,0\n",
         encoding="utf-8",
     )
     submission.write_text(
-        "patientId,confidence,x,y,width,height\n"
-        "p1,0.8,90.0,140.0,210.0,260.0\n"
-        "p2,,,,,\n",
+        "patientId,confidence,x,y,width,height\np1,0.8,90.0,140.0,210.0,260.0\np2,,,,,\n",
         encoding="utf-8",
     )
 
@@ -542,16 +528,12 @@ def test_pet_segmentation_perfect_score(tmp_path: Path) -> None:
         expected_row_count=2,
     )
     labels.write_text(
-        "image_id,rle_mask\n"
-        "Abyssinian_1,1 5 10 3\n"
-        "Bengal_42,2 4\n",
+        "image_id,rle_mask\nAbyssinian_1,1 5 10 3\nBengal_42,2 4\n",
         encoding="utf-8",
     )
     # Identical submission -> perfect IoU
     submission.write_text(
-        "image_id,rle_mask\n"
-        "Abyssinian_1,1 5 10 3\n"
-        "Bengal_42,2 4\n",
+        "image_id,rle_mask\nAbyssinian_1,1 5 10 3\nBengal_42,2 4\n",
         encoding="utf-8",
     )
 
@@ -580,8 +562,7 @@ def test_pet_segmentation_partial_overlap(tmp_path: Path) -> None:
     )
     # Label pixels (0-based): {0,1,2,3,4} (from "1 5")
     labels.write_text(
-        "image_id,rle_mask\n"
-        "img_1,1 5\n",
+        "image_id,rle_mask\nimg_1,1 5\n",
         encoding="utf-8",
     )
     # Pred pixels (0-based): {2,3,4,5,6} (from "3 5")
@@ -589,8 +570,7 @@ def test_pet_segmentation_partial_overlap(tmp_path: Path) -> None:
     # Union: {0,1,2,3,4,5,6} = 7 pixels
     # IoU = 3/7
     submission.write_text(
-        "image_id,rle_mask\n"
-        "img_1,3 5\n",
+        "image_id,rle_mask\nimg_1,3 5\n",
         encoding="utf-8",
     )
 
@@ -617,13 +597,11 @@ def test_pet_segmentation_empty_masks(tmp_path: Path) -> None:
     )
     # Both label and submission have empty masks -> IoU = 1.0
     labels.write_text(
-        "image_id,rle_mask\n"
-        "img_empty,\n",
+        "image_id,rle_mask\nimg_empty,\n",
         encoding="utf-8",
     )
     submission.write_text(
-        "image_id,rle_mask\n"
-        "img_empty,\n",
+        "image_id,rle_mask\nimg_empty,\n",
         encoding="utf-8",
     )
 
@@ -639,8 +617,7 @@ def test_pet_segmentation_empty_masks(tmp_path: Path) -> None:
 def test_validate_submission_schema_detection_partial_bbox_rejected(tmp_path: Path) -> None:
     submission = tmp_path / "submission.csv"
     submission.write_text(
-        "patientId,confidence,x,y,width,height\n"
-        "p1,0.95,10.0,20.0,,40.0\n",
+        "patientId,confidence,x,y,width,height\np1,0.95,10.0,20.0,,40.0\n",
         encoding="utf-8",
     )
 

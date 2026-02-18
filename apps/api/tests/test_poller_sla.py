@@ -3,6 +3,7 @@
 Validates that the session recovery poller detects and handles
 container state anomalies within the configured poll interval.
 """
+
 from __future__ import annotations
 
 from uuid import uuid4
@@ -39,9 +40,7 @@ def test_poller_detects_unknown_state_within_configurable_retries(
             container_id="sla-unknown-1",
         )
 
-        runtime = RecoveryRuntime(
-            states={"sla-unknown-1": RuntimeContainerState.UNKNOWN}
-        )
+        runtime = RecoveryRuntime(states={"sla-unknown-1": RuntimeContainerState.UNKNOWN})
         updated = poll_active_sessions_once(session, settings=test_settings, runtime=runtime)
         assert updated == 1
 

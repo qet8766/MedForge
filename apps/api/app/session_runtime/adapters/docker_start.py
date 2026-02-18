@@ -95,9 +95,7 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
         network=request.sessions_network,
         user="1000:1000",
         cap_drop=["ALL"],
-        cap_add=["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "FSETID", "KILL"]
-        if is_external
-        else None,
+        cap_add=["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "FSETID", "KILL"] if is_external else None,
         privileged=False,
         security_opt=None if is_external else ["no-new-privileges:true"],
         environment=env,

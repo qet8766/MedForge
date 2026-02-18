@@ -3,6 +3,7 @@
 Validates that lifecycle log events contain required context fields
 for multi-tenant debugging: session_id, user_id, event name.
 """
+
 from __future__ import annotations
 
 from uuid import uuid4
@@ -43,9 +44,7 @@ def test_poll_log_contains_session_and_user_ids(db_engine, test_settings: Settin
         assert "session_id" in log_output or str(row.id) in log_output, (
             f"Log output missing session_id. Got: {log_output!r}"
         )
-        assert "user_id" in log_output or str(user.id) in log_output, (
-            f"Log output missing user_id. Got: {log_output!r}"
-        )
+        assert "user_id" in log_output or str(user.id) in log_output, f"Log output missing user_id. Got: {log_output!r}"
 
 
 def test_session_stop_log_contains_required_fields(db_engine, test_settings: Settings, capsys) -> None:
@@ -75,9 +74,7 @@ def test_session_stop_log_contains_required_fields(db_engine, test_settings: Set
         assert "session.stop" in log_output or "session.recovery" in log_output, (
             f"Expected lifecycle event in logs. Got: {log_output!r}"
         )
-        assert str(user.id) in log_output, (
-            f"Log output missing user_id. Got: {log_output!r}"
-        )
+        assert str(user.id) in log_output, f"Log output missing user_id. Got: {log_output!r}"
 
 
 def test_recovery_failure_log_includes_error_context(db_engine, test_settings: Settings, capsys) -> None:
@@ -133,6 +130,4 @@ def test_correlation_id_present_in_recovery_logs(db_engine, test_settings: Setti
         captured = capsys.readouterr()
         log_output = captured.out + captured.err
 
-        assert "correlation_id" in log_output, (
-            f"Log output missing correlation_id. Got: {log_output!r}"
-        )
+        assert "correlation_id" in log_output, f"Log output missing correlation_id. Got: {log_output!r}"

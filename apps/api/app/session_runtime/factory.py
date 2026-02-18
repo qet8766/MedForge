@@ -16,4 +16,3 @@ def get_session_runtime(settings: Settings) -> SessionRuntime:
     workspace = ZfsWorkspaceAdapter(use_sudo=settings.session_runtime_use_sudo)
     container = DockerContainerAdapter()
     return SessionRuntimeService(workspace=workspace, container=container)
-
