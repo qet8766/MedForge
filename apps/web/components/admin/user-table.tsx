@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { apiGet, apiPatchJson, type UserAdminRead, type UserUpdateRequest } from "@/lib/api";
+import { formatRelativeTime, getErrorMessage } from "@/lib/format";
 import { useApiMutation } from "@/lib/hooks/use-api-mutation";
-import { formatRelativeTime } from "@/lib/format";
+import { useFetchState } from "@/lib/hooks/use-fetch-state";
+import { TableErrorState } from "@/components/shared/table-states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,12 +23,6 @@ import {
 } from "@/components/ui/table";
 
 const COLUMN_COUNT = 6;
-
-type FetchState = {
-  users: UserAdminRead[];
-  loading: boolean;
-  error: string | null;
-};
 
 function UserTableHeader(): React.JSX.Element {
   return (
@@ -195,22 +191,18 @@ function UserRow({
 }
 
 export function UserTable(): React.JSX.Element {
-  const [state, setState] = useState<FetchState>({
-    users: [],
-    loading: true,
-    error: null,
-  });
+  const [state, setState] = useFetchState<UserAdminRead[]>([]);
 
   const fetchUsers = useCallback(async (): Promise<void> => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const users = await apiGet<UserAdminRead[]>("/api/v2/admin/users");
-      setState({ users, loading: false, error: null });
+      setState({ data: users, loading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load users.";
-      setState({ users: [], loading: false, error: message });
+      const message = getErrorMessage(err, "Failed to load users.");
+      setState({ data: [], loading: false, error: message });
     }
-  }, []);
+  }, [setState]);
 
   useEffect(() => {
     void fetchUsers();
@@ -219,7 +211,7 @@ export function UserTable(): React.JSX.Element {
   function handleUserUpdated(updated: UserAdminRead): void {
     setState((prev) => ({
       ...prev,
-      users: prev.users.map((u) => (u.user_id === updated.user_id ? updated : u)),
+      data: prev.data.map((u) => (u.user_id === updated.user_id ? updated : u)),
     }));
   }
 
@@ -228,14 +220,10 @@ export function UserTable(): React.JSX.Element {
   }
 
   if (state.error !== null) {
-    return (
-      <div className="py-8 text-center text-sm text-destructive">
-        {state.error}
-      </div>
-    );
+    return <TableErrorState message={state.error} />;
   }
 
-  if (state.users.length === 0) {
+  if (state.data.length === 0) {
     return (
       <Table>
         <UserTableHeader />
@@ -254,7 +242,7 @@ export function UserTable(): React.JSX.Element {
     <Table>
       <UserTableHeader />
       <TableBody>
-        {state.users.map((user) => (
+        {state.data.map((user) => (
           <UserRow key={user.user_id} user={user} onUpdated={handleUserUpdated} />
         ))}
       </TableBody>

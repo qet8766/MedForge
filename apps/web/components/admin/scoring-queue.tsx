@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-
-import { ListOrdered } from "lucide-react";
+import { useCallback, useEffect } from "react";
 
 import { apiGet, type CompetitionSummary, type SubmissionRead } from "@/lib/api";
-import { formatRelativeTime } from "@/lib/format";
+import { formatRelativeTime, getErrorMessage } from "@/lib/format";
+import { useFetchState } from "@/lib/hooks/use-fetch-state";
+import { TableEmptyState, TableErrorState } from "@/components/shared/table-states";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,11 +22,6 @@ type PendingSubmission = SubmissionRead & {
   competition_title: string;
 };
 
-type FetchState = {
-  submissions: PendingSubmission[];
-  loading: boolean;
-  error: string | null;
-};
 
 function ScoringQueueSkeleton(): React.JSX.Element {
   return (
@@ -46,11 +41,7 @@ function ScoringQueueSkeleton(): React.JSX.Element {
 }
 
 export function ScoringQueue(): React.JSX.Element {
-  const [state, setState] = useState<FetchState>({
-    submissions: [],
-    loading: true,
-    error: null,
-  });
+  const [state, setState] = useFetchState<PendingSubmission[]>([]);
 
   const fetchPendingSubmissions = useCallback(async (): Promise<void> => {
     try {
@@ -72,12 +63,12 @@ export function ScoringQueue(): React.JSX.Element {
       }
 
       allPending.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setState({ submissions: allPending, loading: false, error: null });
+      setState({ data: allPending, loading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load scoring queue.";
-      setState({ submissions: [], loading: false, error: message });
+      const message = getErrorMessage(err, "Failed to load scoring queue.");
+      setState({ data: [], loading: false, error: message });
     }
-  }, []);
+  }, [setState]);
 
   useEffect(() => {
     void fetchPendingSubmissions();
@@ -88,41 +79,18 @@ export function ScoringQueue(): React.JSX.Element {
   }
 
   if (state.error !== null) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Scoring Queue</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-destructive">{state.error}</p>
-        </CardContent>
-      </Card>
-    );
+    return <TableErrorState message={state.error} />;
   }
 
-  if (state.submissions.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Scoring Queue</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <ListOrdered className="size-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              No pending submissions in the scoring queue.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+  if (state.data.length === 0) {
+    return <TableEmptyState message="No pending submissions in the scoring queue." />;
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          Scoring Queue ({state.submissions.length})
+          Scoring Queue ({state.data.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -136,7 +104,7 @@ export function ScoringQueue(): React.JSX.Element {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {state.submissions.map((sub) => (
+            {state.data.map((sub) => (
               <TableRow key={sub.id}>
                 <TableCell className="font-medium">{sub.competition_title}</TableCell>
                 <TableCell className="text-muted-foreground text-xs font-mono">

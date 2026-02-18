@@ -30,3 +30,7 @@ export function formatTimestamp(value: string | null): string {
   if (value === null) return "--"
   return new Date(value).toLocaleString()
 }
+
+export function getErrorMessage(error: unknown, fallback = "An error occurred"): string {
+  return error instanceof Error ? error.message : fallback;
+}

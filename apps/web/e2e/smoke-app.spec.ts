@@ -1,18 +1,20 @@
 import { expect, test } from "@playwright/test";
 
+import { resolveApiBaseURL } from "./helpers";
+
 test.describe("authenticated app pages", () => {
   test("dashboard", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByText("Welcome back")).toBeVisible();
+    await expect(page.getByText("Welcome back").first()).toBeVisible();
     await expect(page.getByText("Competitions").first()).toBeVisible();
-    await expect(page.getByText("Session Status")).toBeVisible();
-    await expect(page.getByText("Quick Actions")).toBeVisible();
+    await expect(page.getByText("Session Status").first()).toBeVisible();
+    await expect(page.getByText("Quick Actions").first()).toBeVisible();
   });
 
   test("sessions", async ({ page }) => {
     await page.goto("/sessions");
-    await expect(page.locator("h1")).toContainText("Sessions");
-    await expect(page.getByText("Session History")).toBeVisible();
+    await expect(page.locator("h1").first()).toContainText("Sessions");
+    await expect(page.getByText("Session History").first()).toBeVisible();
   });
 
   test("competitions listing", async ({ page }) => {
@@ -156,15 +158,19 @@ test.describe("authenticated app pages", () => {
   });
 
   test("logout invalidates the session", async ({ page }) => {
-    await page.goto("/sessions");
-    await page.waitForURL(/\/sessions/);
+    const apiBase = resolveApiBaseURL();
 
-    // Perform logout
-    const res = await page.request.post("/api/v2/auth/logout", { data: {} });
+    // Verify authenticated before logout
+    const meBefore = await page.request.get(`${apiBase}/api/v2/me`);
+    expect(meBefore.ok()).toBeTruthy();
+
+    // Perform logout via API subdomain
+    const res = await page.request.post(`${apiBase}/api/v2/auth/logout`, { data: {} });
     expect(res.ok()).toBeTruthy();
 
-    // Protected route should now redirect to login
-    await page.goto("/sessions");
-    await page.waitForURL(/\/login/, { timeout: 5_000 });
+    // Same token should now be rejected
+    const meAfter = await page.request.get(`${apiBase}/api/v2/me`);
+    expect(meAfter.ok()).toBeFalsy();
+    expect(meAfter.status()).toBe(401);
   });
 });

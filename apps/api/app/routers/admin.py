@@ -18,6 +18,7 @@ from app.schemas import (
     UserAdminUpdateRequest,
 )
 from app.session_repo import ACTIVE_SESSION_STATUSES
+from app.util import commit_and_refresh, parse_enum_filter
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin_access)])
 
@@ -97,9 +98,7 @@ def update_user(
     if payload.max_concurrent_sessions is not None:
         user.max_concurrent_sessions = payload.max_concurrent_sessions
 
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    commit_and_refresh(session, user)
 
     active_count = _active_session_count(session, user_id=user.id)
 
@@ -124,17 +123,10 @@ def list_all_sessions(
 
     statement = select(SessionRecord)
 
-    if status_filter:
-        status_values = [s.strip() for s in status_filter.split(",") if s.strip()]
-        valid_statuses = []
-        for sv in status_values:
-            try:
-                valid_statuses.append(SessionStatus(sv))
-            except ValueError:
-                pass
-        if valid_statuses:
-            status_col = cast(Any, SessionRecord.status)
-            statement = statement.where(status_col.in_(valid_statuses))
+    valid_statuses = parse_enum_filter(status_filter, SessionStatus)
+    if valid_statuses:
+        status_col = cast(Any, SessionRecord.status)
+        statement = statement.where(status_col.in_(valid_statuses))
 
     if exposure:
         try:

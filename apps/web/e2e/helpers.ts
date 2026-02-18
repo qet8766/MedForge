@@ -18,6 +18,12 @@ export function resolveBaseURL(): string {
   throw new Error("E2E_BASE_URL (or E2E_DOMAIN/DOMAIN) is required for remote-external e2e.");
 }
 
+export function resolveApiBaseURL(): string {
+  const baseURL = resolveBaseURL();
+  const domain = resolveDomain(baseURL);
+  return `https://api.medforge.${domain}`;
+}
+
 export function resolveDomain(baseURL: string): string {
   const fromEnv = process.env.E2E_DOMAIN?.trim();
   if (fromEnv) {
@@ -82,7 +88,8 @@ export async function ensureSignedIn(page: Page, email: string, password: string
   await page.getByTestId("signup-submit").click();
   await page.getByTestId("signup-success").waitFor({ state: "visible", timeout: 8_000 });
 
-  await page.request.post("/api/v2/auth/logout", { data: {} });
+  const apiBase = resolveApiBaseURL();
+  await page.request.post(`${apiBase}/api/v2/auth/logout`, { data: {} });
 
   const postSignupLogin = await submitLogin(page, email, password);
   expect(postSignupLogin).toBe("success");

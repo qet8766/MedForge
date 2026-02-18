@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiGet, type SessionCurrentResponse, type SessionRead } from "@/lib/api";
+import { getErrorMessage } from "@/lib/format";
+import { isTransitioning } from "@/lib/status";
 import { apiPathForSurface, inferClientSurface } from "@/lib/surface";
 
 type UseSessionPollingReturn = {
@@ -10,10 +12,6 @@ type UseSessionPollingReturn = {
 };
 
 const DEFAULT_POLL_INTERVAL_MS = 3000;
-
-function isTransitioning(status: string): boolean {
-  return status === "starting" || status === "stopping";
-}
 
 export function useSessionPolling(
   pollInterval: number = DEFAULT_POLL_INTERVAL_MS
@@ -36,11 +34,7 @@ export function useSessionPolling(
       setSession(current);
       setError(null);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Failed to fetch session."
-      );
+      setError(getErrorMessage(requestError, "Failed to fetch session."));
       setSession(null);
     } finally {
       setLoading(false);

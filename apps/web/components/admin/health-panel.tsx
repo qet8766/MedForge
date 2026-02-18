@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Activity } from "lucide-react";
 
 import { apiGet, type HealthResponse } from "@/lib/api";
+import { getErrorMessage } from "@/lib/format";
+import { usePolling } from "@/lib/hooks/use-polling";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,7 +54,6 @@ export function HealthPanel(): React.JSX.Element {
     error: null,
     lastChecked: null,
   });
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchHealth = useCallback(async (): Promise<void> => {
     try {
@@ -64,7 +65,7 @@ export function HealthPanel(): React.JSX.Element {
         lastChecked: new Date(),
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to check health.";
+      const message = getErrorMessage(err, "Failed to check health.");
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -78,22 +79,7 @@ export function HealthPanel(): React.JSX.Element {
     void fetchHealth();
   }, [fetchHealth]);
 
-  useEffect(() => {
-    if (timerRef.current !== null) {
-      clearInterval(timerRef.current);
-    }
-
-    timerRef.current = setInterval(() => {
-      void fetchHealth();
-    }, AUTO_REFRESH_MS);
-
-    return () => {
-      if (timerRef.current !== null) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [fetchHealth]);
+  usePolling(() => { void fetchHealth(); }, AUTO_REFRESH_MS, true);
 
   if (state.loading) {
     return <HealthPanelSkeleton />;

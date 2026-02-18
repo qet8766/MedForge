@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Monitor } from "lucide-react";
 
 import { apiGet, type SessionRead, type SessionStatus } from "@/lib/api";
-import { formatRelativeTime } from "@/lib/format";
+import { formatRelativeTime, getErrorMessage } from "@/lib/format";
+import { useFetchState } from "@/lib/hooks/use-fetch-state";
+import { usePolling } from "@/lib/hooks/use-polling";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { TableErrorState } from "@/components/shared/table-states";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,12 +18,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 const ALL_STATUSES: SessionStatus[] = ["starting", "running", "stopping", "stopped", "error"];
 
 const AUTO_REFRESH_MS = 10_000;
-
-type FetchState = {
-  sessions: SessionRead[];
-  loading: boolean;
-  error: string | null;
-};
 
 function SessionCardSkeleton(): React.JSX.Element {
   return (
@@ -80,55 +77,32 @@ function SessionCard({ session }: { session: SessionRead }): React.JSX.Element {
 }
 
 export function SessionGrid(): React.JSX.Element {
-  const [state, setState] = useState<FetchState>({
-    sessions: [],
-    loading: true,
-    error: null,
-  });
+  const [state, setState] = useFetchState<SessionRead[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchSessions = useCallback(async (): Promise<void> => {
     try {
       const sessions = await apiGet<SessionRead[]>("/api/v2/admin/sessions");
-      setState({ sessions, loading: false, error: null });
+      setState({ data: sessions, loading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load sessions.";
+      const message = getErrorMessage(err, "Failed to load sessions.");
       setState((prev) => ({ ...prev, loading: false, error: message }));
     }
-  }, []);
+  }, [setState]);
 
   useEffect(() => {
     void fetchSessions();
   }, [fetchSessions]);
 
-  useEffect(() => {
-    if (timerRef.current !== null) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+  const hasActive = state.data.some(
+    (s) => s.status === "starting" || s.status === "running" || s.status === "stopping"
+  );
 
-    const hasActive = state.sessions.some(
-      (s) => s.status === "starting" || s.status === "running" || s.status === "stopping"
-    );
-
-    if (!hasActive) return;
-
-    timerRef.current = setInterval(() => {
-      void fetchSessions();
-    }, AUTO_REFRESH_MS);
-
-    return () => {
-      if (timerRef.current !== null) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [state.sessions, fetchSessions]);
+  usePolling(() => { void fetchSessions(); }, AUTO_REFRESH_MS, hasActive);
 
   const filteredSessions = statusFilter === "all"
-    ? state.sessions
-    : state.sessions.filter((s) => s.status === statusFilter);
+    ? state.data
+    : state.data.filter((s) => s.status === statusFilter);
 
   if (state.loading) {
     return (
@@ -144,13 +118,7 @@ export function SessionGrid(): React.JSX.Element {
   }
 
   if (state.error !== null) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-sm text-destructive">
-          {state.error}
-        </CardContent>
-      </Card>
-    );
+    return <TableErrorState message={state.error} />;
   }
 
   return (
@@ -165,10 +133,10 @@ export function SessionGrid(): React.JSX.Element {
         size="sm"
       >
         <ToggleGroupItem value="all">
-          All ({state.sessions.length})
+          All ({state.data.length})
         </ToggleGroupItem>
         {ALL_STATUSES.map((s) => {
-          const count = state.sessions.filter((sess) => sess.status === s).length;
+          const count = state.data.filter((sess) => sess.status === s).length;
           return (
             <ToggleGroupItem key={s} value={s}>
               {s} ({count})

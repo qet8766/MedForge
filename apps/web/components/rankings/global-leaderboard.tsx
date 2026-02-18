@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { apiGet, type CompetitionSummary, type LeaderboardResponse } from "@/lib/api";
+import { formatScore, getErrorMessage } from "@/lib/format";
+import { useFetchState } from "@/lib/hooks/use-fetch-state";
+import { formatScoredAt, rankBackground, rankLabel } from "@/lib/leaderboard-utils";
 import { apiPathForSurface, inferClientSurface } from "@/lib/surface";
 import { cn } from "@/lib/utils";
+import { TableEmptyState, TableErrorState } from "@/components/shared/table-states";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -22,39 +26,6 @@ type RankedUser = {
   competitionTitle: string;
   scoredAt: string | null;
 };
-
-function rankBackground(rank: number): string | undefined {
-  switch (rank) {
-    case 1:
-      return "bg-yellow-500/10";
-    case 2:
-      return "bg-zinc-400/10";
-    case 3:
-      return "bg-amber-700/10";
-    default:
-      return undefined;
-  }
-}
-
-function rankLabel(rank: number): string {
-  switch (rank) {
-    case 1:
-      return "\ud83e\udd47";
-    case 2:
-      return "\ud83e\udd48";
-    case 3:
-      return "\ud83e\udd49";
-    default:
-      return String(rank);
-  }
-}
-
-function formatScoredAt(scoredAt: string | null): string {
-  if (scoredAt === null) {
-    return "pending";
-  }
-  return new Date(scoredAt).toLocaleString();
-}
 
 async function fetchGlobalRankings(): Promise<RankedUser[]> {
   const surface = inferClientSurface();
@@ -108,9 +79,7 @@ function LoadingSkeleton(): React.JSX.Element {
 }
 
 export function GlobalLeaderboard(): React.JSX.Element {
-  const [rankings, setRankings] = useState<RankedUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useFetchState<RankedUser[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,56 +87,31 @@ export function GlobalLeaderboard(): React.JSX.Element {
     fetchGlobalRankings()
       .then((data) => {
         if (!cancelled) {
-          setRankings(data);
-          setLoading(false);
+          setState({ data, loading: false, error: null });
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          const message = err instanceof Error ? err.message : "Failed to load rankings.";
-          setError(message);
-          setLoading(false);
+          const message = getErrorMessage(err, "Failed to load rankings.");
+          setState({ data: [], loading: false, error: message });
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setState]);
 
-  if (loading) {
+  if (state.loading) {
     return <LoadingSkeleton />;
   }
 
-  if (error !== null) {
-    return (
-      <div className="py-8 text-center text-sm text-destructive">
-        {error}
-      </div>
-    );
+  if (state.error !== null) {
+    return <TableErrorState message={state.error} />;
   }
 
-  if (rankings.length === 0) {
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Rank</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead className="text-right">Best Score</TableHead>
-            <TableHead>Competition</TableHead>
-            <TableHead className="text-right">Scored At</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow>
-            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-              No ranked users yet. Scores will appear once competitions receive submissions.
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    );
+  if (state.data.length === 0) {
+    return <TableEmptyState message="No ranked users yet. Scores will appear once competitions receive submissions." />;
   }
 
   return (
@@ -182,14 +126,14 @@ export function GlobalLeaderboard(): React.JSX.Element {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rankings.map((user, index) => {
+        {state.data.map((user, index) => {
           const rank = index + 1;
           return (
             <TableRow key={user.userId} className={cn(rankBackground(rank))}>
               <TableCell className="font-medium">{rankLabel(rank)}</TableCell>
               <TableCell className="font-mono text-sm">{user.userId}</TableCell>
               <TableCell className="text-right font-mono tabular-nums">
-                {user.bestScore.toFixed(6)}
+                {formatScore(user.bestScore, 6)}
               </TableCell>
               <TableCell className="text-sm">{user.competitionTitle}</TableCell>
               <TableCell className="text-right text-sm text-muted-foreground">

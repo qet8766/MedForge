@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Literal, cast
 from uuid import UUID
 
@@ -15,7 +15,7 @@ from app.models import AuthSession, User
 from app.rate_limit import require_auth_rate_limit
 from app.schemas import AuthCredentials, AuthUserResponse, SessionActionResponse
 from app.security import create_session_token, hash_password, hash_session_token, normalize_email, verify_password
-from app.util import utcnow
+from app.util import commit_and_refresh, utcnow
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -98,9 +98,7 @@ def signup(
         email=email,
         password_hash=hash_password(payload.password),
     )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    commit_and_refresh(session, user)
 
     token = _issue_auth_session(user_id=user.id, request=request, session=session, settings=settings)
     _set_session_cookie(response, token, settings)

@@ -19,9 +19,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-type SessionsApiResponse = {
-  sessions: SessionListItem[];
-};
+type SessionsApiResponse = SessionListItem[];
 
 const STATUS_FILTERS = ["all", "running", "starting", "stopped", "stopping", "error"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
@@ -93,7 +91,7 @@ export default function SessionsPage(): React.JSX.Element {
       const response = await apiGet<SessionsApiResponse>(
         apiPathForSurface(surface, `/sessions${queryParams}`)
       );
-      setSessions(response.sessions);
+      setSessions(response);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load sessions.";

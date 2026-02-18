@@ -26,6 +26,7 @@ from app.schemas import (
 from app.security import hash_password, normalize_email, verify_password
 from app.session_lifecycle import create_session_for_principal, stop_session_for_principal
 from app.session_repo import ACTIVE_SESSION_STATUSES, list_sessions_for_user
+from app.util import commit_and_refresh, parse_enum_filter
 
 router = APIRouter(tags=["control-plane"])
 
@@ -225,9 +226,7 @@ def update_me(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Current password is incorrect.")
         user.password_hash = hash_password(payload.new_password)
 
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    commit_and_refresh(session, user)
 
     return envelope(
         request,
@@ -293,16 +292,8 @@ def _list_sessions_for_exposure(
     validated_limit = validate_limit(limit)
     offset = decode_offset_cursor(cursor)
 
-    statuses: tuple[SessionStatus, ...] | None = None
-    if status_filter:
-        parsed = []
-        for s in status_filter.split(","):
-            s = s.strip()
-            try:
-                parsed.append(SessionStatus(s))
-            except ValueError:
-                pass
-        statuses = tuple(parsed) if parsed else None
+    parsed_statuses = parse_enum_filter(status_filter, SessionStatus)
+    statuses: tuple[SessionStatus, ...] | None = tuple(parsed_statuses) if parsed_statuses else None
 
     all_rows = list_sessions_for_user(
         session,
