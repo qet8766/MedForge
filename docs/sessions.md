@@ -34,7 +34,7 @@ Runtime constraints (applied by the session manager when creating the container)
 - SSH server with public-key authentication (port 22 mapped to host SSH port).
 - Non-root user (UID/GID 1000).
 - `cap-drop=ALL`, not privileged, no Docker socket.
-- EXTERNAL: `cap_add=[CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, FSETID, KILL]`, no `no-new-privileges` (allows sudo/setuid inside session; required for sshd privilege separation).
+- EXTERNAL: `cap_add=[ALL]`, no `no-new-privileges` (full capability set for GPU development workflows including sudo, sshd privilege separation, and system-level tooling).
 - INTERNAL: no capabilities added back, `security_opt=["no-new-privileges:true"]`.
 - Container name: `mf-session-<slug>`
 - Network: `medforge-external-sessions` or `medforge-internal-sessions` (by exposure)

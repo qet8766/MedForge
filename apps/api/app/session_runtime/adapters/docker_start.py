@@ -93,7 +93,12 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
     if request.ssh_port:
         ports = {"22/tcp": ("0.0.0.0", request.ssh_port)}
 
-    sshd_caps = ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETUID", "SETGID", "FSETID", "KILL"]
+    if request.exposure == "EXTERNAL":
+        cap_add = ["ALL"]
+        security_opt: list[str] | None = None
+    else:
+        cap_add = []
+        security_opt = ["no-new-privileges:true"]
 
     container = client.containers.run(
         request.image_ref,
@@ -101,8 +106,9 @@ def run_container(client: docker.DockerClient, request: ContainerStartRequest) -
         detach=True,
         network=request.sessions_network,
         cap_drop=["ALL"],
-        cap_add=sshd_caps,
+        cap_add=cap_add or None,
         privileged=False,
+        security_opt=security_opt,
         environment=env,
         ports=ports,
         volumes={request.workspace_mount: {"bind": "/workspace", "mode": "rw"}},
